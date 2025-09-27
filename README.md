@@ -83,4 +83,4 @@ Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une sugg
 
 Ce projet est sous licence MIT.
 
-**Auteur:** \[Valéry Farcy]
+**Auteur:**[Valéry Farcy]
