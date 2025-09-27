@@ -2,152 +2,120 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Interpréteur Brainfuck</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧠 Interpréteur Brainfuck (BrainJS)</title>
     <style>
-        body { font-family: monospace; }
-        #memory-view { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
-        .active-cell { background-color: #ff9900; color: white; padding: 2px 4px; border-radius: 3px; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        #run-all { background-color: #4CAF50; color: white; }
+        #run-all:hover:not(:disabled) { background-color: #45a049; }
+        #step-btn { background-color: #2196F3; color: white; }
+        #step-btn:hover:not(:disabled) { background-color: #0b7dda; }
+        #reset-btn { background-color: #f44336; color: white; }
+        #reset-btn:hover:not(:disabled) { background-color: #da190b; }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #output-view {
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #fff;
+            min-height: 50px;
+        }
+        #memory-view {
+            margin-top: 15px;
+            overflow-x: auto;
+        }
+        #memory-view table {
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 500px;
+        }
+        #memory-view td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .header-row td {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            color: #555;
+        }
+        .active-cell {
+            background-color: #ff9900 !important;
+            color: white;
+            font-weight: bold;
+            border-color: #cc7a00 !important;
+        }
+        .ip-highlight {
+            background-color: #ff9900; /* Utiliser la même couleur d'accentuation */
+            color: white;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Interpréteur Brainfuck</h1>
+    <h1>🧠 BrainJS: Interpréteur Brainfuck</h1>
 
+    <label for="bf-code">Entrez votre programme Brainfuck :</label>
     <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
-    <br>
-    <button id="run-all">Exécuter D'un Coup</button>
-    <button id="step-btn">Exécuter Pas à Pas</button>
-    <button id="reset-btn">Réinitialiser</button>
+    
+    <p>
+        <button id="run-all">▶ Exécuter D'un Coup</button>
+        <button id="step-btn">👣 Exécuter Pas à Pas</button>
+        <button id="reset-btn">🔄 Réinitialiser</button>
+    </p>
+
+    <hr>
 
     <h2>Sortie (Output)</h2>
-    <pre id="output-view"></pre>
+    <pre id="output-view">En attente d'exécution...</pre>
 
-    <h2>État de la Mémoire</h2>
-    <p>Pointeur d'Instruction (IP): <span id="ip-view">0</span></p>
-    <p>Pointeur de Cellule (PTR): <span id="ptr-view">0</span></p>
+    <hr>
 
+    <h2>État de l'Interpréteur</h2>
+    <p>
+        Pointeur d'Instruction (IP): <span id="ip-view">0</span>
+        &nbsp;|&nbsp;
+        Pointeur de Cellule (PTR): <span id="ptr-view">0</span>
+    </p>
+
+    <h3>Code en cours d'exécution</h3>
+    <pre id="code-view" style="border: 1px solid #ddd; padding: 10px; background-color: #fff;"></pre>
+
+    <h3>Mémoire (Cellules autour du PTR)</h3>
     <div id="memory-view"></div>
 
+    <script src="BrainfuckInterpreter.js"></script> 
+
     <script>
-        /**
- * Interprète Brainfuck en JavaScript
- */
-class BrainfuckInterpreter {
-    constructor(code, input = '') {
-        this.code = code;
-        this.input = input.split(''); // Pour simuler la lecture de l'entrée
-        this.memory = new Array(30000).fill(0); // 30000 cellules de mémoire par convention
-        this.ptr = 0; // Pointeur de cellule
-        this.ip = 0; // Pointeur d'instruction (Instruction Pointer)
-        this.output = ''; // Chaîne pour l'affichage de la sortie
-        this.loopMap = this.buildLoopMap(code); // Carte des sauts de boucles
-        this.halted = false;
-    }
-
-    /**
-     * Prépare une carte pour les sauts de boucles [] afin d'éviter de reparcourir le code.
-     */
-    buildLoopMap(code) {
-        const map = new Map();
-        const stack = [];
-        for (let i = 0; i < code.length; i++) {
-            if (code[i] === '[') {
-                stack.push(i);
-            } else if (code[i] === ']') {
-                const open = stack.pop();
-                if (open === undefined) throw new Error("Erreur de syntaxe: ']' sans '['.");
-                map.set(open, i);
-                map.set(i, open);
-            }
-        }
-        if (stack.length > 0) throw new Error("Erreur de syntaxe: '[' sans '].");
-        return map;
-    }
-
-    /**
-     * Exécute une seule instruction et met à jour l'état.
-     * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
-     */
-    step() {
-        if (this.ip >= this.code.length) {
-            this.halted = true;
-            return false;
-        }
-
-        const instruction = this.code[this.ip];
-
-        switch (instruction) {
-            case '>':
-                this.ptr++;
-                break;
-            case '<':
-                this.ptr = Math.max(0, this.ptr - 1);
-                break;
-            case '+':
-                this.memory[this.ptr] = (this.memory[this.ptr] + 1) % 256; // Débordement à 255 -> 0
-                break;
-            case '-':
-                this.memory[this.ptr] = (this.memory[this.ptr] - 1 + 256) % 256; // Sous-débordement à 0 -> 255
-                break;
-            case '.':
-                this.output += String.fromCharCode(this.memory[this.ptr]);
-                break;
-            case ',':
-                const char = this.input.shift();
-                this.memory[this.ptr] = char ? char.charCodeAt(0) : 0; // Utiliser 0 si l'entrée est vide
-                break;
-            case '[':
-                if (this.memory[this.ptr] === 0) {
-                    this.ip = this.loopMap.get(this.ip);
-                }
-                break;
-            case ']':
-                if (this.memory[this.ptr] !== 0) {
-                    this.ip = this.loopMap.get(this.ip);
-                }
-                break;
-            // Ignorer les caractères non-Brainfuck
-            default:
-                break;
-        }
-
-        this.ip++;
-        // Gérer le cas où le pointeur mémoire sort des limites (bien que Brainfuck le permette en théorie)
-        if (this.ptr >= this.memory.length) {
-            // Optionnel: agrandir la mémoire ou lancer une erreur.
-            console.warn("Pointeur de mémoire hors des limites définies.");
-        }
-        return true;
-    }
-
-    /**
-     * Exécute le programme jusqu'à la fin ou jusqu'à ce qu'il s'arrête.
-     */
-    runAll() {
-        while (this.step()) {
-            // Boucle d'exécution rapide
-        }
-        return this.output;
-    }
-
-    /**
-     * Retourne l'état actuel de l'interpréteur pour l'affichage.
-     */
-    getState() {
-        return {
-            ptr: this.ptr,
-            ip: this.ip,
-            memorySnippet: this.memory.slice(Math.max(0, this.ptr - 5), this.ptr + 6), // Quelques cellules autour du pointeur
-            memoryFull: this.memory, // La mémoire complète
-            output: this.output,
-            halted: this.halted
-        };
-    }
-}
-
-
-
-
         let interpreter = null;
 
         // Références DOM
@@ -156,67 +124,94 @@ class BrainfuckInterpreter {
         const ipView = document.getElementById('ip-view');
         const ptrView = document.getElementById('ptr-view');
         const memoryView = document.getElementById('memory-view');
+        const codeView = document.getElementById('code-view');
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
 
+        /**
+         * Initialise ou réinitialise l'interpréteur avec le code actuel.
+         */
         function initializeInterpreter() {
             try {
-                // Créer une nouvelle instance de l'interpréteur avec le code actuel
-                // Vous pouvez ajouter un champ pour l'entrée utilisateur (input) si nécessaire
+                // La classe BrainfuckInterpreter doit être définie globalement par le script chargé
                 interpreter = new BrainfuckInterpreter(codeInput.value);
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
+                outputView.textContent = "Programme réinitialisé.";
             } catch (error) {
-                alert("Erreur de code Brainfuck: " + error.message);
+                alert("Erreur de syntaxe Brainfuck: " + error.message);
                 interpreter = null;
             }
         }
 
+        /**
+         * Met à jour tous les éléments de l'interface utilisateur en fonction
+         * de l'état actuel de l'interpréteur.
+         */
         function updateUI() {
             if (!interpreter) return;
 
             const state = interpreter.getState();
+
+            // 1. Mise à jour des compteurs et sortie
             outputView.textContent = state.output;
             ipView.textContent = state.ip;
             ptrView.textContent = state.ptr;
 
-            // Affichage de la mémoire
-            let memDisplay = '<table><tr>';
-            const start = Math.max(0, state.ptr - 5);
-            const end = Math.min(state.ptr + 6, state.memoryFull.length);
+            // 2. Visualisation du code et du Pointeur d'Instruction (IP)
+            const code = state.code;
+            let codeDisplay = '';
+            for (let i = 0; i < code.length; i++) {
+                if (i === state.ip) {
+                    // Met en évidence l'instruction en cours d'exécution
+                    codeDisplay += `<span class="ip-highlight">${code[i]}</span>`;
+                } else {
+                    codeDisplay += code[i];
+                }
+            }
+            codeView.innerHTML = codeDisplay;
 
-            // Afficher l'index (PTR)
-            memDisplay += '<tr>';
+
+            // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
+            let memDisplay = '<table>';
+            const windowSize = 5; // Nombre de cellules à afficher de chaque côté du PTR
+            const start = Math.max(0, state.ptr - windowSize);
+            const end = Math.min(state.ptr + windowSize + 1, state.memoryFull.length);
+
+            // Ligne 1: Index (PTR)
+            memDisplay += '<tr class="header-row">';
             for (let i = start; i < end; i++) {
-                const isCurrent = i === state.ptr;
-                memDisplay += `<td style="border: 1px solid #eee; text-align: center; ${isCurrent ? 'font-weight: bold; background-color: #f0f0f0;' : ''}">${i}</td>`;
+                memDisplay += `<td>${i}</td>`;
             }
             memDisplay += '</tr>';
 
-            // Afficher les valeurs (Contenu)
+            // Ligne 2: Valeurs (Contenu de la cellule)
             memDisplay += '<tr>';
             for (let i = start; i < end; i++) {
-                const isCurrent = i === state.ptr;
-                const cellClass = isCurrent ? 'active-cell' : '';
-                memDisplay += `<td class="${cellClass}" style="border: 1px solid #ccc; text-align: center;">${state.memoryFull[i]}</td>`;
+                const cellClass = i === state.ptr ? 'active-cell' : '';
+                memDisplay += `<td class="${cellClass}">${state.memoryFull[i]}</td>`;
             }
-            memDisplay += '</tr></table>';
+            memDisplay += '</tr>';
+            memDisplay += '</table>';
 
             memoryView.innerHTML = memDisplay;
 
+            // 4. Gestion de la fin du programme
             if (state.halted) {
                 runAllBtn.disabled = true;
                 stepBtn.disabled = true;
-                console.log("Programme terminé.");
+                if (!outputView.textContent.includes("terminé")) {
+                    outputView.textContent += "\n\n--- Programme terminé ---";
+                }
             }
         }
 
         // --- Gestionnaires d'événements ---
 
         runAllBtn.addEventListener('click', () => {
-            if (!interpreter) initializeInterpreter();
+            if (!interpreter || interpreter.getState().halted) initializeInterpreter();
             if (interpreter) {
                 interpreter.runAll();
                 updateUI();
@@ -224,7 +219,8 @@ class BrainfuckInterpreter {
         });
 
         stepBtn.addEventListener('click', () => {
-            if (!interpreter) initializeInterpreter();
+            // Réinitialiser si le programme est terminé
+            if (!interpreter || interpreter.getState().halted) initializeInterpreter(); 
             if (interpreter) {
                 interpreter.step();
                 updateUI();
@@ -235,11 +231,17 @@ class BrainfuckInterpreter {
             initializeInterpreter();
         });
 
-        // Initialisation au chargement
-        initializeInterpreter();
+        // Initialisation au chargement de la page
+        // Un léger délai pour s'assurer que BrainfuckInterpreter.js est chargé
+        window.addEventListener('load', () => {
+            if (typeof BrainfuckInterpreter === 'undefined') {
+                alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement.");
+            } else {
+                initializeInterpreter();
+            }
+        });
 
     </script>
 </body>
 </html>
-
 
