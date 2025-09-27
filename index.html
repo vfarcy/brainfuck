@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interpréteur Brainfuck</title>
+    <style>
+        body { font-family: monospace; }
+        #memory-view { border: 1px solid #ccc; padding: 10px; margin-top: 10px; }
+        .active-cell { background-color: #ff9900; color: white; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <h1>Interpréteur Brainfuck</h1>
+
+    <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+    <br>
+    <button id="run-all">Exécuter D'un Coup</button>
+    <button id="step-btn">Exécuter Pas à Pas</button>
+    <button id="reset-btn">Réinitialiser</button>
+
+    <h2>Sortie (Output)</h2>
+    <pre id="output-view"></pre>
+
+    <h2>État de la Mémoire</h2>
+    <p>Pointeur d'Instruction (IP): <span id="ip-view">0</span></p>
+    <p>Pointeur de Cellule (PTR): <span id="ptr-view">0</span></p>
+
+    <div id="memory-view"></div>
+
+    <script>
+        /**
+ * Interprète Brainfuck en JavaScript
+ */
+class BrainfuckInterpreter {
+    constructor(code, input = '') {
+        this.code = code;
+        this.input = input.split(''); // Pour simuler la lecture de l'entrée
+        this.memory = new Array(30000).fill(0); // 30000 cellules de mémoire par convention
+        this.ptr = 0; // Pointeur de cellule
+        this.ip = 0; // Pointeur d'instruction (Instruction Pointer)
+        this.output = ''; // Chaîne pour l'affichage de la sortie
+        this.loopMap = this.buildLoopMap(code); // Carte des sauts de boucles
+        this.halted = false;
+    }
+
+    /**
+     * Prépare une carte pour les sauts de boucles [] afin d'éviter de reparcourir le code.
+     */
+    buildLoopMap(code) {
+        const map = new Map();
+        const stack = [];
+        for (let i = 0; i < code.length; i++) {
+            if (code[i] === '[') {
+                stack.push(i);
+            } else if (code[i] === ']') {
+                const open = stack.pop();
+                if (open === undefined) throw new Error("Erreur de syntaxe: ']' sans '['.");
+                map.set(open, i);
+                map.set(i, open);
+            }
+        }
+        if (stack.length > 0) throw new Error("Erreur de syntaxe: '[' sans '].");
+        return map;
+    }
+
+    /**
+     * Exécute une seule instruction et met à jour l'état.
+     * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
+     */
+    step() {
+        if (this.ip >= this.code.length) {
+            this.halted = true;
+            return false;
+        }
+
+        const instruction = this.code[this.ip];
+
+        switch (instruction) {
+            case '>':
+                this.ptr++;
+                break;
+            case '<':
+                this.ptr = Math.max(0, this.ptr - 1);
+                break;
+            case '+':
+                this.memory[this.ptr] = (this.memory[this.ptr] + 1) % 256; // Débordement à 255 -> 0
+                break;
+            case '-':
+                this.memory[this.ptr] = (this.memory[this.ptr] - 1 + 256) % 256; // Sous-débordement à 0 -> 255
+                break;
+            case '.':
+                this.output += String.fromCharCode(this.memory[this.ptr]);
+                break;
+            case ',':
+                const char = this.input.shift();
+                this.memory[this.ptr] = char ? char.charCodeAt(0) : 0; // Utiliser 0 si l'entrée est vide
+                break;
+            case '[':
+                if (this.memory[this.ptr] === 0) {
+                    this.ip = this.loopMap.get(this.ip);
+                }
+                break;
+            case ']':
+                if (this.memory[this.ptr] !== 0) {
+                    this.ip = this.loopMap.get(this.ip);
+                }
+                break;
+            // Ignorer les caractères non-Brainfuck
+            default:
+                break;
+        }
+
+        this.ip++;
+        // Gérer le cas où le pointeur mémoire sort des limites (bien que Brainfuck le permette en théorie)
+        if (this.ptr >= this.memory.length) {
+            // Optionnel: agrandir la mémoire ou lancer une erreur.
+            console.warn("Pointeur de mémoire hors des limites définies.");
+        }
+        return true;
+    }
+
+    /**
+     * Exécute le programme jusqu'à la fin ou jusqu'à ce qu'il s'arrête.
+     */
+    runAll() {
+        while (this.step()) {
+            // Boucle d'exécution rapide
+        }
+        return this.output;
+    }
+
+    /**
+     * Retourne l'état actuel de l'interpréteur pour l'affichage.
+     */
+    getState() {
+        return {
+            ptr: this.ptr,
+            ip: this.ip,
+            memorySnippet: this.memory.slice(Math.max(0, this.ptr - 5), this.ptr + 6), // Quelques cellules autour du pointeur
+            memoryFull: this.memory, // La mémoire complète
+            output: this.output,
+            halted: this.halted
+        };
+    }
+}
+
+
+
+
+        let interpreter = null;
+
+        // Références DOM
+        const codeInput = document.getElementById('bf-code');
+        const outputView = document.getElementById('output-view');
+        const ipView = document.getElementById('ip-view');
+        const ptrView = document.getElementById('ptr-view');
+        const memoryView = document.getElementById('memory-view');
+        const runAllBtn = document.getElementById('run-all');
+        const stepBtn = document.getElementById('step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        function initializeInterpreter() {
+            try {
+                // Créer une nouvelle instance de l'interpréteur avec le code actuel
+                // Vous pouvez ajouter un champ pour l'entrée utilisateur (input) si nécessaire
+                interpreter = new BrainfuckInterpreter(codeInput.value);
+                updateUI();
+                runAllBtn.disabled = false;
+                stepBtn.disabled = false;
+            } catch (error) {
+                alert("Erreur de code Brainfuck: " + error.message);
+                interpreter = null;
+            }
+        }
+
+        function updateUI() {
+            if (!interpreter) return;
+
+            const state = interpreter.getState();
+            outputView.textContent = state.output;
+            ipView.textContent = state.ip;
+            ptrView.textContent = state.ptr;
+
+            // Affichage de la mémoire
+            let memDisplay = '<table><tr>';
+            const start = Math.max(0, state.ptr - 5);
+            const end = Math.min(state.ptr + 6, state.memoryFull.length);
+
+            // Afficher l'index (PTR)
+            memDisplay += '<tr>';
+            for (let i = start; i < end; i++) {
+                const isCurrent = i === state.ptr;
+                memDisplay += `<td style="border: 1px solid #eee; text-align: center; ${isCurrent ? 'font-weight: bold; background-color: #f0f0f0;' : ''}">${i}</td>`;
+            }
+            memDisplay += '</tr>';
+
+            // Afficher les valeurs (Contenu)
+            memDisplay += '<tr>';
+            for (let i = start; i < end; i++) {
+                const isCurrent = i === state.ptr;
+                const cellClass = isCurrent ? 'active-cell' : '';
+                memDisplay += `<td class="${cellClass}" style="border: 1px solid #ccc; text-align: center;">${state.memoryFull[i]}</td>`;
+            }
+            memDisplay += '</tr></table>';
+
+            memoryView.innerHTML = memDisplay;
+
+            if (state.halted) {
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
+                console.log("Programme terminé.");
+            }
+        }
+
+        // --- Gestionnaires d'événements ---
+
+        runAllBtn.addEventListener('click', () => {
+            if (!interpreter) initializeInterpreter();
+            if (interpreter) {
+                interpreter.runAll();
+                updateUI();
+            }
+        });
+
+        stepBtn.addEventListener('click', () => {
+            if (!interpreter) initializeInterpreter();
+            if (interpreter) {
+                interpreter.step();
+                updateUI();
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            initializeInterpreter();
+        });
+
+        // Initialisation au chargement
+        initializeInterpreter();
+
+    </script>
+</body>
+</html>
+
+
