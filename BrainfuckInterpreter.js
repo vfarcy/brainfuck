@@ -10,22 +10,23 @@ class BrainfuckInterpreter {
      * @param {string} [input=''] L'entrée utilisateur simulée pour la commande ','.
      */
     constructor(code, input = '') {
-        // Nettoyer le code pour ne garder que les instructions Brainfuck
-        this.code = code.replace(/[^><+\-.,[\]]/g, '');
-        this.input = input.split(''); // Convertir l'entrée en tableau de caractères
-        this.memory = new Array(30000).fill(0); // 30000 cellules de mémoire (convention)
-        this.ptr = 0; // Pointeur de cellule (Memory Pointer)
-        this.ip = 0; // Pointeur d'instruction (Instruction Pointer)
-        this.output = ''; // Chaîne pour l'affichage de la sortie
-        this.loopMap = this.buildLoopMap(this.code); // Carte des sauts de boucles
-        this.halted = false; // Indique si le programme est terminé
+        // Validation et nettoyage : S'assurer que 'code' est une chaîne et n'est pas null/undefined
+        const safeCode = typeof code === 'string' ? code : ''; 
+        this.code = safeCode.replace(/[^><+\-.,[\]]/g, '');
+        
+        this.input = input.split(''); 
+        this.memory = new Array(30000).fill(0); 
+        this.ptr = 0; 
+        this.ip = 0; 
+        this.output = ''; 
+        this.loopMap = this.buildLoopMap(this.code);
+        this.halted = false; 
     }
 
     /**
      * Prépare une carte (Map) pour lier les crochets d'ouverture '[' à
      * leurs crochets de fermeture ']' correspondants, et vice-versa.
-     * Cela permet de sauter rapidement dans les boucles sans reparcourir le code.
-     * @param {string} code Le programme Brainfuck.
+     * @param {string} code Le programme Brainfuck nettoyé.
      * @returns {Map<number, number>} La carte des sauts de boucles.
      * @throws {Error} Si la syntaxe des crochets est incorrecte.
      */
@@ -38,20 +39,20 @@ class BrainfuckInterpreter {
             } else if (code[i] === ']') {
                 const open = stack.pop();
                 if (open === undefined) {
-                    throw new Error(`Erreur de syntaxe: ']' sans '[' à l'index ${i}.`);
+                    throw new Error(`']' sans '[' à l'index ${i}.`);
                 }
                 map.set(open, i);
                 map.set(i, open);
             }
         }
         if (stack.length > 0) {
-            throw new Error(`Erreur de syntaxe: '[' sans ']' (reste ${stack.length} non fermés).`);
+            throw new Error(`'[' sans ']' (reste ${stack.length} non fermés).`);
         }
         return map;
     }
 
     /**
-     * Exécute une seule instruction Brainfuck et met à jour l'état interne.
+     * Exécute une seule instruction Brainfuck.
      * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
      */
     step() {
@@ -65,69 +66,62 @@ class BrainfuckInterpreter {
         switch (instruction) {
             case '>':
                 this.ptr++;
-                // Optionnel: agrandir la mémoire si nécessaire, ou ignorer si on dépasse les 30000
                 if (this.ptr >= this.memory.length) {
-                    // Pour simplifier et éviter l'allocation dynamique dans cet exemple :
-                    // On pourrait lancer une erreur ou augmenter this.memory.length
+                    // Optionnel: On pourrait redimensionner ou lever une erreur ici.
                     console.warn("Pointeur de mémoire hors des limites définies (30000).");
                 }
                 break;
 
             case '<':
-                this.ptr = Math.max(0, this.ptr - 1); // Le pointeur ne doit pas être négatif
+                this.ptr = Math.max(0, this.ptr - 1);
                 break;
 
             case '+':
-                // Incrémenter la cellule, avec débordement (wraparound) de 255 à 0
+                // Débordement (wraparound) de 255 à 0
                 this.memory[this.ptr] = (this.memory[this.ptr] + 1) % 256;
                 break;
 
             case '-':
-                // Décrémenter la cellule, avec sous-débordement (wraparound) de 0 à 255
+                // Sous-débordement (wraparound) de 0 à 255
                 this.memory[this.ptr] = (this.memory[this.ptr] - 1 + 256) % 256;
                 break;
 
             case '.':
-                // Ajouter le caractère correspondant à la valeur ASCII/Unicode de la cellule à la sortie
                 this.output += String.fromCharCode(this.memory[this.ptr]);
                 break;
 
             case ',':
-                // Lire le prochain caractère de l'entrée. Si l'entrée est vide, lit 0.
+                // Lit le caractère et utilise 0 si l'entrée est vide
                 const char = this.input.shift();
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
                 break;
 
             case '[':
-                // Si la valeur de la cellule est zéro, sauter à l'instruction après le ']' correspondant
+                // Sauter après le ']' correspondant si la valeur est zéro
                 if (this.memory[this.ptr] === 0) {
                     this.ip = this.loopMap.get(this.ip);
                 }
                 break;
 
             case ']':
-                // Si la valeur de la cellule n'est PAS zéro, sauter à l'instruction après le '[' correspondant
+                // Sauter après le '[' correspondant si la valeur n'est PAS zéro
                 if (this.memory[this.ptr] !== 0) {
                     this.ip = this.loopMap.get(this.ip);
                 }
                 break;
 
-            // Par convention, les autres caractères sont ignorés (sauf s'ils sont déjà filtrés)
             default:
                 break;
         }
 
-        this.ip++; // Avancer au prochain pointeur d'instruction
+        this.ip++; 
         return true;
     }
 
     /**
-     * Exécute le programme jusqu'à la fin ou jusqu'à ce qu'il s'arrête.
-     * Cette méthode est utilisée pour l'exécution complète (Run All).
-     * @returns {string} La sortie générée.
+     * Exécute le programme jusqu'à la fin.
      */
     runAll() {
-        // Limite de sécurité pour éviter les boucles infinies qui figent le navigateur
         const maxSteps = 10000000;
         let steps = 0;
 
@@ -136,7 +130,7 @@ class BrainfuckInterpreter {
         }
 
         if (steps >= maxSteps) {
-            console.error("Limite d'étapes d'exécution atteinte. Programme possiblement en boucle infinie.");
+            console.error("Limite d'étapes atteinte. Programme possiblement en boucle infinie.");
             this.halted = true;
         }
 
@@ -144,22 +138,17 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Retourne l'état actuel de l'interpréteur pour la visualisation dans l'interface.
-     * @returns {{ptr: number, ip: number, memoryFull: number[], output: string, halted: boolean}}
+     * Retourne l'état actuel de l'interpréteur pour l'affichage.
      */
     getState() {
         return {
-            ptr: this.ptr, // Pointeur de cellule
-            ip: this.ip,   // Pointeur d'instruction
-            memoryFull: this.memory, // La mémoire complète (pour afficher l'extrait)
-            output: this.output,     // La sortie accumulée
-            halted: this.halted      // État de l'exécution
+            ptr: this.ptr,
+            ip: this.ip,
+            code: this.code,
+            memoryFull: this.memory,
+            output: this.output,
+            halted: this.halted
         };
     }
 }
-
-// Optionnel: si vous utilisez des modules ES6, exportez la classe
-// export default BrainfuckInterpreter;
-
-
 
