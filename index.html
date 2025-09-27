@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 Interpréteur Brainfuck (BrainJS)</title>
+    <title>🧠 BrainJS: Interpréteur Brainfuck</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -20,6 +20,7 @@
             box-sizing: border-box;
             font-family: monospace;
             font-size: 14px;
+            resize: vertical;
         }
         button {
             padding: 10px 15px;
@@ -40,16 +41,16 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
-        #output-view {
+        
+        /* --- Styles de Sortie et Mémoire --- */
+        #output-view, #code-view {
             white-space: pre-wrap;
             border: 1px solid #ddd;
             padding: 10px;
             background-color: #fff;
             min-height: 50px;
-        }
-        #memory-view {
-            margin-top: 15px;
-            overflow-x: auto;
+            font-family: monospace;
+            font-size: 14px;
         }
         #memory-view table {
             border-collapse: collapse;
@@ -75,7 +76,7 @@
         .ip-highlight {
             background-color: #ff9900;
             color: white;
-            padding: 2px 4px;
+            padding: 1px 2px;
             border-radius: 3px;
         }
     </style>
@@ -94,6 +95,9 @@
     </p>
 
     <hr>
+    
+    <h2>Données d'Entrée (Input)</h2>
+    <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
 
     <h2>Sortie (Output)</h2>
     <pre id="output-view">En attente d'exécution...</pre>
@@ -108,7 +112,7 @@
     </p>
 
     <h3>Code en cours d'exécution</h3>
-    <pre id="code-view" style="border: 1px solid #ddd; padding: 10px; background-color: #fff;"></pre>
+    <pre id="code-view"></pre>
 
     <h3>Mémoire (Cellules autour du PTR)</h3>
     <div id="memory-view"></div>
@@ -120,6 +124,7 @@
 
         // Références DOM
         const codeInput = document.getElementById('bf-code');
+        const inputData = document.getElementById('bf-input');
         const outputView = document.getElementById('output-view');
         const ipView = document.getElementById('ip-view');
         const ptrView = document.getElementById('ptr-view');
@@ -128,20 +133,19 @@
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
-
+        
         /**
-         * Initialise ou réinitialise l'interpréteur avec le code actuel.
+         * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
          */
         function initializeInterpreter() {
             try {
-                // IMPORTANT: La classe BrainfuckInterpreter doit exister à ce point.
-                interpreter = new BrainfuckInterpreter(codeInput.value);
+                // Passage du code et des données d'entrée
+                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
                 outputView.textContent = "Programme réinitialisé.";
             } catch (error) {
-                // Capture les erreurs de syntaxe (crochets mal fermés)
                 alert("Erreur de syntaxe Brainfuck: " + error.message);
                 interpreter = null;
             }
@@ -161,14 +165,20 @@
             ptrView.textContent = state.ptr;
 
             // 2. Visualisation du code et du Pointeur d'Instruction (IP)
-            const code = state.code;
+            
             let codeDisplay = '';
-            for (let i = 0; i < code.length; i++) {
-                if (i === state.ip) {
-                    codeDisplay += `<span class="ip-highlight">${code[i]}</span>`;
+            let charCount = 0;
+            
+            // On parcourt le code *nettoyé* pour y placer le surlignement de l'IP
+            for (let i = 0; i < state.code.length; i++) {
+                const char = state.code[i];
+                
+                if (charCount === state.ip) {
+                    codeDisplay += `<span class="ip-highlight">${char}</span>`;
                 } else {
-                    codeDisplay += code[i];
+                    codeDisplay += char;
                 }
+                charCount++;
             }
             codeView.innerHTML = codeDisplay;
 
@@ -210,6 +220,7 @@
         // --- Gestionnaires d'événements ---
 
         runAllBtn.addEventListener('click', () => {
+            // Réinitialiser s'il n'y a pas d'interpréteur ou si l'exécution précédente est terminée
             if (!interpreter || interpreter.getState().halted) initializeInterpreter();
             if (interpreter) {
                 interpreter.runAll();
@@ -229,10 +240,9 @@
             initializeInterpreter();
         });
 
-        // Initialisation après le chargement complet (s'assure que tout est prêt, y compris BrainfuckInterpreter.js)
+        // Initialisation après le chargement complet
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
-                // Afficher une alerte si la classe n'est pas trouvée (erreur de chemin de fichier)
                 alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
             } else {
                 initializeInterpreter();
@@ -242,4 +252,3 @@
     </script>
 </body>
 </html>
-
