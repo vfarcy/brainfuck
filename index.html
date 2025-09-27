@@ -73,7 +73,7 @@
             border-color: #cc7a00 !important;
         }
         .ip-highlight {
-            background-color: #ff9900; /* Utiliser la même couleur d'accentuation */
+            background-color: #ff9900;
             color: white;
             padding: 2px 4px;
             border-radius: 3px;
@@ -134,21 +134,21 @@
          */
         function initializeInterpreter() {
             try {
-                // La classe BrainfuckInterpreter doit être définie globalement par le script chargé
+                // IMPORTANT: La classe BrainfuckInterpreter doit exister à ce point.
                 interpreter = new BrainfuckInterpreter(codeInput.value);
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
                 outputView.textContent = "Programme réinitialisé.";
             } catch (error) {
+                // Capture les erreurs de syntaxe (crochets mal fermés)
                 alert("Erreur de syntaxe Brainfuck: " + error.message);
                 interpreter = null;
             }
         }
 
         /**
-         * Met à jour tous les éléments de l'interface utilisateur en fonction
-         * de l'état actuel de l'interpréteur.
+         * Met à jour tous les éléments de l'interface utilisateur.
          */
         function updateUI() {
             if (!interpreter) return;
@@ -165,7 +165,6 @@
             let codeDisplay = '';
             for (let i = 0; i < code.length; i++) {
                 if (i === state.ip) {
-                    // Met en évidence l'instruction en cours d'exécution
                     codeDisplay += `<span class="ip-highlight">${code[i]}</span>`;
                 } else {
                     codeDisplay += code[i];
@@ -176,7 +175,7 @@
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
-            const windowSize = 5; // Nombre de cellules à afficher de chaque côté du PTR
+            const windowSize = 5; 
             const start = Math.max(0, state.ptr - windowSize);
             const end = Math.min(state.ptr + windowSize + 1, state.memoryFull.length);
 
@@ -219,7 +218,6 @@
         });
 
         stepBtn.addEventListener('click', () => {
-            // Réinitialiser si le programme est terminé
             if (!interpreter || interpreter.getState().halted) initializeInterpreter(); 
             if (interpreter) {
                 interpreter.step();
@@ -231,11 +229,11 @@
             initializeInterpreter();
         });
 
-        // Initialisation au chargement de la page
-        // Un léger délai pour s'assurer que BrainfuckInterpreter.js est chargé
+        // Initialisation après le chargement complet (s'assure que tout est prêt, y compris BrainfuckInterpreter.js)
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
-                alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement.");
+                // Afficher une alerte si la classe n'est pas trouvée (erreur de chemin de fichier)
+                alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
             } else {
                 initializeInterpreter();
             }
