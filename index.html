@@ -31,35 +31,27 @@
             border-radius: 4px;
             background-color: #fff;
             overflow: hidden;
+            display: grid; /* Utiliser grid pour superposer les éléments */
         }
         .editor-wrapper textarea,
         .editor-wrapper pre {
+            grid-area: 1 / 1 / 2 / 2; /* Placer les deux dans la même cellule de la grille */
             font-family: monospace;
             font-size: 14px;
             line-height: 1.5;
             tab-size: 2;
-        }
-        .editor-wrapper pre {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             margin: 0;
             padding: 10px;
             box-sizing: border-box;
             white-space: pre-wrap;
             word-wrap: break-word;
-            overflow: hidden;
+        }
+        .editor-wrapper pre {
             pointer-events: none;
             background-color: #fff;
         }
-        .editor-wrapper textarea {
-            position: relative;
+        .editor-wrapper textarea { 
             z-index: 1;
-            width: 100%;
-            height: 100%;
-            padding: 10px;
             border: none;
             background-color: transparent;
             color: transparent;
