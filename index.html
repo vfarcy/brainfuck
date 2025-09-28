@@ -139,10 +139,15 @@
             font-size: 14px;
             min-width: 500px;
         }
+        #memory-view {
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
         #memory-view td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
+            white-space: nowrap;
         }
         .header-row td {
             font-weight: bold;
@@ -154,6 +159,10 @@
             color: white;
             font-weight: bold;
             border-color: #cc7a00 !important;
+        }
+        .ellipsis-cell {
+            font-weight: bold;
+            color: #999;
         }
     </style>
 </head>
@@ -333,22 +342,35 @@
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
-            const windowSize = 5; 
-            const start = Math.max(0, state.ptr - windowSize);
-            const end = Math.min(state.ptr + windowSize + 1, state.memoryFull.length);
+            const windowRadius = 10;
+            const memoryLength = state.memoryFull.length;
+            const start = Math.max(0, state.ptr - windowRadius);
+            const end = Math.min(state.ptr + windowRadius + 1, memoryLength);
 
             // Ligne 1: Index (PTR)
             memDisplay += '<tr class="header-row">';
+            if (start > 0) {
+                memDisplay += '<td class="ellipsis-cell">…</td>';
+            }
             for (let i = start; i < end; i++) {
                 memDisplay += `<td>${i}</td>`;
+            }
+            if (end < memoryLength) {
+                memDisplay += '<td class="ellipsis-cell">…</td>';
             }
             memDisplay += '</tr>';
 
             // Ligne 2: Valeurs (Contenu de la cellule)
             memDisplay += '<tr>';
+            if (start > 0) {
+                memDisplay += '<td class="ellipsis-cell">…</td>';
+            }
             for (let i = start; i < end; i++) {
                 const cellClass = i === state.ptr ? 'active-cell' : '';
                 memDisplay += `<td class="${cellClass}">${state.memoryFull[i]}</td>`;
+            }
+            if (end < memoryLength) {
+                memDisplay += '<td class="ellipsis-cell">…</td>';
             }
             memDisplay += '</tr>';
             memDisplay += '</table>';
