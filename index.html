@@ -5,76 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🧠 BrainJS: Interpréteur Brainfuck</title>
     <style>
+        :root {
+            --bg-color: #f9f9f9;
+            --text-color: #333333;
+            --heading-color: #333333;
+            --border-color: #cccccc;
+            --card-bg: #ffffff;
+            --output-bg: #ffffff;
+            --table-header-bg: #f0f0f0;
+            --table-header-text: #555555;
+            --active-cell-bg: #ff9900;
+            --active-cell-border: #cc7a00;
+            --code-color: #333333;
+            --selection-bg: rgba(255, 210, 128, 0.6);
+            --selection-text-color: #333333;
+        }
+
+        body.theme-light {
+            --bg-color: #f9f9f9;
+            --text-color: #333333;
+            --heading-color: #333333;
+            --border-color: #cccccc;
+            --card-bg: #ffffff;
+            --output-bg: #ffffff;
+            --table-header-bg: #f0f0f0;
+            --table-header-text: #555555;
+            --active-cell-bg: #ff9900;
+            --active-cell-border: #cc7a00;
+            --code-color: #333333;
+            --selection-bg: rgba(255, 210, 128, 0.6);
+            --selection-text-color: #333333;
+        }
+
+        body.theme-dark {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --heading-color: #fafafa;
+            --border-color: #333333;
+            --card-bg: #1e1e1e;
+            --output-bg: #1e1e1e;
+            --table-header-bg: #2c2c2c;
+            --table-header-text: #c7c7c7;
+            --active-cell-bg: #ffb74d;
+            --active-cell-border: #f57c00;
+            --code-color: #f5f5f5;
+            --selection-bg: rgba(33, 150, 243, 0.35);
+            --selection-text-color: #ffffff;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 20px;
-            background-color: #f9f9f9;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        h1, h2 {
-            color: #333;
+
+        h1, h2, h3 {
+            color: var(--heading-color);
         }
+
         textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
             box-sizing: border-box;
             font-family: monospace;
             font-size: 14px;
             resize: vertical;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
+
         button {
             padding: 10px 15px;
-            margin-right: 10px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
             font-weight: bold;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
         }
+
+        button:focus-visible {
+            outline: 2px solid var(--active-cell-bg);
+            outline-offset: 2px;
+        }
+
+        .button-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 15px 0;
+        }
+
         #run-all { background-color: #4CAF50; color: white; }
         #run-all:hover:not(:disabled) { background-color: #45a049; }
         #step-btn { background-color: #2196F3; color: white; }
         #step-btn:hover:not(:disabled) { background-color: #0b7dda; }
         #reset-btn { background-color: #f44336; color: white; }
         #reset-btn:hover:not(:disabled) { background-color: #da190b; }
+
+        #theme-toggle {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 18px;
+        }
+
+        #theme-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.theme-dark #theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
         }
-        
-        /* --- Styles de Sortie et Mémoire --- */
+
+        body.theme-dark button:disabled {
+            background-color: #555;
+        }
+
         #output-view, #code-view {
             white-space: pre-wrap;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             padding: 10px;
-            background-color: #fff;
+            background-color: var(--output-bg);
             min-height: 50px;
             font-family: monospace;
             font-size: 14px;
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
+
         #memory-view table {
             border-collapse: collapse;
             font-size: 14px;
             min-width: 500px;
         }
+
         #memory-view td {
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             padding: 8px;
             text-align: center;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
         .header-row td {
             font-weight: bold;
-            background-color: #f0f0f0;
-            color: #555;
+            background-color: var(--table-header-bg);
+            color: var(--table-header-text);
         }
+
         .active-cell {
-            background-color: #ff9900 !important;
+            background-color: var(--active-cell-bg) !important;
             color: white;
             font-weight: bold;
-            border-color: #cc7a00 !important;
+            border-color: var(--active-cell-border) !important;
         }
+
         .ip-highlight {
-            background-color: #ff9900;
+            background-color: var(--active-cell-bg);
             color: white;
             padding: 1px 2px;
             border-radius: 3px;
@@ -85,12 +181,18 @@
             position: relative;
             width: 100%;
             margin-bottom: 10px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--border-color);
             border-radius: 5px;
-            background-color: #fff;
+            background-color: var(--card-bg);
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-        .editor-wrapper textarea {
+
+        body.theme-dark .editor-wrapper {
+            box-shadow: none;
+        }
+
+        #bf-code {
             position: relative;
             width: 100%;
             border: none;
@@ -101,13 +203,15 @@
             resize: vertical;
             background: transparent;
             color: transparent;
-            caret-color: #333;
+            caret-color: var(--code-color);
             z-index: 2;
             overflow: auto;
         }
-        .editor-wrapper textarea:focus {
+
+        #bf-code:focus {
             outline: none;
         }
+
         #bf-code-highlight {
             position: absolute;
             top: 0;
@@ -121,27 +225,48 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             pointer-events: none;
-            color: #333;
+            color: var(--code-color);
+            background-color: var(--card-bg);
             overflow: hidden;
             z-index: 1;
+            will-change: transform;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+
+        .token {
+            transition: background-color 0.2s ease;
+        }
+
         .token-move {
             color: #1976d2;
             font-weight: 600;
         }
+
         .token-arith {
             color: #2e7d32;
             font-weight: 600;
         }
+
         .token-io {
             color: #8e24aa;
         }
+
         .token-loop {
             color: #d32f2f;
             font-weight: 600;
         }
+
         .token-other {
             color: #757575;
+        }
+
+        body.theme-dark .token-other {
+            color: #bdbdbd;
+        }
+
+        .token.selected {
+            background-color: var(--selection-bg);
+            color: var(--selection-text-color);
         }
     </style>
 </head>
@@ -152,17 +277,18 @@
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
     <div class="editor-wrapper">
         <pre id="bf-code-highlight" aria-hidden="true"></pre>
-        <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+        <textarea id="bf-code" rows="10" cols="80" spellcheck="false">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
     </div>
-    
-    <p>
-        <button id="run-all">▶ Exécuter D'un Coup</button>
-        <button id="step-btn">👣 Exécuter Pas à Pas</button>
-        <button id="reset-btn">🔄 Réinitialiser</button>
-    </p>
+
+    <div class="button-bar">
+        <button id="run-all" type="button">▶ Exécuter D'un Coup</button>
+        <button id="step-btn" type="button">👣 Exécuter Pas à Pas</button>
+        <button id="reset-btn" type="button">🔄 Réinitialiser</button>
+        <button id="theme-toggle" type="button" aria-pressed="false" aria-label="Basculer le thème">🌙 Mode sombre</button>
+    </div>
 
     <hr>
-    
+
     <h2>Données d'Entrée (Input)</h2>
     <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
 
@@ -184,14 +310,14 @@
     <h3>Mémoire (Cellules autour du PTR)</h3>
     <div id="memory-view"></div>
 
-    <script src="BrainfuckInterpreter.js"></script> 
+    <script src="BrainfuckInterpreter.js"></script>
 
     <script>
         let interpreter = null;
 
         // Références DOM
-    const codeInput = document.getElementById('bf-code');
-    const codeHighlight = document.getElementById('bf-code-highlight');
+        const codeInput = document.getElementById('bf-code');
+        const codeHighlight = document.getElementById('bf-code-highlight');
         const inputData = document.getElementById('bf-input');
         const outputView = document.getElementById('output-view');
         const ipView = document.getElementById('ip-view');
@@ -201,6 +327,7 @@
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
+        const themeToggleBtn = document.getElementById('theme-toggle');
 
         const CHAR_CLASSES = {
             '>': 'token-move',
@@ -213,9 +340,8 @@
             ']': 'token-loop'
         };
 
-        /**
-         * Échappe les caractères HTML spéciaux.
-         */
+        const THEME_STORAGE_KEY = 'brainjs-theme';
+
         function escapeHTML(str) {
             return str
                 .replace(/&/g, '&amp;')
@@ -223,56 +349,115 @@
                 .replace(/>/g, '&gt;');
         }
 
-        /**
-         * Met à jour la coloration syntaxique de l'éditeur Brainfuck.
-         */
         function updateCodeHighlight() {
-            const code = codeInput.value;
             if (!codeHighlight) return;
+            const code = codeInput.value;
 
             if (!code) {
                 codeHighlight.innerHTML = '&nbsp;';
             } else {
                 let highlighted = '';
-                for (const char of code) {
-                    const escaped = escapeHTML(char === '\n' ? '\n' : char);
-                    if (char === '\n') {
-                        highlighted += '\n';
-                        continue;
-                    }
+                for (let i = 0; i < code.length; i++) {
+                    const char = code[i];
                     const tokenClass = CHAR_CLASSES[char] || 'token-other';
-                    highlighted += `<span class="${tokenClass}">${escaped}</span>`;
+                    const baseClass = `token ${tokenClass}`;
+
+                    if (char === '\n') {
+                        highlighted += `<span class="${baseClass}" data-idx="${i}">\n</span>`;
+                    } else if (char === ' ') {
+                        highlighted += `<span class="${baseClass}" data-idx="${i}">&nbsp;</span>`;
+                    } else if (char === '\t') {
+                        highlighted += `<span class="${baseClass}" data-idx="${i}">&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+                    } else {
+                        highlighted += `<span class="${baseClass}" data-idx="${i}">${escapeHTML(char)}</span>`;
+                    }
                 }
                 codeHighlight.innerHTML = highlighted;
             }
 
+            applySelectionHighlight();
             syncScroll();
         }
 
-        /**
-         * Synchronise la position de scroll entre le textarea et la coloration.
-         */
+        function applySelectionHighlight() {
+            if (!codeHighlight) return;
+            const start = codeInput.selectionStart ?? 0;
+            const end = codeInput.selectionEnd ?? 0;
+            const spans = codeHighlight.querySelectorAll('span[data-idx]');
+
+            spans.forEach(span => {
+                const idx = Number(span.dataset.idx);
+                if (idx >= start && idx < end) {
+                    span.classList.add('selected');
+                } else {
+                    span.classList.remove('selected');
+                }
+            });
+        }
+
+        function scheduleSelectionHighlight() {
+            requestAnimationFrame(applySelectionHighlight);
+        }
+
         function syncScroll() {
             if (!codeHighlight) return;
             const x = -codeInput.scrollLeft;
             const y = -codeInput.scrollTop;
             codeHighlight.style.transform = `translate(${x}px, ${y}px)`;
         }
-        
+
+        function getStoredTheme() {
+            try {
+                return localStorage.getItem(THEME_STORAGE_KEY);
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function storeTheme(theme) {
+            try {
+                localStorage.setItem(THEME_STORAGE_KEY, theme);
+            } catch (error) {
+                // Ignore storage errors (private mode, etc.)
+            }
+        }
+
+        function applyTheme(theme, options = {}) {
+            const { persist = true } = options;
+            const normalized = theme === 'dark' ? 'dark' : 'light';
+
+            document.body.classList.toggle('theme-dark', normalized === 'dark');
+            document.body.classList.toggle('theme-light', normalized === 'light');
+
+            if (themeToggleBtn) {
+                themeToggleBtn.textContent = normalized === 'dark' ? '☀️ Mode clair' : '🌙 Mode sombre';
+                themeToggleBtn.setAttribute('aria-pressed', normalized === 'dark');
+            }
+
+            if (persist) {
+                storeTheme(normalized);
+            }
+
+            updateCodeHighlight();
+        }
+
+        function toggleTheme() {
+            const next = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+            applyTheme(next);
+        }
+
         /**
          * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
          */
         function initializeInterpreter() {
             try {
-                // Passage du code et des données d'entrée
-                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
+                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value);
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
-                outputView.textContent = "Programme réinitialisé.";
-                updateCodeHighlight();
+                outputView.textContent = 'Programme réinitialisé.';
             } catch (error) {
-                alert("Erreur de syntaxe Brainfuck: " + error.message);
+                alert('Erreur de syntaxe Brainfuck: ' + error.message);
                 interpreter = null;
             }
         }
@@ -286,32 +471,26 @@
             const state = interpreter.getState();
 
             // 1. Mise à jour des compteurs et sortie
-            outputView.textContent = state.output;
+            outputView.textContent = state.output || '';
             ipView.textContent = state.ip;
             ptrView.textContent = state.ptr;
 
             // 2. Visualisation du code et du Pointeur d'Instruction (IP)
-            
             let codeDisplay = '';
-            let charCount = 0;
-            
-            // On parcourt le code *nettoyé* pour y placer le surlignement de l'IP
-            for (let i = 0; i < state.code.length; i++) {
-                const char = state.code[i];
-                
-                if (charCount === state.ip) {
+            const sanitizedCode = state.code;
+            for (let i = 0; i < sanitizedCode.length; i++) {
+                const char = escapeHTML(sanitizedCode[i]);
+                if (i === state.ip) {
                     codeDisplay += `<span class="ip-highlight">${char}</span>`;
                 } else {
                     codeDisplay += char;
                 }
-                charCount++;
             }
             codeView.innerHTML = codeDisplay;
 
-
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
-            const windowSize = 5; 
+            const windowSize = 5;
             const start = Math.max(0, state.ptr - windowSize);
             const end = Math.min(state.ptr + windowSize + 1, state.memoryFull.length);
 
@@ -337,8 +516,8 @@
             if (state.halted) {
                 runAllBtn.disabled = true;
                 stepBtn.disabled = true;
-                if (!outputView.textContent.includes("terminé")) {
-                    outputView.textContent += "\n\n--- Programme terminé ---";
+                if (!outputView.textContent.includes('--- Programme terminé ---')) {
+                    outputView.textContent += '\n\n--- Programme terminé ---';
                 }
             }
         }
@@ -346,8 +525,9 @@
         // --- Gestionnaires d'événements ---
 
         runAllBtn.addEventListener('click', () => {
-            // Réinitialiser s'il n'y a pas d'interpréteur ou si l'exécution précédente est terminée
-            if (!interpreter || interpreter.getState().halted) initializeInterpreter();
+            if (!interpreter || interpreter.getState().halted) {
+                initializeInterpreter();
+            }
             if (interpreter) {
                 interpreter.runAll();
                 updateUI();
@@ -355,7 +535,9 @@
         });
 
         stepBtn.addEventListener('click', () => {
-            if (!interpreter || interpreter.getState().halted) initializeInterpreter(); 
+            if (!interpreter || interpreter.getState().halted) {
+                initializeInterpreter();
+            }
             if (interpreter) {
                 interpreter.step();
                 updateUI();
@@ -366,17 +548,51 @@
             initializeInterpreter();
         });
 
-        codeInput.addEventListener('input', updateCodeHighlight);
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+
+        codeInput.addEventListener('input', () => {
+            interpreter = null;
+            updateCodeHighlight();
+            scheduleSelectionHighlight();
+        });
+
         codeInput.addEventListener('scroll', syncScroll);
+
+        ['select', 'keyup', 'mouseup', 'touchend', 'keydown'].forEach(evt => {
+            codeInput.addEventListener(evt, scheduleSelectionHighlight);
+        });
 
         // Initialisation après le chargement complet
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
                 alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
-            } else {
-                updateCodeHighlight();
-                initializeInterpreter();
+                return;
             }
+
+            const storedTheme = getStoredTheme();
+            if (storedTheme) {
+                applyTheme(storedTheme, { persist: false });
+            } else {
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(prefersDark ? 'dark' : 'light', { persist: false });
+            }
+
+            if (window.matchMedia) {
+                const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                if (mediaQuery.addEventListener) {
+                    mediaQuery.addEventListener('change', event => {
+                        if (!getStoredTheme()) {
+                            applyTheme(event.matches ? 'dark' : 'light', { persist: false });
+                        }
+                    });
+                }
+            }
+
+            updateCodeHighlight();
+            initializeInterpreter();
+            scheduleSelectionHighlight();
         });
 
     </script>

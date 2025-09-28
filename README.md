@@ -13,6 +13,8 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
       * **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
       * **État de la Mémoire** : Affiche un aperçu des cellules autour du pointeur, avec la cellule active mise en évidence.
     * **Coloration Syntaxique Interactive** : L'éditeur Brainfuck propose des couleurs par instruction pour faciliter l'écriture et la lecture du code.
+  * **Thème Clair/Sombre** : Bascule instantanée avec mémorisation de la préférence et harmonie des couleurs du moteur et de l'UI.
+  * **Surlignage de Sélection** : La sélection dans l'éditeur reste visible même avec le texte transparent grâce à une surcouche synchronisée.
   * **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
   * **Gestion des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion efficace des sauts (`[]`).
 
