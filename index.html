@@ -135,17 +135,33 @@
             font-size: 14px;
         }
         #memory-view {
-            overflow-x: auto;
-            padding-bottom: 10px;
             max-width: 100%;
         }
-        #memory-view table {
+        .memory-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .memory-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .memory-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(0,0,0,0.25);
+            border-radius: 4px;
+        }
+        .memory-scroll::-webkit-scrollbar-track {
+            background-color: rgba(0,0,0,0.05);
+        }
+        .memory-scroll table {
             border-collapse: collapse;
             font-size: 14px;
             min-width: 500px;
             width: max-content;
         }
-        #memory-view td {
+        .memory-scroll td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: center;
@@ -289,8 +305,6 @@
         codeInput.addEventListener('scroll', () => {
             syncHighlightScroll();
         });
-
-        codeInput.addEventListener('scroll', syncHighlightScroll);
         
         window.addEventListener('resize', () => {
             syncHighlightScroll();
@@ -377,7 +391,7 @@
             memDisplay += '</tr>';
             memDisplay += '</table>';
 
-            memoryView.innerHTML = memDisplay;
+            memoryView.innerHTML = `<div class="memory-scroll" role="region" aria-label="Fenêtre mémoire défilable">${memDisplay}</div>`;
 
             // 4. Gestion de la fin du programme
             if (state.halted) {
