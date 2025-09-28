@@ -79,6 +79,70 @@
             padding: 1px 2px;
             border-radius: 3px;
         }
+
+        /* --- Éditeur avec coloration syntaxique --- */
+        .editor-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .editor-wrapper textarea {
+            position: relative;
+            width: 100%;
+            border: none;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: vertical;
+            background: transparent;
+            color: transparent;
+            caret-color: #333;
+            z-index: 2;
+            overflow: auto;
+        }
+        .editor-wrapper textarea:focus {
+            outline: none;
+        }
+        #bf-code-highlight {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            pointer-events: none;
+            color: #333;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .token-move {
+            color: #1976d2;
+            font-weight: 600;
+        }
+        .token-arith {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+        .token-io {
+            color: #8e24aa;
+        }
+        .token-loop {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+        .token-other {
+            color: #757575;
+        }
     </style>
 </head>
 <body>
@@ -86,7 +150,10 @@
     <h1>🧠 BrainJS: Interpréteur Brainfuck</h1>
 
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
-    <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+    <div class="editor-wrapper">
+        <pre id="bf-code-highlight" aria-hidden="true"></pre>
+        <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+    </div>
     
     <p>
         <button id="run-all">▶ Exécuter D'un Coup</button>
@@ -123,7 +190,8 @@
         let interpreter = null;
 
         // Références DOM
-        const codeInput = document.getElementById('bf-code');
+    const codeInput = document.getElementById('bf-code');
+    const codeHighlight = document.getElementById('bf-code-highlight');
         const inputData = document.getElementById('bf-input');
         const outputView = document.getElementById('output-view');
         const ipView = document.getElementById('ip-view');
@@ -133,6 +201,63 @@
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
+
+        const CHAR_CLASSES = {
+            '>': 'token-move',
+            '<': 'token-move',
+            '+': 'token-arith',
+            '-': 'token-arith',
+            '.': 'token-io',
+            ',': 'token-io',
+            '[': 'token-loop',
+            ']': 'token-loop'
+        };
+
+        /**
+         * Échappe les caractères HTML spéciaux.
+         */
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        /**
+         * Met à jour la coloration syntaxique de l'éditeur Brainfuck.
+         */
+        function updateCodeHighlight() {
+            const code = codeInput.value;
+            if (!codeHighlight) return;
+
+            if (!code) {
+                codeHighlight.innerHTML = '&nbsp;';
+            } else {
+                let highlighted = '';
+                for (const char of code) {
+                    const escaped = escapeHTML(char === '\n' ? '\n' : char);
+                    if (char === '\n') {
+                        highlighted += '\n';
+                        continue;
+                    }
+                    const tokenClass = CHAR_CLASSES[char] || 'token-other';
+                    highlighted += `<span class="${tokenClass}">${escaped}</span>`;
+                }
+                codeHighlight.innerHTML = highlighted;
+            }
+
+            syncScroll();
+        }
+
+        /**
+         * Synchronise la position de scroll entre le textarea et la coloration.
+         */
+        function syncScroll() {
+            if (!codeHighlight) return;
+            const x = -codeInput.scrollLeft;
+            const y = -codeInput.scrollTop;
+            codeHighlight.style.transform = `translate(${x}px, ${y}px)`;
+        }
         
         /**
          * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
@@ -145,6 +270,7 @@
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
                 outputView.textContent = "Programme réinitialisé.";
+                updateCodeHighlight();
             } catch (error) {
                 alert("Erreur de syntaxe Brainfuck: " + error.message);
                 interpreter = null;
@@ -240,11 +366,15 @@
             initializeInterpreter();
         });
 
+        codeInput.addEventListener('input', updateCodeHighlight);
+        codeInput.addEventListener('scroll', syncScroll);
+
         // Initialisation après le chargement complet
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
                 alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
             } else {
+                updateCodeHighlight();
                 initializeInterpreter();
             }
         });
