@@ -411,7 +411,7 @@
             // Les caractères imprimables ASCII sont généralement entre 32 (espace) et 126 (~)
             if (value >= 32 && value <= 126) {
                 const char = escapeHtml(String.fromCharCode(value));
-                return `${value} <span style="color: #0b7dda; font-weight: bold;">'${char}'</span>`;
+                return `${value} <span style="color: #aaa; font-weight: bold;">'<span style="color: #0b7dda;">${char}</span>'</span>`;
             }
             // Pour les autres valeurs (non imprimables, null, etc.), on affiche juste le nombre.
             return value.toString();
