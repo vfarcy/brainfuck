@@ -168,9 +168,9 @@
     </div>
     
     <p>
-        <button id="run-all">▶ Exécuter D'un Coup</button>
-        <button id="step-btn">👣 Exécuter Pas à Pas</button>
-        <button id="reset-btn">🔄 Réinitialiser</button>
+        <button id="run-all" aria-label="Exécuter d'un coup">▶ Exécuter D'un Coup</button>
+        <button id="step-btn" aria-label="Exécuter pas à pas">👣 Exécuter Pas à Pas</button>
+        <button id="reset-btn" aria-label="Réinitialiser">🔄 Réinitialiser</button>
     </p>
 
     <hr>
@@ -265,6 +265,10 @@
 
         function syncHighlightScroll() {
             codeHighlight.style.transform = `translate(${-codeInput.scrollLeft}px, ${-codeInput.scrollTop}px)`;
+            // La transformation est plus fluide si elle est dans une frame d'animation
+            requestAnimationFrame(() => {
+                codeHighlight.style.transform = `translate(${-codeInput.scrollLeft}px, ${-codeInput.scrollTop}px)`;
+            });
         }
 
         codeInput.addEventListener('input', () => {
@@ -275,6 +279,8 @@
             syncHighlightScroll();
         });
 
+        codeInput.addEventListener('scroll', syncHighlightScroll);
+        
         window.addEventListener('resize', () => {
             syncHighlightScroll();
         });
