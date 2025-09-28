@@ -4,23 +4,46 @@
  * Interprète le code Brainfuck en gérant la mémoire, le pointeur de cellule,
  * et le pointeur d'instruction. Il supporte l'exécution pas à pas.
  */
+const DEFAULT_MEMORY_SIZE = 30000;
+const MAX_MEMORY_SIZE = 1000000;
+
 class BrainfuckInterpreter {
     /**
      * @param {string} code Le programme Brainfuck à exécuter.
      * @param {string} [input=''] L'entrée utilisateur simulée pour la commande ','.
+     * @param {{ memorySize?: number }} [options={}] Options de configuration (taille mémoire, etc.).
      */
-    constructor(code, input = '') {
+    constructor(code, input = '', options = {}) {
         // Validation et nettoyage : S'assurer que 'code' est une chaîne et n'est pas null/undefined
         const safeCode = typeof code === 'string' ? code : ''; 
         this.code = safeCode.replace(/[^><+\-.,[\]]/g, '');
         
         this.input = input.split(''); 
-        this.memory = new Array(30000).fill(0); 
+        const memorySize = this.resolveMemorySize(options?.memorySize);
+        this.memorySize = memorySize;
+        this.memory = new Array(memorySize).fill(0); 
         this.ptr = 0; 
         this.ip = 0; 
         this.output = ''; 
         this.loopMap = this.buildLoopMap(this.code);
         this.halted = false; 
+    }
+
+    resolveMemorySize(value) {
+        if (value === undefined || value === null) {
+            return DEFAULT_MEMORY_SIZE;
+        }
+
+        const parsed = Number.parseInt(value, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+            throw new Error('La taille mémoire doit être un entier positif.');
+        }
+
+        if (parsed > MAX_MEMORY_SIZE) {
+            throw new Error(`La taille mémoire maximale autorisée est de ${MAX_MEMORY_SIZE.toLocaleString('fr-FR')} cellules.`);
+        }
+
+        return parsed;
     }
 
     /**
@@ -67,8 +90,8 @@ class BrainfuckInterpreter {
             case '>':
                 this.ptr++;
                 if (this.ptr >= this.memory.length) {
-                    // Optionnel: On pourrait redimensionner ou lever une erreur ici.
-                    console.warn("Pointeur de mémoire hors des limites définies (30000).");
+                    this.halted = true;
+                    throw new Error(`Pointeur mémoire dépassé (index ${this.ptr}). La taille mémoire maximale est de ${this.memory.length}.`);
                 }
                 break;
 
@@ -146,6 +169,7 @@ class BrainfuckInterpreter {
             ip: this.ip,
             code: this.code,
             memoryFull: this.memory,
+            memorySize: this.memory.length,
             output: this.output,
             halted: this.halted
         };

@@ -6,17 +6,20 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 
 ## ✨ Fonctionnalités Clés
 
-  * **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-  * **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
-  * **Visualisation de l'État en Temps Réel** :
-      * **Pointeur d'Instruction (IP)** : Mise en évidence de l'instruction en cours dans le code source.
-      * **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
-      * **État de la Mémoire** : Affiche un aperçu des cellules autour du pointeur, avec la cellule active mise en évidence.
-    * **Coloration Syntaxique Interactive** : L'éditeur et la vue d'exécution colorent chaque instruction pour faciliter l'écriture et l'analyse du code.
-  * **Thème Clair/Sombre** : Bascule instantanée avec mémorisation de la préférence et harmonie des couleurs du moteur et de l'UI.
-  * **Surlignage de Sélection** : La sélection dans l'éditeur reste visible même avec le texte transparent grâce à une surcouche synchronisée.
-  * **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
-  * **Gestion des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion efficace des sauts (`[]`).
+- **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
+- **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
+- **Visualisation de l'État en Temps Réel** :
+    - **Pointeur d'Instruction (IP)** : Mise en évidence de l'instruction en cours dans le code source.
+    - **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
+    - **État de la Mémoire** : Affiche un aperçu des cellules autour du pointeur, avec la cellule active mise en évidence.
+- **Coloration Syntaxique Interactive** : L'éditeur et la vue d'exécution colorent chaque instruction pour faciliter l'écriture et l'analyse du code.
+- **Thème Clair/Sombre** : Bascule instantanée avec mémorisation de la préférence et harmonie des couleurs du moteur et de l'UI.
+- **Surlignage de Sélection** : La sélection dans l'éditeur reste visible même avec le texte transparent grâce à une surcouche synchronisée.
+- **Mémoire Paramétrable** : Ajustez la taille du ruban directement dans l'interface (1 à 1 000 000 cellules, par défaut 30 000).
+- **Notifications Conviviales** : Les erreurs et succès s'affichent dans une bannière non intrusive plutôt que via des pop-ups.
+- **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
+- **Gestion des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion efficace des sauts (`[]`).
+- **Détection des Débordements** : Le pointeur mémoire est surveillé et provoque une erreur explicite lorsqu'il dépasse la zone allouée.
 
 -----
 
@@ -55,7 +58,7 @@ Ce fichier définit la classe **`BrainfuckInterpreter`**. Il est entièrement in
 
 | Méthode | Rôle |
 | :--- | :--- |
-| `constructor(code, input)` | Initialise la mémoire et pré-calcule le `loopMap`. |
+| `constructor(code, input, options)` | Initialise la mémoire (taille paramétrable) et pré-calcule le `loopMap`. |
 | `buildLoopMap(code)` | Gère la validation et le mappage des crochets `[` et `]`. |
 | `step()` | La fonction clé : exécute **une seule instruction** (`>`, `<`, `+`, `-`, `.`, `,`, `[`, `]`). |
 | `runAll()` | Exécute `step()` en boucle jusqu'à l'arrêt. |

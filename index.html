@@ -100,6 +100,32 @@
             margin: 15px 0;
         }
 
+        .memory-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .memory-control label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .memory-control input {
+            width: 120px;
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .memory-control input:focus {
+            outline: 2px solid var(--active-cell-bg);
+            outline-offset: 2px;
+        }
+
         #run-all { background-color: #4CAF50; color: white; }
         #run-all:hover:not(:disabled) { background-color: #45a049; }
         #step-btn { background-color: #2196F3; color: white; }
@@ -129,6 +155,80 @@
 
         body.theme-dark button:disabled {
             background-color: #555;
+        }
+
+        .notification {
+            margin: 15px 0;
+            padding: 12px 16px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .notification[hidden] {
+            display: none;
+        }
+
+        .notification__text {
+            flex: 1;
+        }
+
+        .notification__close {
+            border: none;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .notification__close:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.theme-dark .notification__close:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .notification--info {
+            background-color: rgba(33, 150, 243, 0.15);
+            color: #0d47a1;
+            border-color: rgba(33, 150, 243, 0.3);
+        }
+
+        .notification--success {
+            background-color: rgba(76, 175, 80, 0.15);
+            color: #1b5e20;
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .notification--error {
+            background-color: rgba(244, 67, 54, 0.18);
+            color: #b71c1c;
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        body.theme-dark .notification--info {
+            background-color: rgba(33, 150, 243, 0.25);
+            color: #bbdefb;
+            border-color: rgba(33, 150, 243, 0.4);
+        }
+
+        body.theme-dark .notification--success {
+            background-color: rgba(76, 175, 80, 0.25);
+            color: #c8e6c9;
+            border-color: rgba(76, 175, 80, 0.4);
+        }
+
+        body.theme-dark .notification--error {
+            background-color: rgba(244, 67, 54, 0.25);
+            color: #ffccbc;
+            border-color: rgba(244, 67, 54, 0.4);
         }
 
         #output-view, #code-view {
@@ -274,6 +374,11 @@
 
     <h1>🧠 BrainJS: Interpréteur Brainfuck</h1>
 
+    <div id="notification" class="notification notification--info" role="status" hidden>
+        <span id="notification-text" class="notification__text"></span>
+        <button id="notification-close" type="button" class="notification__close" aria-label="Fermer la notification">×</button>
+    </div>
+
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
     <div class="editor-wrapper">
         <pre id="bf-code-highlight" aria-hidden="true"></pre>
@@ -281,6 +386,10 @@
     </div>
 
     <div class="button-bar">
+        <div class="memory-control">
+            <label for="memory-size">Taille mémoire (cellules)</label>
+            <input type="number" id="memory-size" name="memory-size" min="1" max="1000000" step="1" value="30000">
+        </div>
         <button id="run-all" type="button">▶ Exécuter D'un Coup</button>
         <button id="step-btn" type="button">👣 Exécuter Pas à Pas</button>
         <button id="reset-btn" type="button">🔄 Réinitialiser</button>
@@ -328,6 +437,10 @@
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
         const themeToggleBtn = document.getElementById('theme-toggle');
+        const memorySizeInput = document.getElementById('memory-size');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+        const notificationCloseBtn = document.getElementById('notification-close');
 
         const CHAR_CLASSES = {
             '>': 'token-move',
@@ -341,6 +454,9 @@
         };
 
         const THEME_STORAGE_KEY = 'brainjs-theme';
+        const DEFAULT_MEMORY_SIZE = 30000;
+        const MEMORY_MIN = 1;
+        const MEMORY_MAX = 1000000;
 
         function escapeHTML(str) {
             return str
@@ -431,6 +547,76 @@
             requestAnimationFrame(applySelectionHighlight);
         }
 
+        function hideMessage() {
+            if (!notification) return;
+            notification.hidden = true;
+            if (notificationText) {
+                notificationText.textContent = '';
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            if (!notification || !notificationText) return;
+
+            const variants = ['info', 'success', 'error'];
+            const finalType = variants.includes(type) ? type : 'info';
+
+            notification.classList.remove('notification--info', 'notification--success', 'notification--error');
+            notification.classList.add(`notification--${finalType}`);
+            notificationText.textContent = message;
+            notification.hidden = false;
+            notification.setAttribute('role', finalType === 'error' ? 'alert' : 'status');
+        }
+
+        function parseMemorySize({ silent = false } = {}) {
+            if (!memorySizeInput) {
+                return DEFAULT_MEMORY_SIZE;
+            }
+
+            const rawValue = memorySizeInput.value.trim();
+            if (rawValue === '') {
+                if (!silent) {
+                    showMessage(`Veuillez indiquer une taille mémoire comprise entre ${MEMORY_MIN.toLocaleString('fr-FR')} et ${MEMORY_MAX.toLocaleString('fr-FR')} cellules.`, 'error');
+                }
+                return null;
+            }
+
+            const parsed = Number.parseInt(rawValue, 10);
+            if (!Number.isFinite(parsed)) {
+                if (!silent) {
+                    showMessage('Valeur de mémoire invalide. Utilisez un nombre entier.', 'error');
+                }
+                return null;
+            }
+
+            let normalized = parsed;
+            let clamped = false;
+
+            if (parsed < MEMORY_MIN) {
+                normalized = MEMORY_MIN;
+                clamped = true;
+            } else if (parsed > MEMORY_MAX) {
+                normalized = MEMORY_MAX;
+                clamped = true;
+            }
+
+            if (clamped) {
+                memorySizeInput.value = String(normalized);
+                if (!silent) {
+                    showMessage(`La taille mémoire a été ajustée à ${normalized.toLocaleString('fr-FR')} cellules (plage autorisée : ${MEMORY_MIN.toLocaleString('fr-FR')} - ${MEMORY_MAX.toLocaleString('fr-FR')}).`, 'info');
+                }
+            }
+
+            return normalized;
+        }
+
+        function normalizeMemoryInput() {
+            const value = parseMemorySize({ silent: true });
+            if (value === null && memorySizeInput) {
+                memorySizeInput.value = String(DEFAULT_MEMORY_SIZE);
+            }
+        }
+
         function syncScroll() {
             if (!codeHighlight) return;
             const x = -codeInput.scrollLeft;
@@ -482,15 +668,31 @@
          * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
          */
         function initializeInterpreter() {
+            const memorySize = parseMemorySize();
+            if (memorySize === null) {
+                interpreter = null;
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
+                return false;
+            }
+
             try {
-                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value);
+                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value, { memorySize });
+                if (memorySizeInput) {
+                    memorySizeInput.value = String(memorySize);
+                }
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;
                 outputView.textContent = 'Programme réinitialisé.';
+                showMessage(`Programme prêt (mémoire : ${memorySize.toLocaleString('fr-FR')} cellules).`, 'success');
+                return true;
             } catch (error) {
-                alert('Erreur de syntaxe Brainfuck: ' + error.message);
+                showMessage(`Erreur Brainfuck : ${error.message}`, 'error');
                 interpreter = null;
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
+                return false;
             }
         }
 
@@ -549,21 +751,45 @@
 
         runAllBtn.addEventListener('click', () => {
             if (!interpreter || interpreter.getState().halted) {
-                initializeInterpreter();
+                if (!initializeInterpreter()) {
+                    return;
+                }
             }
-            if (interpreter) {
+            if (!interpreter) return;
+
+            try {
                 interpreter.runAll();
                 updateUI();
+                if (interpreter.getState().halted) {
+                    showMessage('Programme exécuté jusqu\'à la fin.', 'success');
+                }
+            } catch (error) {
+                showMessage(`Erreur Brainfuck : ${error.message}`, 'error');
+                interpreter = null;
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
             }
         });
 
         stepBtn.addEventListener('click', () => {
             if (!interpreter || interpreter.getState().halted) {
-                initializeInterpreter();
+                if (!initializeInterpreter()) {
+                    return;
+                }
             }
-            if (interpreter) {
+            if (!interpreter) return;
+
+            try {
                 interpreter.step();
                 updateUI();
+                if (interpreter.getState().halted) {
+                    showMessage('Programme terminé.', 'success');
+                }
+            } catch (error) {
+                showMessage(`Erreur Brainfuck : ${error.message}`, 'error');
+                interpreter = null;
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
             }
         });
 
@@ -579,6 +805,9 @@
             interpreter = null;
             updateCodeHighlight();
             scheduleSelectionHighlight();
+            hideMessage();
+            runAllBtn.disabled = false;
+            stepBtn.disabled = false;
         });
 
         codeInput.addEventListener('scroll', syncScroll);
@@ -587,10 +816,26 @@
             codeInput.addEventListener(evt, scheduleSelectionHighlight);
         });
 
+        if (notificationCloseBtn) {
+            notificationCloseBtn.addEventListener('click', hideMessage);
+        }
+
+        if (memorySizeInput) {
+            memorySizeInput.addEventListener('blur', normalizeMemoryInput);
+            memorySizeInput.addEventListener('input', () => {
+                interpreter = null;
+                hideMessage();
+                runAllBtn.disabled = false;
+                stepBtn.disabled = false;
+            });
+        }
+
         // Initialisation après le chargement complet
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
-                alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
+                showMessage("Le moteur Brainfuck n'a pas pu être chargé. Vérifiez que 'BrainfuckInterpreter.js' est accessible.", 'error');
+                runAllBtn.disabled = true;
+                stepBtn.disabled = true;
                 return;
             }
 
@@ -613,6 +858,7 @@
                 }
             }
 
+            normalizeMemoryInput();
             updateCodeHighlight();
             initializeInterpreter();
             scheduleSelectionHighlight();
