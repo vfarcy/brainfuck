@@ -358,7 +358,7 @@
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
-            const windowRadius = 30;
+            const windowRadius = 7;
             const memoryLength = state.memoryFull.length;
             const start = Math.max(0, state.ptr - windowRadius);
             const end = Math.min(state.ptr + windowRadius + 1, memoryLength);
