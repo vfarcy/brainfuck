@@ -379,6 +379,38 @@
             syncScroll();
         }
 
+        function renderCodeWithSyntax(code, activeIndex) {
+            if (!code) return '';
+
+            let html = '';
+            for (let i = 0; i < code.length; i++) {
+                const char = code[i];
+                const tokenClass = CHAR_CLASSES[char] || 'token-other';
+                const classNames = ['token', tokenClass];
+
+                if (i === activeIndex) {
+                    classNames.push('ip-highlight');
+                }
+
+                if (char === '\n') {
+                    html += `<span class="${classNames.join(' ')}">\n</span>`;
+                } else if (char === ' ') {
+                    html += `<span class="${classNames.join(' ')}">&nbsp;</span>`;
+                } else if (char === '\t') {
+                    html += `<span class="${classNames.join(' ')}">&nbsp;&nbsp;&nbsp;&nbsp;</span>`;
+                } else {
+                    html += `<span class="${classNames.join(' ')}">${escapeHTML(char)}</span>`;
+                }
+            }
+
+            // Si le pointeur d'instruction est à la fin, ajoute un marqueur visuel.
+            if (activeIndex >= code.length) {
+                html += '<span class="ip-highlight">&nbsp;</span>';
+            }
+
+            return html;
+        }
+
         function applySelectionHighlight() {
             if (!codeHighlight) return;
             const start = codeInput.selectionStart ?? 0;
@@ -476,17 +508,8 @@
             ptrView.textContent = state.ptr;
 
             // 2. Visualisation du code et du Pointeur d'Instruction (IP)
-            let codeDisplay = '';
             const sanitizedCode = state.code;
-            for (let i = 0; i < sanitizedCode.length; i++) {
-                const char = escapeHTML(sanitizedCode[i]);
-                if (i === state.ip) {
-                    codeDisplay += `<span class="ip-highlight">${char}</span>`;
-                } else {
-                    codeDisplay += char;
-                }
-            }
-            codeView.innerHTML = codeDisplay;
+            codeView.innerHTML = renderCodeWithSyntax(sanitizedCode, state.ip);
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
