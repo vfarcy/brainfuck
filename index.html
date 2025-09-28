@@ -303,6 +303,8 @@
             resize: vertical;
             background: transparent;
             color: transparent;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 0 var(--code-color);
             caret-color: var(--code-color);
             z-index: 2;
             overflow: auto;
@@ -335,6 +337,7 @@
 
         .token {
             transition: background-color 0.2s ease;
+            color: var(--code-color);
         }
 
         .token-move {
