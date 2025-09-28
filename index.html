@@ -491,6 +491,18 @@
             const memoryWrapper = memoryView.querySelector('.memory-scroll-wrapper');
             setupMemoryScrollbar(memoryWrapper);
 
+            // Centrer automatiquement la vue mémoire sur la cellule active
+            const activeCellElement = memoryWrapper.querySelector('.active-cell');
+            const scrollContainer = memoryWrapper.querySelector('.memory-scroll');
+            if (activeCellElement && scrollContainer) {
+                const containerWidth = scrollContainer.offsetWidth;
+                const cellLeft = activeCellElement.offsetLeft;
+                const cellWidth = activeCellElement.offsetWidth;
+                // Calcule la position de défilement pour centrer la cellule
+                const scrollTarget = cellLeft - (containerWidth / 2) + (cellWidth / 2);
+                scrollContainer.scrollLeft = scrollTarget;
+            }
+
             // 4. Gestion de la fin du programme
             if (state.halted) {
                 runAllBtn.disabled = true;
