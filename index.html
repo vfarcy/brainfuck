@@ -134,14 +134,16 @@
             font-family: monospace;
             font-size: 14px;
         }
+        #memory-view {
+            overflow-x: auto;
+            padding-bottom: 10px;
+            max-width: 100%;
+        }
         #memory-view table {
             border-collapse: collapse;
             font-size: 14px;
             min-width: 500px;
-        }
-        #memory-view {
-            overflow-x: auto;
-            padding-bottom: 10px;
+            width: max-content;
         }
         #memory-view td {
             border: 1px solid #ddd;
@@ -342,7 +344,7 @@
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
             let memDisplay = '<table>';
-            const windowRadius = 10;
+            const windowRadius = 30;
             const memoryLength = state.memoryFull.length;
             const start = Math.max(0, state.ptr - windowRadius);
             const end = Math.min(state.ptr + windowRadius + 1, memoryLength);
