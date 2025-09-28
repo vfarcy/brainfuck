@@ -1,19 +1,22 @@
 # 🧠 BrainJS: Interpréteur Brainfuck en JavaScript
 
-Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive permettant l'exécution pas à pas et la visualisation de l'état de la mémoire. Ce projet sépare clairement la logique de l'interpréteur de l'interface utilisateur.
+Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et riche en fonctionnalités. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Ce projet sépare clairement la logique de l'interpréteur de l'interface utilisateur.
 
 -----
 
 ## ✨ Fonctionnalités Clés
 
-  * **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-  * **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
-  * **Visualisation de l'État en Temps Réel** :
-      * **Pointeur d'Instruction (IP)** : Mise en évidence de l'instruction en cours dans le code source.
-      * **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
-      * **État de la Mémoire** : Affiche un aperçu des cellules autour du pointeur, avec la cellule active mise en évidence.
-  * **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
-  * **Gestion des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion efficace des sauts (`[]`).
+*   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
+*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck et les commentaires, et qui surligne l'instruction en cours d'exécution directement dans le code source.
+*   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
+*   **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
+*   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée (commande `,`) et visualiser la sortie (commande `.`).
+*   **Visualisation de l'État en Temps Réel** :
+    *   **Pointeur d'Instruction (IP)** : Mise en évidence de l'instruction en cours dans l'éditeur et dans une vue de code "nettoyé".
+    *   **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
+    *   **Visualisation Avancée de la Mémoire** : Affiche une "fenêtre" glissante de cellules autour du pointeur. La cellule active est mise en évidence, et les valeurs sont affichées en hexadécimal et en caractère ASCII (si imprimable). Une barre de défilement interactive permet d'explorer facilement la mémoire.
+*   **Gestion Efficace des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion instantanée des sauts (`[]`).
+*   **Validation de Syntaxe** : Détecte et signale les erreurs de syntaxe, comme les boucles non équilibrées.
 
 -----
 
