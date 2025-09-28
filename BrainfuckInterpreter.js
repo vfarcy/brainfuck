@@ -1,3 +1,7 @@
+const MEMORY_SIZE = 30000;
+const MAX_BYTE_VALUE = 256;
+const VALID_CHARS = '><+-.,[]';
+
 /**
  * BrainfuckInterpreter
  *
@@ -18,7 +22,7 @@ class BrainfuckInterpreter {
         const filteredChars = [];
         for (let i = 0; i < safeCode.length; i++) {
             const char = safeCode[i];
-            if (!'><+-.,[]'.includes(char)) {
+            if (!VALID_CHARS.includes(char)) {
                 continue;
             }
             filteredChars.push(char);
@@ -26,8 +30,8 @@ class BrainfuckInterpreter {
         }
         this.code = filteredChars.join('');
         
-        this.input = input.split(''); 
-        this.memory = new Array(30000).fill(0); 
+        this.input = (typeof input === 'string' ? input : '').split('');
+        this.memory = new Array(MEMORY_SIZE).fill(0);
         this.ptr = 0; 
         this.ip = 0; 
         this.output = ''; 
@@ -79,23 +83,25 @@ class BrainfuckInterpreter {
             case '>':
                 this.ptr++;
                 if (this.ptr >= this.memory.length) {
-                    // Optionnel: On pourrait redimensionner ou lever une erreur ici.
-                    console.warn("Pointeur de mémoire hors des limites définies (30000).");
+                    // Le pointeur est hors limites. On pourrait aussi redimensionner la mémoire ou boucler.
+                    console.warn(`Pointeur de mémoire hors des limites (> ${MEMORY_SIZE - 1}).`);
                 }
                 break;
 
             case '<':
-                this.ptr = Math.max(0, this.ptr - 1);
+                if (this.ptr > 0) {
+                    this.ptr--;
+                }
                 break;
 
             case '+':
                 // Débordement (wraparound) de 255 à 0
-                this.memory[this.ptr] = (this.memory[this.ptr] + 1) % 256;
+                this.memory[this.ptr] = (this.memory[this.ptr] + 1) % MAX_BYTE_VALUE;
                 break;
 
             case '-':
                 // Sous-débordement (wraparound) de 0 à 255
-                this.memory[this.ptr] = (this.memory[this.ptr] - 1 + 256) % 256;
+                this.memory[this.ptr] = (this.memory[this.ptr] - 1 + MAX_BYTE_VALUE) % MAX_BYTE_VALUE;
                 break;
 
             case '.':
@@ -165,4 +171,3 @@ class BrainfuckInterpreter {
         };
     }
 }
-
