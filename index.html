@@ -137,6 +137,10 @@
         #memory-view {
             max-width: 100%;
         }
+        .memory-scroll-wrapper {
+            width: 100%;
+            max-width: 100%;
+        }
         .memory-scroll {
             overflow-x: auto;
             overflow-y: hidden;
@@ -166,6 +170,36 @@
             padding: 8px;
             text-align: center;
             white-space: nowrap;
+        }
+        .memory-scroll-slider {
+            width: 100%;
+            margin-top: 6px;
+            appearance: none;
+            height: 6px;
+            border-radius: 4px;
+            background: #d0d0d0;
+            cursor: pointer;
+        }
+        .memory-scroll-slider:focus {
+            outline: 2px solid rgba(33, 150, 243, 0.4);
+            outline-offset: 2px;
+        }
+        .memory-scroll-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #2196F3;
+            border: none;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+        .memory-scroll-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #2196F3;
+            border: none;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
         }
         .header-row td {
             font-weight: bold;
@@ -298,6 +332,38 @@
             });
         }
 
+        function setupMemoryScrollbar(wrapper) {
+            if (!wrapper) return;
+
+            const scrollContainer = wrapper.querySelector('.memory-scroll');
+            const slider = wrapper.querySelector('.memory-scroll-slider');
+
+            if (!scrollContainer || !slider) return;
+
+            const updateSlider = () => {
+                const overflow = scrollContainer.scrollWidth - scrollContainer.clientWidth;
+                if (overflow > 0.5) {
+                    slider.style.display = 'block';
+                    slider.max = overflow;
+                    slider.value = Math.min(scrollContainer.scrollLeft, overflow);
+                } else {
+                    slider.style.display = 'none';
+                    slider.value = 0;
+                    scrollContainer.scrollLeft = 0;
+                }
+            };
+
+            slider.addEventListener('input', () => {
+                scrollContainer.scrollLeft = Number(slider.value);
+            });
+
+            scrollContainer.addEventListener('scroll', () => {
+                slider.value = scrollContainer.scrollLeft;
+            });
+
+            requestAnimationFrame(updateSlider);
+        }
+
         codeInput.addEventListener('input', () => {
             renderEditorHighlight();
         });
@@ -308,6 +374,9 @@
         
         window.addEventListener('resize', () => {
             syncHighlightScroll();
+            if (interpreter) {
+                updateUI();
+            }
         });
 
         // Première coloration au chargement du script
@@ -391,7 +460,15 @@
             memDisplay += '</tr>';
             memDisplay += '</table>';
 
-            memoryView.innerHTML = `<div class="memory-scroll" role="region" aria-label="Fenêtre mémoire défilable">${memDisplay}</div>`;
+            memoryView.innerHTML = `
+                <div class="memory-scroll-wrapper">
+                    <div class="memory-scroll" role="region" aria-label="Fenêtre mémoire défilable">${memDisplay}</div>
+                    <input type="range" class="memory-scroll-slider" min="0" value="0" step="1" aria-label="Défilement horizontal de la mémoire">
+                </div>
+            `;
+
+            const memoryWrapper = memoryView.querySelector('.memory-scroll-wrapper');
+            setupMemoryScrollbar(memoryWrapper);
 
             // 4. Gestion de la fin du programme
             if (state.halted) {
