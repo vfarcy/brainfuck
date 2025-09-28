@@ -22,6 +22,88 @@
             font-size: 14px;
             resize: vertical;
         }
+        .editor-wrapper {
+            position: relative;
+            width: 100%;
+            margin-top: 8px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            overflow: hidden;
+        }
+        .editor-wrapper textarea,
+        .editor-wrapper pre {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            tab-size: 2;
+        }
+        .editor-wrapper pre {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow: hidden;
+            pointer-events: none;
+            background-color: #fff;
+        }
+        .editor-wrapper textarea {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            border: none;
+            background-color: transparent;
+            color: transparent;
+            caret-color: #222;
+            text-shadow: 0 0 0 #222;
+            resize: vertical;
+        }
+        .editor-wrapper textarea:focus {
+            outline: none;
+        }
+        .code-editor::selection {
+            background-color: rgba(33, 150, 243, 0.35);
+        }
+        .bf-token {
+            display: inline;
+            color: #444;
+        }
+        .bf-comment {
+            color: #bdbdbd;
+        }
+        .bf-move-right,
+        .bf-move-left {
+            color: #1565c0;
+        }
+        .bf-increment,
+        .bf-decrement {
+            color: #2e7d32;
+        }
+        .bf-output {
+            color: #ef6c00;
+        }
+        .bf-input {
+            color: #8e24aa;
+        }
+        .bf-loop-start,
+        .bf-loop-end {
+            color: #d81b60;
+        }
+        .bf-active {
+            background-color: #ff9900;
+            color: #fff !important;
+            border-radius: 3px;
+            padding: 0 2px;
+        }
         button {
             padding: 10px 15px;
             margin-right: 10px;
@@ -73,12 +155,6 @@
             font-weight: bold;
             border-color: #cc7a00 !important;
         }
-        .ip-highlight {
-            background-color: #ff9900;
-            color: white;
-            padding: 1px 2px;
-            border-radius: 3px;
-        }
     </style>
 </head>
 <body>
@@ -86,7 +162,10 @@
     <h1>🧠 BrainJS: Interpréteur Brainfuck</h1>
 
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
-    <textarea id="bf-code" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+    <div class="editor-wrapper">
+        <pre id="code-highlight" aria-hidden="true"></pre>
+        <textarea id="bf-code" class="code-editor" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+    </div>
     
     <p>
         <button id="run-all">▶ Exécuter D'un Coup</button>
@@ -130,9 +209,78 @@
         const ptrView = document.getElementById('ptr-view');
         const memoryView = document.getElementById('memory-view');
         const codeView = document.getElementById('code-view');
+        const codeHighlight = document.getElementById('code-highlight');
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
         const resetBtn = document.getElementById('reset-btn');
+
+        const BF_TOKEN_CLASSES = {
+            '>': 'bf-move-right',
+            '<': 'bf-move-left',
+            '+': 'bf-increment',
+            '-': 'bf-decrement',
+            '.': 'bf-output',
+            ',': 'bf-input',
+            '[': 'bf-loop-start',
+            ']': 'bf-loop-end'
+        };
+
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, (char) => {
+                switch (char) {
+                    case '&': return '&amp;';
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '"': return '&quot;';
+                    case "'": return '&#39;';
+                    default: return char;
+                }
+            });
+        }
+
+        function buildHighlightedHtml(source, activeIndex = null) {
+            if (!source) return '';
+            let html = '';
+            for (let i = 0; i < source.length; i++) {
+                const char = source[i];
+                if (char === '\n') {
+                    html += '\n';
+                    continue;
+                }
+                const classes = ['bf-token'];
+                const tokenClass = BF_TOKEN_CLASSES[char] || 'bf-comment';
+                classes.push(tokenClass);
+                if (activeIndex !== null && i === activeIndex) {
+                    classes.push('bf-active');
+                }
+                html += `<span class="${classes.join(' ')}">${escapeHtml(char)}</span>`;
+            }
+            return html;
+        }
+
+        function renderEditorHighlight(activeOriginalIndex = null) {
+            codeHighlight.innerHTML = buildHighlightedHtml(codeInput.value, activeOriginalIndex);
+            syncHighlightScroll();
+        }
+
+        function syncHighlightScroll() {
+            codeHighlight.style.transform = `translate(${-codeInput.scrollLeft}px, ${-codeInput.scrollTop}px)`;
+        }
+
+        codeInput.addEventListener('input', () => {
+            renderEditorHighlight();
+        });
+
+        codeInput.addEventListener('scroll', () => {
+            syncHighlightScroll();
+        });
+
+        window.addEventListener('resize', () => {
+            syncHighlightScroll();
+        });
+
+        // Première coloration au chargement du script
+        renderEditorHighlight();
         
         /**
          * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
@@ -166,21 +314,15 @@
 
             // 2. Visualisation du code et du Pointeur d'Instruction (IP)
             
-            let codeDisplay = '';
-            let charCount = 0;
-            
-            // On parcourt le code *nettoyé* pour y placer le surlignement de l'IP
-            for (let i = 0; i < state.code.length; i++) {
-                const char = state.code[i];
-                
-                if (charCount === state.ip) {
-                    codeDisplay += `<span class="ip-highlight">${char}</span>`;
-                } else {
-                    codeDisplay += char;
-                }
-                charCount++;
-            }
-            codeView.innerHTML = codeDisplay;
+            const activeInstructionIndex = state.code.length === 0
+                ? null
+                : (state.ip < state.code.length ? state.ip : state.code.length - 1);
+            const activeOriginalIndex = (!state.codeMap || state.codeMap.length === 0)
+                ? null
+                : (state.ip < state.codeMap.length ? state.codeMap[state.ip] : state.codeMap[state.codeMap.length - 1]);
+
+            codeView.innerHTML = buildHighlightedHtml(state.code, activeInstructionIndex);
+            renderEditorHighlight(activeOriginalIndex);
 
 
             // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)

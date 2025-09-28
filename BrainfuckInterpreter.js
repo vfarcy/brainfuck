@@ -11,8 +11,20 @@ class BrainfuckInterpreter {
      */
     constructor(code, input = '') {
         // Validation et nettoyage : S'assurer que 'code' est une chaîne et n'est pas null/undefined
-        const safeCode = typeof code === 'string' ? code : ''; 
-        this.code = safeCode.replace(/[^><+\-.,[\]]/g, '');
+        const safeCode = typeof code === 'string' ? code : '';
+        this.originalCode = safeCode;
+        this.codeMap = [];
+
+        const filteredChars = [];
+        for (let i = 0; i < safeCode.length; i++) {
+            const char = safeCode[i];
+            if (!'><+-.,[]'.includes(char)) {
+                continue;
+            }
+            filteredChars.push(char);
+            this.codeMap.push(i);
+        }
+        this.code = filteredChars.join('');
         
         this.input = input.split(''); 
         this.memory = new Array(30000).fill(0); 
@@ -147,7 +159,9 @@ class BrainfuckInterpreter {
             code: this.code,
             memoryFull: this.memory,
             output: this.output,
-            halted: this.halted
+            halted: this.halted,
+            originalCode: this.originalCode,
+            codeMap: this.codeMap
         };
     }
 }
