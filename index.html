@@ -1245,6 +1245,7 @@
                     }
                     
                     // Forcer le nettoyage des threads terminés après chaque step
+                    console.log('🧹 Nettoyage forcé après step...');
                     BrainfuckInterpreter.cleanupHaltedThreads();
                     
                     updateUI();

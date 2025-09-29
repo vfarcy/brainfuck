@@ -105,6 +105,8 @@ class BrainfuckInterpreter {
      * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
      */
     step() {
+        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}'`);
+        
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
             this.halted = true;
