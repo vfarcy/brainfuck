@@ -556,6 +556,10 @@
                 
                 // Passage du code et des données d'entrée
                 interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
+                
+                // Debug initial
+                BrainfuckInterpreter.debugThreadManager();
+                
                 updateUI();
                 runAllBtn.disabled = false;
                 stepBtn.disabled = false;

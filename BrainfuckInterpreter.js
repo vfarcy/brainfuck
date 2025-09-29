@@ -175,6 +175,9 @@ class BrainfuckInterpreter {
     handleFork() {
         const manager = BrainfuckInterpreter.threadManager;
         
+        // Nettoyer d'abord les threads terminés
+        BrainfuckInterpreter.cleanupHaltedThreads();
+        
         // Compter seulement les threads actifs (non halted)
         let activeThreadCount = 0;
         for (const [threadId, thread] of manager.threads) {
@@ -183,6 +186,8 @@ class BrainfuckInterpreter {
             }
         }
         
+        console.log(`🔍 Debug Fork: Threads actifs = ${activeThreadCount}, Limite = ${manager.maxThreads}`);
+        
         // Protection contre les fork bombs
         if (activeThreadCount >= manager.maxThreads) {
             throw new Error(`Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé.`);
@@ -190,24 +195,29 @@ class BrainfuckInterpreter {
         
         const childId = manager.nextId++;
         
-        // Créer le thread enfant avec copie complète de l'état
-        const childThread = new BrainfuckInterpreter(
-            this.originalCode, 
-            this.input.join(''), 
-            childId, 
-            this.threadId
-        );
+        // Créer le thread enfant SANS passer par le constructeur complet
+        const childThread = Object.create(BrainfuckInterpreter.prototype);
         
-        // Copier l'état complet du parent vers l'enfant
+        // Copier toutes les propriétés du parent
+        childThread.originalCode = this.originalCode;
+        childThread.codeMap = [...this.codeMap];
+        childThread.code = this.code;
+        childThread.input = [...this.input];
         childThread.memory = [...this.memory];
         childThread.ptr = this.ptr;
         childThread.ip = this.ip;
-        childThread.input = [...this.input];
         childThread.output = this.output;
-        childThread.code = this.code;
-        childThread.codeMap = [...this.codeMap];
         childThread.loopMap = this.loopMap;
         childThread.halted = this.halted;
+        
+        // Propriétés de threading
+        childThread.threadId = childId;
+        childThread.parentId = this.threadId;
+        childThread.isForked = true;
+        childThread.children = [];
+        
+        // Ajouter au gestionnaire MANUELLEMENT
+        manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
         // Thread parent: cellule active = 0
@@ -225,10 +235,8 @@ class BrainfuckInterpreter {
         this.children.push(childId);
         childThread.isForked = true;
         
-        // Incrémenter le compteur seulement maintenant
-        manager.activeThreads++;
-        
         console.log(`🔀 Fork créé: Parent T${this.threadId} → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
+        console.log(`📊 Threads après fork: ${manager.threads.size} total, ${activeThreadCount + 1} actifs`);
     }
 
     /**
@@ -345,6 +353,7 @@ class BrainfuckInterpreter {
      * Remet à zéro le gestionnaire de threads
      */
     static resetThreadManager() {
+        console.log('🔄 Reset complet du gestionnaire de threads');
         BrainfuckInterpreter.threadManager = {
             threads: new Map(),
             nextId: 1,
@@ -409,6 +418,35 @@ class BrainfuckInterpreter {
         }
         manager.activeThreads = actualActiveThreads;
 
+        if (cleaned > 0) {
+            console.log(`🧹 Nettoyé ${cleaned} threads terminés. Actifs: ${actualActiveThreads}`);
+        }
+
         return cleaned;
+    }
+
+    /**
+     * Debug: Affiche l'état complet du gestionnaire de threads
+     */
+    static debugThreadManager() {
+        const manager = BrainfuckInterpreter.threadManager;
+        if (!manager) {
+            console.log('❌ Aucun gestionnaire de threads');
+            return;
+        }
+
+        console.log('🔍 État du gestionnaire de threads:');
+        console.log(`  - Total threads: ${manager.threads.size}`);
+        console.log(`  - ActiveThreads compteur: ${manager.activeThreads}`);
+        console.log(`  - NextId: ${manager.nextId}`);
+        console.log(`  - MaxThreads: ${manager.maxThreads}`);
+        
+        let realActive = 0;
+        for (const [threadId, thread] of manager.threads) {
+            const status = thread.halted ? 'HALTED' : 'ACTIVE';
+            console.log(`  - Thread T${threadId}: ${status} (parent: T${thread.parentId || 'none'})`);
+            if (!thread.halted) realActive++;
+        }
+        console.log(`  - Threads réellement actifs: ${realActive}`);
     }
 }
