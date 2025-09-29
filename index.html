@@ -263,15 +263,73 @@
             background: #fff8f8;
         }
         
+        .thread-state.current {
+            border: 2px solid #2196F3;
+            background: #e3f2fd;
+        }
+        
         .thread-header {
             font-weight: bold;
             color: #333;
             margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .thread-details {
             color: #666;
             line-height: 1.4;
+        }
+        
+        .thread-memory {
+            margin-top: 10px;
+            border-top: 1px solid #eee;
+            padding-top: 8px;
+        }
+        
+        .thread-memory-scroll {
+            overflow-x: auto;
+            max-width: 100%;
+            margin-top: 5px;
+        }
+        
+        .thread-memory table {
+            border-collapse: collapse;
+            font-size: 11px;
+            min-width: 300px;
+        }
+        
+        .thread-memory td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .thread-memory .header-row td {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            color: #555;
+            font-size: 10px;
+        }
+        
+        .thread-memory .active-cell {
+            background-color: #ff9900 !important;
+            color: white;
+            font-weight: bold;
+            border-color: #cc7a00 !important;
+        }
+        
+        .thread-code {
+            margin-top: 8px;
+            padding: 6px;
+            background: #f8f8f8;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 11px;
+            max-height: 60px;
+            overflow-y: auto;
         }
         
         #max-threads-control {
@@ -306,7 +364,8 @@
     
     <p>
         <button id="run-all" aria-label="Exécuter d'un coup">▶ Exécuter D'un Coup</button>
-        <button id="step-btn" aria-label="Exécuter pas à pas">👣 Exécuter Pas à Pas</button>
+        <button id="step-btn" aria-label="Exécuter pas à pas">👣 Step (Tous Threads)</button>
+        <button id="step-single-btn" aria-label="Exécuter pas à pas thread unique" style="display: none;">👤 Step (Thread Actuel)</button>
         <button id="reset-btn" aria-label="Réinitialiser">🔄 Réinitialiser</button>
     </p>
     
@@ -328,7 +387,12 @@
     
     <!-- Vue multi-thread (masquée par défaut) -->
     <div id="multi-thread-view" style="display: none;">
-        <h3>🔀 État de Tous les Threads Actifs</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">🔀 État de Tous les Threads Actifs</h3>
+            <button id="toggle-thread-details" style="padding: 5px 10px; font-size: 12px;">
+                👁️ Vue Détaillée
+            </button>
+        </div>
         <div id="threads-container">
             <!-- Les threads s'afficheront ici dynamiquement -->
         </div>
@@ -371,6 +435,7 @@
         const codeHighlight = document.getElementById('code-highlight');
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
+        const stepSingleBtn = document.getElementById('step-single-btn');
         const resetBtn = document.getElementById('reset-btn');
 
         const BF_TOKEN_CLASSES = {
@@ -606,12 +671,28 @@
             // 4. Mise à jour des informations de threading
             updateThreadInfo(state);
             
+            // Nettoyer les threads terminés périodiquement
+            if (state.totalThreads > 1) {
+                const cleaned = BrainfuckInterpreter.cleanupHaltedThreads();
+                if (cleaned > 0) {
+                    console.log(`🧹 Nettoyage: ${cleaned} threads terminés supprimés`);
+                }
+            }
+            
             // 5. Afficher la vue multi-thread si nécessaire
             if (state.totalThreads > 1) {
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
+                
+                // Afficher le bouton Step Single en mode multi-thread
+                stepSingleBtn.style.display = 'inline-block';
+                stepBtn.textContent = '👣 Step (Tous Threads)';
             } else {
                 document.getElementById('multi-thread-view').style.display = 'none';
+                
+                // Masquer le bouton Step Single en mode single-thread
+                stepSingleBtn.style.display = 'none';
+                stepBtn.textContent = '👣 Exécuter Pas à Pas';
             }
 
             // 6. Gestion de la fin du programme
@@ -635,7 +716,25 @@
                 infoHTML += ` (Principal)`;
             }
             
-            infoHTML += `<br><strong>Threads Actifs:</strong> ${state.totalThreads}`;
+            // Calculer les threads réels
+            const manager = BrainfuckInterpreter.threadManager;
+            let activeCount = 0;
+            let totalCount = 0;
+            if (manager) {
+                for (const [threadId, thread] of manager.threads) {
+                    totalCount++;
+                    if (!thread.halted) {
+                        activeCount++;
+                    }
+                }
+            } else {
+                activeCount = totalCount = 1;
+            }
+            
+            infoHTML += `<br><strong>Threads:</strong> ${activeCount} actifs`;
+            if (totalCount > activeCount) {
+                infoHTML += ` (${totalCount - activeCount} terminés)`;
+            }
             
             if (state.children.length > 0) {
                 infoHTML += `<br><strong>Enfants Créés:</strong> [${state.children.map(id => `T${id}`).join(', ')}]`;
@@ -657,25 +756,142 @@
             
             allStates.forEach(state => {
                 const threadDiv = document.createElement('div');
-                threadDiv.className = `thread-state ${state.halted ? 'halted' : 'active'}`;
+                const currentThreadId = interpreter ? interpreter.getState().threadId : 0;
+                const isCurrentThread = state.threadId === currentThreadId;
                 
-                threadDiv.innerHTML = `
+                let className = 'thread-state ';
+                if (isCurrentThread) {
+                    className += 'current ';
+                } else if (state.halted) {
+                    className += 'halted ';
+                } else {
+                    className += 'active ';
+                }
+                threadDiv.className = className.trim();
+                
+                // En-tête du thread
+                const headerHTML = `
                     <div class="thread-header">
-                        🔗 Thread T${state.threadId} 
-                        ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'}
-                        ${state.halted ? '🛑' : '▶️'}
+                        <span>🔗 Thread T${state.threadId} ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'} ${isCurrentThread ? '👑 Actuel' : ''}</span>
+                        <span>${state.halted ? '🛑 Arrêté' : '▶️ Actif'}</span>
                     </div>
+                `;
+                
+                // Informations de base
+                const detailsHTML = `
                     <div class="thread-details">
                         <strong>PTR:</strong> ${state.ptr} | 
                         <strong>IP:</strong> ${state.ip} | 
                         <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0}<br>
                         <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
-                        <strong>Sortie:</strong> "${state.output.slice(-15)}${state.output.length > 15 ? '...' : ''}"<br>
+                        <strong>Sortie:</strong> "${escapeHtml(state.output.slice(-20))}${state.output.length > 20 ? '...' : ''}"<br>
                         ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
                     </div>
                 `;
+                
+                // Contenu selon le mode d'affichage
+                let contentHTML = headerHTML + detailsHTML;
+                
+                if (showDetailedThreadView) {
+                    // Visualisation de la mémoire (fenêtre autour du PTR)
+                    const memoryHTML = generateThreadMemoryView(state);
+                    
+                    // Code en cours d'exécution avec mise en évidence
+                    const codeHTML = generateThreadCodeView(state);
+                    
+                    contentHTML += memoryHTML + codeHTML;
+                }
+                
+                threadDiv.innerHTML = contentHTML;
                 container.appendChild(threadDiv);
             });
+        }
+
+        // Génère la vue mémoire pour un thread
+        function generateThreadMemoryView(state) {
+            const windowRadius = 5; // Fenêtre plus petite pour économiser l'espace
+            const memoryLength = state.memoryFull.length;
+            const start = Math.max(0, state.ptr - windowRadius);
+            const end = Math.min(state.ptr + windowRadius + 1, memoryLength);
+
+            let memDisplay = '<div class="thread-memory"><strong>Mémoire:</strong><div class="thread-memory-scroll"><table>';
+            
+            // Ligne 1: Index (PTR)
+            memDisplay += '<tr class="header-row">';
+            if (start > 0) {
+                memDisplay += '<td>…</td>';
+            }
+            for (let i = start; i < end; i++) {
+                memDisplay += `<td>${i}</td>`;
+            }
+            if (end < memoryLength) {
+                memDisplay += '<td>…</td>';
+            }
+            memDisplay += '</tr>';
+
+            // Ligne 2: Valeurs
+            memDisplay += '<tr>';
+            if (start > 0) {
+                memDisplay += '<td>…</td>';
+            }
+            for (let i = start; i < end; i++) {
+                const cellClass = i === state.ptr ? 'active-cell' : '';
+                const value = state.memoryFull[i];
+                const hexValue = '0x' + value.toString(16).toUpperCase().padStart(2, '0');
+                let cellContent = hexValue;
+                
+                // Ajouter le caractère ASCII si imprimable
+                if (value >= 32 && value <= 126) {
+                    const char = escapeHtml(String.fromCharCode(value));
+                    cellContent += `<br>'${char}'`;
+                }
+                
+                memDisplay += `<td class="${cellClass}">${cellContent}</td>`;
+            }
+            if (end < memoryLength) {
+                memDisplay += '<td>…</td>';
+            }
+            memDisplay += '</tr>';
+            memDisplay += '</table></div></div>';
+            
+            return memDisplay;
+        }
+
+        // Génère la vue code pour un thread
+        function generateThreadCodeView(state) {
+            if (!state.code || state.code.length === 0) {
+                return '<div class="thread-code"><em>Aucun code</em></div>';
+            }
+            
+            // Afficher une fenêtre autour de l'IP actuel
+            const windowRadius = 10;
+            const start = Math.max(0, state.ip - windowRadius);
+            const end = Math.min(state.ip + windowRadius + 1, state.code.length);
+            
+            let codeDisplay = '<div class="thread-code"><strong>Code (IP=' + state.ip + '):</strong><br>';
+            
+            if (start > 0) {
+                codeDisplay += '…';
+            }
+            
+            for (let i = start; i < end; i++) {
+                const char = state.code[i];
+                if (i === state.ip) {
+                    // Instruction actuelle en surbrillance
+                    codeDisplay += `<span style="background: #ff9900; color: white; padding: 1px 2px; border-radius: 2px;">${escapeHtml(char)}</span>`;
+                } else {
+                    // Coloration normale
+                    const tokenClass = BF_TOKEN_CLASSES[char] || 'bf-comment';
+                    codeDisplay += `<span class="${tokenClass}">${escapeHtml(char)}</span>`;
+                }
+            }
+            
+            if (end < state.code.length) {
+                codeDisplay += '…';
+            }
+            
+            codeDisplay += '</div>';
+            return codeDisplay;
         }
 
         // --- Gestionnaires d'événements ---
@@ -715,8 +931,64 @@
         stepBtn.addEventListener('click', () => {
             if (!interpreter || interpreter.getState().halted) initializeInterpreter(); 
             if (interpreter) {
-                interpreter.step();
+                try {
+                    const state = interpreter.getState();
+                    
+                    if (state.totalThreads > 1) {
+                        // Mode multi-thread: exécuter une étape pour chaque thread actif
+                        const manager = BrainfuckInterpreter.threadManager;
+                        let anyProgress = false;
+                        const threadsToRemove = [];
+                        
+                        for (const [threadId, thread] of manager.threads) {
+                            if (!thread.halted) {
+                                const continued = thread.step();
+                                if (continued) {
+                                    anyProgress = true;
+                                } else {
+                                    // Thread terminé
+                                    thread.halted = true;
+                                    threadsToRemove.push(threadId);
+                                    console.log(`🛑 Thread T${threadId} terminé. Restants: ${manager.activeThreads - 1}`);
+                                }
+                            }
+                        }
+                        
+                        // Nettoyer les threads terminés du gestionnaire
+                        threadsToRemove.forEach(threadId => {
+                            manager.threads.delete(threadId);
+                            manager.activeThreads--;
+                        });
+                        
+                        if (!anyProgress && manager.activeThreads === 0) {
+                            console.log('Tous les threads sont terminés');
+                        }
+                    } else {
+                        // Mode single-thread classique
+                        interpreter.step();
+                    }
+                    
+                    updateUI();
+                } catch (error) {
+                    alert(`❌ Erreur d'exécution step: ${error.message}`);
+                    console.error(error);
+                }
+            }
+        });
+
+        stepSingleBtn.addEventListener('click', () => {
+            if (!interpreter) return;
+            
+            try {
+                // Exécuter une étape seulement pour le thread principal (ou actuel)
+                const continued = interpreter.step();
+                if (!continued) {
+                    console.log(`🛑 Thread T${interpreter.threadId} terminé`);
+                }
                 updateUI();
+            } catch (error) {
+                alert(`❌ Erreur d'exécution step single: ${error.message}`);
+                console.error(error);
             }
         });
 
@@ -734,11 +1006,30 @@
             }
         });
 
+        // Variable pour contrôler la vue détaillée des threads
+        let showDetailedThreadView = true;
+        
+        // Gestionnaire pour le bouton de bascule de vue
+        document.getElementById('toggle-thread-details').addEventListener('click', () => {
+            showDetailedThreadView = !showDetailedThreadView;
+            const button = document.getElementById('toggle-thread-details');
+            button.textContent = showDetailedThreadView ? '👁️ Vue Compacte' : '👁️ Vue Détaillée';
+            
+            // Mettre à jour l'affichage immédiatement
+            if (interpreter && interpreter.getState().totalThreads > 1) {
+                updateMultiThreadView();
+            }
+        });
+
         // Initialisation après le chargement complet
         window.addEventListener('load', () => {
             if (typeof BrainfuckInterpreter === 'undefined') {
                 alert("Erreur: Le fichier 'BrainfuckInterpreter.js' n'a pas été trouvé ou chargé correctement. Vérifiez le chemin.");
             } else {
+                // Initialiser le bouton de vue
+                const toggleButton = document.getElementById('toggle-thread-details');
+                toggleButton.textContent = showDetailedThreadView ? '👁️ Vue Compacte' : '👁️ Vue Détaillée';
+                
                 initializeInterpreter();
             }
         });

@@ -58,7 +58,12 @@ class BrainfuckInterpreter {
         }
         
         BrainfuckInterpreter.threadManager.threads.set(this.threadId, this);
-        BrainfuckInterpreter.threadManager.activeThreads++; 
+        
+        // Incrémenter activeThreads seulement pour le thread principal (threadId = 0)
+        // Les threads enfants sont comptés dans handleFork()
+        if (this.threadId === 0) {
+            BrainfuckInterpreter.threadManager.activeThreads++;
+        } 
     }
 
     /**
@@ -170,9 +175,17 @@ class BrainfuckInterpreter {
     handleFork() {
         const manager = BrainfuckInterpreter.threadManager;
         
+        // Compter seulement les threads actifs (non halted)
+        let activeThreadCount = 0;
+        for (const [threadId, thread] of manager.threads) {
+            if (!thread.halted) {
+                activeThreadCount++;
+            }
+        }
+        
         // Protection contre les fork bombs
-        if (manager.activeThreads >= manager.maxThreads) {
-            throw new Error(`Limite de threads atteinte (${manager.activeThreads}/${manager.maxThreads}). Fork refusé.`);
+        if (activeThreadCount >= manager.maxThreads) {
+            throw new Error(`Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé.`);
         }
         
         const childId = manager.nextId++;
@@ -212,6 +225,9 @@ class BrainfuckInterpreter {
         this.children.push(childId);
         childThread.isForked = true;
         
+        // Incrémenter le compteur seulement maintenant
+        manager.activeThreads++;
+        
         console.log(`🔀 Fork créé: Parent T${this.threadId} → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
     }
 
@@ -246,6 +262,7 @@ class BrainfuckInterpreter {
 
         while (manager.activeThreads > 0 && totalSteps < maxTotalSteps) {
             let anyProgress = false;
+            const threadsToRemove = [];
             
             // Exécuter une étape pour chaque thread actif
             for (const [threadId, thread] of manager.threads) {
@@ -256,7 +273,8 @@ class BrainfuckInterpreter {
                         totalSteps++;
                     } else {
                         // Thread terminé
-                        manager.activeThreads--;
+                        thread.halted = true;
+                        threadsToRemove.push(threadId);
                         results.push({
                             threadId: thread.threadId,
                             parentId: thread.parentId,
@@ -265,10 +283,16 @@ class BrainfuckInterpreter {
                             finalMemory: thread.memory.slice(0, 50),
                             children: thread.children
                         });
-                        console.log(`🛑 Thread T${threadId} terminé. Restants: ${manager.activeThreads}`);
+                        console.log(`🛑 Thread T${threadId} terminé. Restants: ${manager.activeThreads - 1}`);
                     }
                 }
             }
+            
+            // Nettoyer les threads terminés du gestionnaire
+            threadsToRemove.forEach(threadId => {
+                manager.threads.delete(threadId);
+                manager.activeThreads--;
+            });
             
             if (!anyProgress) break;
         }
@@ -284,6 +308,19 @@ class BrainfuckInterpreter {
      * Retourne l'état actuel de l'interpréteur pour l'affichage.
      */
     getState() {
+        // Calculer le nombre réel de threads actifs
+        const manager = BrainfuckInterpreter.threadManager;
+        let realActiveThreads = 0;
+        if (manager) {
+            for (const [threadId, thread] of manager.threads) {
+                if (!thread.halted) {
+                    realActiveThreads++;
+                }
+            }
+        } else {
+            realActiveThreads = 1;
+        }
+        
         return {
             ptr: this.ptr,
             ip: this.ip,
@@ -299,7 +336,7 @@ class BrainfuckInterpreter {
             parentId: this.parentId,
             isForked: this.isForked,
             children: this.children,
-            totalThreads: BrainfuckInterpreter.threadManager?.activeThreads || 1,
+            totalThreads: realActiveThreads,
             currentInstruction: this.code[this.ip] || null
         };
     }
@@ -339,5 +376,39 @@ class BrainfuckInterpreter {
         if (BrainfuckInterpreter.threadManager) {
             BrainfuckInterpreter.threadManager.maxThreads = maxThreads;
         }
+    }
+
+    /**
+     * Nettoie les threads terminés du gestionnaire
+     * @returns {number} Nombre de threads nettoyés
+     */
+    static cleanupHaltedThreads() {
+        const manager = BrainfuckInterpreter.threadManager;
+        if (!manager) return 0;
+
+        let cleaned = 0;
+        const threadsToRemove = [];
+
+        for (const [threadId, thread] of manager.threads) {
+            if (thread.halted) {
+                threadsToRemove.push(threadId);
+            }
+        }
+
+        threadsToRemove.forEach(threadId => {
+            manager.threads.delete(threadId);
+            cleaned++;
+        });
+
+        // Recalculer le compteur activeThreads
+        let actualActiveThreads = 0;
+        for (const [threadId, thread] of manager.threads) {
+            if (!thread.halted) {
+                actualActiveThreads++;
+            }
+        }
+        manager.activeThreads = actualActiveThreads;
+
+        return cleaned;
     }
 }
