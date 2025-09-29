@@ -1243,6 +1243,9 @@
                         console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
                     }
                     
+                    // Forcer le nettoyage des threads terminés après chaque step
+                    BrainfuckInterpreter.cleanupHaltedThreads();
+                    
                     updateUI();
                 } catch (error) {
                     alert(`❌ Erreur d'exécution step: ${error.message}`);

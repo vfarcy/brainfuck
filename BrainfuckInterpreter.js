@@ -55,7 +55,7 @@ class BrainfuckInterpreter {
                 threads: new Map(),
                 nextId: 1,
                 activeThreads: 0,
-                maxThreads: 20 // Protection contre les fork bombs
+                maxThreads: 8 // Protection contre les fork bombs
             };
         }
         
@@ -181,8 +181,11 @@ class BrainfuckInterpreter {
     handleFork() {
         const manager = BrainfuckInterpreter.threadManager;
         
-        // Nettoyer d'abord les threads terminés
+        // Nettoyer d'abord les threads terminés (DOUBLE NETTOYAGE)
         BrainfuckInterpreter.cleanupHaltedThreads();
+        
+        // Forcer un second nettoyage pour être sûr
+        setTimeout(() => BrainfuckInterpreter.cleanupHaltedThreads(), 0);
         
         // Vérifier la limite de forks par thread
         console.log(`🔍 Thread T${this.threadId} tente un fork (forks actuels: ${this.forkCount}/${this.maxForksPerThread})`);
@@ -386,7 +389,7 @@ class BrainfuckInterpreter {
             threads: new Map(),
             nextId: 1,
             activeThreads: 0,
-            maxThreads: 20
+            maxThreads: 8
         };
     }
 
