@@ -265,6 +265,82 @@
             background: #e3f2fd;
         }
         
+        .thread-execution-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 1s infinite;
+        }
+        
+        .thread-execution-indicator.executing {
+            background: #ff9900;
+            animation: flash 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes flash {
+            0% { background: #ff9900; transform: scale(1); }
+            50% { background: #ffeb3b; transform: scale(1.2); }
+            100% { background: #ff9900; transform: scale(1); }
+        }
+        
+        .thread-timeline {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .step-counter {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #2196F3;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .thread-progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        
+        .thread-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        .execution-log {
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 10px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 5px;
+            margin-top: 5px;
+        }
+        
         .thread-header {
             font-weight: bold;
             color: #333;
@@ -342,7 +418,78 @@
             font-size: 12px;
             margin-top: 5px;
         }
-    </style>
+            /* Logs d'exécution */
+        .execution-stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2196F3;
+        }
+
+        .thread-logs {
+            margin-top: 15px;
+        }
+
+        .thread-log-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .thread-log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .thread-id {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .thread-steps {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .thread-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .thread-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #2196F3);
+            transition: width 0.3s ease;
+        }
+
+        </style>
 </head>
 <body>
 
@@ -373,6 +520,11 @@
         <div class="warning-text">
             ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]")
         </div>
+    </div>
+    
+    <!-- Compteur d'étapes global -->
+    <div id="step-counter" class="step-counter" style="display: none;">
+        Étape: <span id="step-number">0</span>
     </div>
 
     <hr>
@@ -586,6 +738,56 @@
         }
 
         /**
+         * Génère les logs d'exécution des threads
+         */
+        function generateThreadExecutionLog() {
+            const logElement = document.getElementById('execution-log');
+            if (!logElement) return;
+            
+            let html = '<h4>📊 Historique d\'exécution</h4>';
+            
+            if (executionHistory.size === 0) {
+                html += '<p style="color: #666; font-style: italic;">Aucune exécution pour le moment</p>';
+            } else {
+                html += '<div class="execution-stats">';
+                
+                // Statistiques globales
+                const totalSteps = Array.from(executionHistory.values()).reduce((sum, steps) => sum + steps, 0);
+                html += `<div class="stat-item">
+                    <span class="stat-label">Total d'étapes:</span>
+                    <span class="stat-value">${totalSteps}</span>
+                </div>`;
+                
+                html += `<div class="stat-item">
+                    <span class="stat-label">Threads actifs:</span>
+                    <span class="stat-value">${executionHistory.size}</span>
+                </div>`;
+                
+                html += '</div>';
+                
+                // Détails par thread
+                html += '<div class="thread-logs">';
+                for (const [threadId, steps] of executionHistory) {
+                    const percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                    html += `
+                        <div class="thread-log-item">
+                            <div class="thread-log-header">
+                                <span class="thread-id">Thread T${threadId}</span>
+                                <span class="thread-steps">${steps} étapes (${percentage}%)</span>
+                            </div>
+                            <div class="thread-progress-bar">
+                                <div class="thread-progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+            }
+            
+            logElement.innerHTML = html;
+        }
+
+        /**
          * Met à jour tous les éléments de l'interface utilisateur.
          */
         function updateUI() {
@@ -696,6 +898,9 @@
                 stepBtn.textContent = '👣 Exécuter Pas à Pas';
             }
 
+            // 5.5. Générer les logs d'exécution
+            generateThreadExecutionLog();
+
             // 6. Gestion de la fin du programme
             if (state.halted) {
                 runAllBtn.disabled = true;
@@ -755,7 +960,7 @@
             
             container.innerHTML = '';
             
-            allStates.forEach(state => {
+            allStates.forEach((state, index) => {
                 const threadDiv = document.createElement('div');
                 const currentThreadId = interpreter ? interpreter.getState().threadId : 0;
                 const isCurrentThread = state.threadId === currentThreadId;
@@ -769,24 +974,37 @@
                     className += 'active ';
                 }
                 threadDiv.className = className.trim();
+                threadDiv.style.position = 'relative';
                 
-                // En-tête du thread
+                // Calculer le progrès du thread (pourcentage d'instructions exécutées)
+                const progress = state.code.length > 0 ? (state.ip / state.code.length) * 100 : 0;
+                
+                // En-tête du thread avec indicateur d'exécution
                 const headerHTML = `
                     <div class="thread-header">
                         <span>🔗 Thread T${state.threadId} ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'} ${isCurrentThread ? '👑 Actuel' : ''}</span>
                         <span>${state.halted ? '🛑 Arrêté' : '▶️ Actif'}</span>
                     </div>
+                    <div class="thread-progress-bar">
+                        <div class="thread-progress-fill" style="width: ${Math.min(progress, 100)}%"></div>
+                    </div>
                 `;
                 
-                // Informations de base
+                // Informations de base avec chronologie
+                const steps = executionHistory.get(state.threadId) || 0;
                 const detailsHTML = `
                     <div class="thread-details">
                         <strong>PTR:</strong> ${state.ptr} | 
-                        <strong>IP:</strong> ${state.ip} | 
-                        <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0}<br>
+                        <strong>IP:</strong> ${state.ip}/${state.code.length} | 
+                        <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0} | 
+                        <strong>Étapes:</strong> ${steps}<br>
                         <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
                         <strong>Sortie:</strong> "${escapeHtml(state.output.slice(-20))}${state.output.length > 20 ? '...' : ''}"<br>
                         ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
+                        <div class="thread-timeline">
+                            📊 Progrès: ${progress.toFixed(1)}% | 
+                            ⏱️ Dernière activité: Étape ${globalStepCounter}
+                        </div>
                     </div>
                 `;
                 
@@ -800,12 +1018,42 @@
                     // Code en cours d'exécution avec mise en évidence
                     const codeHTML = generateThreadCodeView(state);
                     
-                    contentHTML += memoryHTML + codeHTML;
+                    // Log d'exécution récent
+                    const logHTML = generateThreadExecutionLog(state.threadId);
+                    
+                    contentHTML += memoryHTML + codeHTML + logHTML;
                 }
                 
                 threadDiv.innerHTML = contentHTML;
                 container.appendChild(threadDiv);
+                
+                // Ajouter effet visuel lors de l'exécution
+                if (!state.halted && Math.random() < 0.3) { // Animation occasionnelle
+                    setTimeout(() => {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'thread-execution-indicator executing';
+                        threadDiv.appendChild(indicator);
+                        setTimeout(() => indicator.remove(), 500);
+                    }, index * 100);
+                }
             });
+        }
+
+        // Génère un log d'exécution pour un thread
+        function generateThreadExecutionLog(threadId) {
+            const history = executionHistory.get(threadId) || 0;
+            const logs = [
+                `Étape ${Math.max(0, globalStepCounter - 2)}: Instruction exécutée`,
+                `Étape ${Math.max(0, globalStepCounter - 1)}: État mis à jour`,
+                `Étape ${globalStepCounter}: État actuel`
+            ];
+            
+            return `
+                <div class="execution-log">
+                    <strong>📝 Log d'exécution:</strong><br>
+                    ${logs.slice(-3).map(log => `• ${log}`).join('<br>')}
+                </div>
+            `;
         }
 
         // Génère la vue mémoire pour un thread
@@ -935,6 +1183,11 @@
                 try {
                     const state = interpreter.getState();
                     
+                    // Incrémenter le compteur global
+                    globalStepCounter++;
+                    document.getElementById('step-number').textContent = globalStepCounter;
+                    document.getElementById('step-counter').style.display = 'block';
+                    
                     if (state.totalThreads > 1) {
                         // Mode multi-thread: exécuter une étape pour chaque thread actif
                         const manager = BrainfuckInterpreter.threadManager;
@@ -943,9 +1196,15 @@
                         
                         for (const [threadId, thread] of manager.threads) {
                             if (!thread.halted) {
+                                // Incrémenter l'historique du thread
+                                executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                                
                                 const continued = thread.step();
                                 if (continued) {
                                     anyProgress = true;
+                                    
+                                    // Effet visuel d'exécution
+                                    console.log(`⚡ T${threadId}: ${thread.code[thread.ip - 1] || 'N/A'} (IP: ${thread.ip - 1} → ${thread.ip})`);
                                 } else {
                                     // Thread terminé
                                     thread.halted = true;
@@ -962,11 +1221,16 @@
                         });
                         
                         if (!anyProgress && manager.activeThreads === 0) {
-                            console.log('Tous les threads sont terminés');
+                            console.log('🎯 Tous les threads sont terminés');
+                            document.getElementById('step-counter').style.display = 'none';
                         }
                     } else {
                         // Mode single-thread classique
+                        const threadId = interpreter.threadId;
+                        executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                        
                         interpreter.step();
+                        console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
                     }
                     
                     updateUI();
@@ -994,7 +1258,23 @@
         });
 
         resetBtn.addEventListener('click', () => {
+            // Réinitialisation complète
             BrainfuckInterpreter.resetThreadManager();
+            
+            // Reset des compteurs
+            globalStepCounter = 0;
+            executionHistory.clear();
+            document.getElementById('step-number').textContent = '0';
+            document.getElementById('step-counter').style.display = 'none';
+            
+            // Nettoyer l'interface
+            document.querySelector('#output pre').textContent = '';
+            document.getElementById('memory-view').innerHTML = '';
+            document.getElementById('execution-log').innerHTML = '';
+            
+            console.clear();
+            console.log('🔄 Interpréteur réinitialisé');
+            
             initializeInterpreter();
         });
 
@@ -1009,6 +1289,8 @@
 
         // Variable pour contrôler la vue détaillée des threads
         let showDetailedThreadView = true;
+        let globalStepCounter = 0;
+        let executionHistory = new Map(); // Historique d'exécution par thread
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {
