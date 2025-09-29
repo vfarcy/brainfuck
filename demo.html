@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Démo Visualisation Multithreadée - Brainfuck</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .demo-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .demo-title {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .feature {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+        }
+        .feature h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+        }
+        .code-example {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            border-left: 3px solid #2196F3;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .steps {
+            counter-reset: step-counter;
+        }
+        .step {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        .step::before {
+            content: "Étape " counter(step-counter) ": ";
+            font-weight: bold;
+            color: #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-title">
+        🎮 Démonstration des Nouvelles Fonctionnalités
+        <br><small>Visualisation Multithreadée Avancée</small>
+    </div>
+
+    <div class="demo-card">
+        <h2>🚀 Fonctionnalités Implémentées</h2>
+        
+        <div class="feature">
+            <h3>📊 Compteur d'Étapes Global</h3>
+            <p>Un badge en temps réel affiche le nombre total d'étapes exécutées. Il apparaît automatiquement lors de l'exécution et disparaît lors du reset.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📈 Barres de Progression par Thread</h3>
+            <p>Chaque thread affiche une barre de progression basée sur sa position dans le code (IP/longueur). Couleurs dynamiques du vert au bleu.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📋 Historique d'Exécution Détaillé</h3>
+            <p>Statistiques complètes : total d'étapes, threads actifs, répartition en pourcentage, barres comparatives.</p>
+        </div>
+
+        <div class="feature">
+            <h3>✨ Animations Visuelles</h3>
+            <p>Effets de pulse pendant l'exécution, flash pour les notifications, transitions fluides pour tous les changements.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🔍 Logs de Débogage Améliorés</h3>
+            <p>Console structurée avec format : <span class="highlight">⚡ T{id}: {commande} (IP: avant → après)</span></p>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <h2>🧪 Guide de Test</h2>
+        
+        <div class="steps">
+            <div class="step">
+                Ouvrez <strong>index.html</strong> dans votre navigateur préféré
+            </div>
+            
+            <div class="step">
+                Testez avec ce programme simple :
+                <div class="code-example">+++f+++.</div>
+                <small>→ Crée 2 threads, parent affiche '\x03', enfant affiche '\x04'</small>
+            </div>
+            
+            <div class="step">
+                Observez le <span class="highlight">compteur d'étapes</span> en haut à droite qui s'incrémente
+            </div>
+            
+            <div class="step">
+                Regardez les <span class="highlight">barres de progression</span> de chaque thread avancer
+            </div>
+            
+            <div class="step">
+                Consultez l'<span class="highlight">historique d'exécution</span> en bas avec les statistiques détaillées
+            </div>
+            
+            <div class="step">
+                Testez le bouton <strong>Reset</strong> pour voir la remise à zéro complète
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-card">
+        <h2>🎯 Programmes de Test Avancés</h2>
+        
+        <h3>Fork Multiple :</h3>
+        <div class="code-example">+f+f+.</div>
+        <p>Crée 4 threads avec des valeurs différentes</p>
+        
+        <h3>Fork avec Boucle :</h3>
+        <div class="code-example">++f[+.]</div>
+        <p>Parent entre en boucle, enfant s'arrête</p>
+        
+        <h3>Test de Protection Fork Bomb :</h3>
+        <div class="code-example">+[f]</div>
+        <p>Limitation automatique à 10 threads max</p>
+    </div>
+
+    <div class="demo-card">
+        <h2>🎨 Interface Utilisateur</h2>
+        <p>L'interface a été complètement repensée pour offrir :</p>
+        <ul>
+            <li><strong>Visibilité</strong> : Informations importantes toujours visibles</li>
+            <li><strong>Intuitivité</strong> : Couleurs et animations guidant l'utilisateur</li>
+            <li><strong>Performance</strong> : Animations CSS3 fluides</li>
+            <li><strong>Détail</strong> : Statistiques précises pour l'analyse</li>
+        </ul>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="index.html" class="btn">🚀 Lancer l'Interpréteur</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px; color: rgba(255,255,255,0.7);">
+        <small>
+            Brainfuck Multithreadé avec Visualisation Avancée<br>
+            Développé avec ❤️ pour une meilleure expérience utilisateur
+        </small>
+    </div>
+</body>
+</html>
