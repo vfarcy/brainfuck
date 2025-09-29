@@ -90,6 +90,13 @@
         .bf-loop-end {
             color: #d81b60;
         }
+        .bf-fork {
+            color: #ff6b35;
+            background: rgba(255, 107, 53, 0.15);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
         .bf-active {
             background-color: #ff9900;
             color: #fff !important;
@@ -210,6 +217,76 @@
             font-weight: bold;
             color: #999;
         }
+        
+        /* Styles pour le multithreading */
+        #thread-info {
+            background: linear-gradient(135deg, #e3f2fd, #f0f8ff);
+            border: 2px solid #4a90e2;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        #multi-thread-view {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .thread-state {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        
+        .thread-state:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .thread-state.active {
+            border-left: 5px solid #4caf50;
+            background: #f8fff8;
+        }
+        
+        .thread-state.halted {
+            border-left: 5px solid #f44336;
+            background: #fff8f8;
+        }
+        
+        .thread-header {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .thread-details {
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        #max-threads-control {
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+        }
+        
+        .warning-text {
+            color: #856404;
+            font-size: 12px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -219,7 +296,12 @@
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
     <div class="editor-wrapper">
         <pre id="code-highlight" aria-hidden="true"></pre>
-        <textarea id="bf-code" class="code-editor" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.</textarea>
+        <textarea id="bf-code" class="code-editor" rows="10" cols="80">++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+
+// Exemples avec fork (commande 'y'):
+// Simple: ++y    (Parent: cell[0]=0, Enfant: cell[1]=1)
+// Test: +++y>+++y>+++
+// ⚠️ Danger: +[y+]  (Explosion de threads!)</textarea>
     </div>
     
     <p>
@@ -227,8 +309,30 @@
         <button id="step-btn" aria-label="Exécuter pas à pas">👣 Exécuter Pas à Pas</button>
         <button id="reset-btn" aria-label="Réinitialiser">🔄 Réinitialiser</button>
     </p>
+    
+    <!-- Contrôle pour la limite de threads -->
+    <div id="max-threads-control">
+        <label for="max-threads">🛡️ Limite max de threads:</label>
+        <input type="number" id="max-threads" value="100" min="1" max="1000" style="width: 80px;">
+        <div class="warning-text">
+            ⚠️ Attention: La commande 'y' peut créer des explosions de threads (ex: "+[y+]")
+        </div>
+    </div>
 
     <hr>
+    
+    <!-- Section d'information des threads -->
+    <div id="thread-info">
+        <strong>🔗 Thread Principal (T0)</strong> - Aucun fork détecté
+    </div>
+    
+    <!-- Vue multi-thread (masquée par défaut) -->
+    <div id="multi-thread-view" style="display: none;">
+        <h3>🔀 État de Tous les Threads Actifs</h3>
+        <div id="threads-container">
+            <!-- Les threads s'afficheront ici dynamiquement -->
+        </div>
+    </div>
     
     <h2>Données d'Entrée (Input)</h2>
     <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
@@ -277,7 +381,8 @@
             '.': 'bf-output',
             ',': 'bf-input',
             '[': 'bf-loop-start',
-            ']': 'bf-loop-end'
+            ']': 'bf-loop-end',
+            'y': 'bf-fork'
         };
 
         function escapeHtml(text) {
@@ -381,6 +486,9 @@
          */
         function initializeInterpreter() {
             try {
+                // Réinitialiser le gestionnaire de threads
+                BrainfuckInterpreter.resetThreadManager();
+                
                 // Passage du code et des données d'entrée
                 interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
                 updateUI();
@@ -495,7 +603,18 @@
                 scrollContainer.scrollLeft = scrollTarget;
             }
 
-            // 4. Gestion de la fin du programme
+            // 4. Mise à jour des informations de threading
+            updateThreadInfo(state);
+            
+            // 5. Afficher la vue multi-thread si nécessaire
+            if (state.totalThreads > 1) {
+                updateMultiThreadView();
+                document.getElementById('multi-thread-view').style.display = 'block';
+            } else {
+                document.getElementById('multi-thread-view').style.display = 'none';
+            }
+
+            // 6. Gestion de la fin du programme
             if (state.halted) {
                 runAllBtn.disabled = true;
                 stepBtn.disabled = true;
@@ -505,14 +624,91 @@
             }
         }
 
+        // Nouvelle fonction pour les informations de thread
+        function updateThreadInfo(state) {
+            const threadInfo = document.getElementById('thread-info');
+            let infoHTML = `<strong>🔗 Thread T${state.threadId}</strong>`;
+            
+            if (state.parentId !== null) {
+                infoHTML += ` (Enfant de T${state.parentId})`;
+            } else {
+                infoHTML += ` (Principal)`;
+            }
+            
+            infoHTML += `<br><strong>Threads Actifs:</strong> ${state.totalThreads}`;
+            
+            if (state.children.length > 0) {
+                infoHTML += `<br><strong>Enfants Créés:</strong> [${state.children.map(id => `T${id}`).join(', ')}]`;
+            }
+            
+            if (state.isForked) {
+                infoHTML += `<br><span style="color: #ff6b35;">🔀 Ce thread a été créé par fork</span>`;
+            }
+            
+            threadInfo.innerHTML = infoHTML;
+        }
+
+        // Nouvelle fonction pour la vue multi-thread
+        function updateMultiThreadView() {
+            const allStates = BrainfuckInterpreter.getAllThreadStates();
+            const container = document.getElementById('threads-container');
+            
+            container.innerHTML = '';
+            
+            allStates.forEach(state => {
+                const threadDiv = document.createElement('div');
+                threadDiv.className = `thread-state ${state.halted ? 'halted' : 'active'}`;
+                
+                threadDiv.innerHTML = `
+                    <div class="thread-header">
+                        🔗 Thread T${state.threadId} 
+                        ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'}
+                        ${state.halted ? '🛑' : '▶️'}
+                    </div>
+                    <div class="thread-details">
+                        <strong>PTR:</strong> ${state.ptr} | 
+                        <strong>IP:</strong> ${state.ip} | 
+                        <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0}<br>
+                        <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
+                        <strong>Sortie:</strong> "${state.output.slice(-15)}${state.output.length > 15 ? '...' : ''}"<br>
+                        ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
+                    </div>
+                `;
+                container.appendChild(threadDiv);
+            });
+        }
+
         // --- Gestionnaires d'événements ---
 
         runAllBtn.addEventListener('click', () => {
             // Réinitialiser s'il n'y a pas d'interpréteur ou si l'exécution précédente est terminée
             if (!interpreter || interpreter.getState().halted) initializeInterpreter();
             if (interpreter) {
-                interpreter.runAll();
-                updateUI();
+                try {
+                    const state = interpreter.getState();
+                    
+                    if (state.totalThreads > 1) {
+                        // Exécution multi-thread
+                        console.log('🚀 Démarrage exécution multi-thread...');
+                        const results = BrainfuckInterpreter.runAllThreads();
+                        console.log('✅ Exécution terminée. Résultats:', results);
+                        
+                        // Afficher un résumé
+                        const summary = results.map(r => 
+                            `T${r.threadId}: "${r.output}"`
+                        ).join('\n');
+                        alert(`Exécution multi-thread terminée!\n\nRésultats:\n${summary}`);
+                    } else {
+                        // Exécution single-thread classique
+                        interpreter.runAll();
+                        console.log('✅ Exécution single-thread terminée');
+                    }
+                    
+                    updateUI();
+                } catch (error) {
+                    alert(`❌ Erreur d'exécution: ${error.message}`);
+                    console.error(error);
+                }
             }
         });
 
@@ -525,7 +721,17 @@
         });
 
         resetBtn.addEventListener('click', () => {
+            BrainfuckInterpreter.resetThreadManager();
             initializeInterpreter();
+        });
+
+        // Gestionnaire pour la limite de threads
+        document.getElementById('max-threads').addEventListener('change', (e) => {
+            const newLimit = parseInt(e.target.value);
+            if (newLimit > 0) {
+                BrainfuckInterpreter.setMaxThreads(newLimit);
+                console.log(`Limite de threads mise à jour: ${newLimit}`);
+            }
         });
 
         // Initialisation après le chargement complet

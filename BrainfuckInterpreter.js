@@ -1,19 +1,22 @@
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
-const VALID_CHARS = '><+-.,[]';
+const VALID_CHARS = '><+-.,[]y'; // Ajout de la commande 'y' pour le fork
 
 /**
- * BrainfuckInterpreter
+ * BrainfuckInterpreter avec support du multithreading
  *
  * Interprète le code Brainfuck en gérant la mémoire, le pointeur de cellule,
- * et le pointeur d'instruction. Il supporte l'exécution pas à pas.
+ * et le pointeur d'instruction. Il supporte l'exécution pas à pas et le
+ * multithreading avec la commande 'y' (fork).
  */
 class BrainfuckInterpreter {
     /**
      * @param {string} code Le programme Brainfuck à exécuter.
      * @param {string} [input=''] L'entrée utilisateur simulée pour la commande ','.
+     * @param {number} [threadId=0] Identifiant unique du thread.
+     * @param {number} [parentId=null] ID du thread parent (null pour le thread principal).
      */
-    constructor(code, input = '') {
+    constructor(code, input = '', threadId = 0, parentId = null) {
         // Validation et nettoyage : S'assurer que 'code' est une chaîne et n'est pas null/undefined
         const safeCode = typeof code === 'string' ? code : '';
         this.originalCode = safeCode;
@@ -36,7 +39,26 @@ class BrainfuckInterpreter {
         this.ip = 0; 
         this.output = ''; 
         this.loopMap = this.buildLoopMap(this.code);
-        this.halted = false; 
+        this.halted = false;
+
+        // Informations de threading
+        this.threadId = threadId;
+        this.parentId = parentId;
+        this.isForked = false;
+        this.children = [];
+        
+        // Gestionnaire global de threads (statique)
+        if (!BrainfuckInterpreter.threadManager) {
+            BrainfuckInterpreter.threadManager = {
+                threads: new Map(),
+                nextId: 1,
+                activeThreads: 0,
+                maxThreads: 100 // Protection contre les fork bombs
+            };
+        }
+        
+        BrainfuckInterpreter.threadManager.threads.set(this.threadId, this);
+        BrainfuckInterpreter.threadManager.activeThreads++; 
     }
 
     /**
@@ -128,6 +150,10 @@ class BrainfuckInterpreter {
                 }
                 break;
 
+            case 'y':
+                this.handleFork();
+                break;
+
             default:
                 break;
         }
@@ -137,10 +163,63 @@ class BrainfuckInterpreter {
     }
 
     /**
+     * Gère la commande de fork 'y'
+     * Thread parent: cellule active = 0
+     * Thread enfant: ptr++, cellule active = 1
+     */
+    handleFork() {
+        const manager = BrainfuckInterpreter.threadManager;
+        
+        // Protection contre les fork bombs
+        if (manager.activeThreads >= manager.maxThreads) {
+            throw new Error(`Limite de threads atteinte (${manager.activeThreads}/${manager.maxThreads}). Fork refusé.`);
+        }
+        
+        const childId = manager.nextId++;
+        
+        // Créer le thread enfant avec copie complète de l'état
+        const childThread = new BrainfuckInterpreter(
+            this.originalCode, 
+            this.input.join(''), 
+            childId, 
+            this.threadId
+        );
+        
+        // Copier l'état complet du parent vers l'enfant
+        childThread.memory = [...this.memory];
+        childThread.ptr = this.ptr;
+        childThread.ip = this.ip;
+        childThread.input = [...this.input];
+        childThread.output = this.output;
+        childThread.code = this.code;
+        childThread.codeMap = [...this.codeMap];
+        childThread.loopMap = this.loopMap;
+        childThread.halted = this.halted;
+        
+        // Appliquer les règles du fork
+        // Thread parent: cellule active = 0
+        this.memory[this.ptr] = 0;
+        
+        // Thread enfant: ptr++, cellule active = 1
+        childThread.ptr++;
+        if (childThread.ptr >= childThread.memory.length) {
+            // Extension automatique de la mémoire si nécessaire
+            childThread.memory = childThread.memory.concat(new Array(MEMORY_SIZE).fill(0));
+        }
+        childThread.memory[childThread.ptr] = 1;
+        
+        // Enregistrer la relation parent-enfant
+        this.children.push(childId);
+        childThread.isForked = true;
+        
+        console.log(`🔀 Fork créé: Parent T${this.threadId} → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
+    }
+
+    /**
      * Exécute le programme jusqu'à la fin.
      */
     runAll() {
-        const maxSteps = 10000000;
+        const maxSteps = 100000; // Réduit pour la sécurité
         let steps = 0;
 
         while (this.step() && steps < maxSteps) {
@@ -156,6 +235,52 @@ class BrainfuckInterpreter {
     }
 
     /**
+     * Exécute tous les threads jusqu'à completion
+     * @returns {Array} Résultats de tous les threads
+     */
+    static runAllThreads() {
+        const manager = BrainfuckInterpreter.threadManager;
+        const results = [];
+        let totalSteps = 0;
+        const maxTotalSteps = 500000; // Limite globale plus élevée
+
+        while (manager.activeThreads > 0 && totalSteps < maxTotalSteps) {
+            let anyProgress = false;
+            
+            // Exécuter une étape pour chaque thread actif
+            for (const [threadId, thread] of manager.threads) {
+                if (!thread.halted) {
+                    const continued = thread.step();
+                    if (continued) {
+                        anyProgress = true;
+                        totalSteps++;
+                    } else {
+                        // Thread terminé
+                        manager.activeThreads--;
+                        results.push({
+                            threadId: thread.threadId,
+                            parentId: thread.parentId,
+                            output: thread.output,
+                            finalPtr: thread.ptr,
+                            finalMemory: thread.memory.slice(0, 50),
+                            children: thread.children
+                        });
+                        console.log(`🛑 Thread T${threadId} terminé. Restants: ${manager.activeThreads}`);
+                    }
+                }
+            }
+            
+            if (!anyProgress) break;
+        }
+
+        if (totalSteps >= maxTotalSteps) {
+            throw new Error(`Limite d'exécution globale atteinte (${maxTotalSteps} étapes) avec ${manager.activeThreads} threads actifs`);
+        }
+
+        return results.sort((a, b) => a.threadId - b.threadId);
+    }
+
+    /**
      * Retourne l'état actuel de l'interpréteur pour l'affichage.
      */
     getState() {
@@ -167,7 +292,52 @@ class BrainfuckInterpreter {
             output: this.output,
             halted: this.halted,
             originalCode: this.originalCode,
-            codeMap: this.codeMap
+            codeMap: this.codeMap,
+            
+            // Informations de threading
+            threadId: this.threadId,
+            parentId: this.parentId,
+            isForked: this.isForked,
+            children: this.children,
+            totalThreads: BrainfuckInterpreter.threadManager?.activeThreads || 1,
+            currentInstruction: this.code[this.ip] || null
         };
+    }
+
+    /**
+     * Remet à zéro le gestionnaire de threads
+     */
+    static resetThreadManager() {
+        BrainfuckInterpreter.threadManager = {
+            threads: new Map(),
+            nextId: 1,
+            activeThreads: 0,
+            maxThreads: 100
+        };
+    }
+
+    /**
+     * Obtient tous les threads actifs
+     * @returns {Array} Liste des états de tous les threads
+     */
+    static getAllThreadStates() {
+        const manager = BrainfuckInterpreter.threadManager;
+        const states = [];
+        
+        for (const [threadId, thread] of manager.threads) {
+            states.push(thread.getState());
+        }
+        
+        return states.sort((a, b) => a.threadId - b.threadId);
+    }
+
+    /**
+     * Configure la limite maximale de threads
+     * @param {number} maxThreads - Nouvelle limite
+     */
+    static setMaxThreads(maxThreads) {
+        if (BrainfuckInterpreter.threadManager) {
+            BrainfuckInterpreter.threadManager.maxThreads = maxThreads;
+        }
     }
 }

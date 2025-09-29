@@ -1,22 +1,71 @@
-# 🧠 BrainJS: Interpréteur Brainfuck en JavaScript
+# 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
 
-Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et riche en fonctionnalités. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Ce projet sépare clairement la logique de l'interpréteur de l'interface utilisateur.
+Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `y` de fork**.
 
 -----
 
 ## ✨ Fonctionnalités Clés
 
 *   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck et les commentaires, et qui surligne l'instruction en cours d'exécution directement dans le code source.
+*   **🔀 Multithreading avec Fork** : Nouvelle commande `y` qui permet la création de threads parallèles.
+*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `y`).
+*   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
+*   **Protection Fork Bomb** : Limite configurable du nombre de threads pour éviter les explosions.
 *   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
-*   **Exécution Complète (Run All)** : Exécute le programme jusqu'à la fin.
-*   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée (commande `,`) et visualiser la sortie (commande `.`).
-*   **Visualisation de l'État en Temps Réel** :
-    *   **Pointeur d'Instruction (IP)** : Mise en évidence de l'instruction en cours dans l'éditeur et dans une vue de code "nettoyé".
-    *   **Pointeur de Cellule (PTR)** : Indique la cellule mémoire active.
-    *   **Visualisation Avancée de la Mémoire** : Affiche une "fenêtre" glissante de cellules autour du pointeur. La cellule active est mise en évidence, et les valeurs sont affichées en hexadécimal et en caractère ASCII (si imprimable). Une barre de défilement interactive permet d'explorer facilement la mémoire.
-*   **Gestion Efficace des Boucles** : Utilisation d'une carte de boucles (`loopMap`) pré-calculée pour une gestion instantanée des sauts (`[]`).
-*   **Validation de Syntaxe** : Détecte et signale les erreurs de syntaxe, comme les boucles non équilibrées.
+*   **Exécution Complète Multi-Thread** : Exécute tous les threads jusqu'à completion.
+*   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée et visualiser la sortie.
+*   **Visualisation de l'État en Temps Réel** avec support multi-thread.
+
+-----
+
+## 🔀 Nouvelle Commande: Fork (`y`)
+
+### Comportement de `y`
+Quand la commande `y` est rencontrée, le thread actuel **fork** :
+
+| Thread | Action |
+|--------|--------|
+| **Parent** | La cellule active est mise à `0` |
+| **Enfant** | Le pointeur avance d'une position (`ptr++`) et la nouvelle cellule est mise à `1` |
+
+### Exemples
+
+#### Exemple Simple
+```brainfuck
+++y
+```
+**Résultat :**
+- Thread T0 (parent) : `cell[0] = 0`
+- Thread T1 (enfant) : `cell[1] = 1`
+
+#### ⚠️ Exemple Dangereux (Fork Bomb)
+```brainfuck
++[y+]
+```
+**Attention !** Ce code créerait une explosion exponentielle de threads :
+1. `cell[0] = 1` → Entre dans la boucle
+2. `y` → Fork (Thread T0: `cell[0] = 0`, Thread T1: `cell[1] = 1`)
+3. `+` → Les deux threads incrémentent leur cellule (toutes deviennent `1`)
+4. `]` → Retour au `[` car les cellules ne sont pas nulles
+5. Répétition infinie avec doublement des threads à chaque tour !
+
+**Protection :** Une limite de 100 threads actifs par défaut empêche les fork bombs.
+
+-----
+
+## 🔧 Commandes Brainfuck Supportées
+
+| Commande | Action | Multithreading |
+|----------|--------|----------------|
+| `>` | Avance le pointeur | ✅ Par thread |
+| `<` | Recule le pointeur | ✅ Par thread |
+| `+` | Incrémente la cellule | ✅ Par thread |
+| `-` | Décrémente la cellule | ✅ Par thread |
+| `.` | Sortie caractère | ✅ Par thread |
+| `,` | Entrée caractère | ✅ Par thread |
+| `[` | Début de boucle | ✅ Par thread |
+| `]` | Fin de boucle | ✅ Par thread |
+| **`y`** | **Fork thread** | ✅ **Nouveau !** |
 
 -----
 
@@ -28,17 +77,17 @@ Ce projet ne nécessite aucune dépendance externe ni configuration de serveur.
 
 ```
 brainjs/
-├── index.html            # Interface utilisateur et logique de contrôle (Vue)
-├── BrainfuckInterpreter.js # Le moteur de l'interpréteur (Logique pure)
-└── README.md             # Ce fichier
+├── index.html                # Interface utilisateur avec support multi-thread
+├── BrainfuckInterpreter.js   # Moteur avec threading (commande 'y')
+└── README.md                 # Ce fichier
 ```
 
 ### Lancement
 
 1.  **Cloner le dépôt** :
     ```bash
-    git clone https://github.com/votre-utilisateur/brainjs.git
-    cd brainjs
+    git clone https://github.com/vfarcy/brainfuck.git
+    cd brainfuck
     ```
 2.  **Ouvrir l'application** :
     Ouvrez le fichier **`index.html`** directement dans votre navigateur web.
@@ -49,25 +98,53 @@ brainjs/
 
 Le projet est conçu avec une séparation claire entre la Vue (HTML/UI) et le Modèle (Logique d'interpréteur).
 
-### 1\. `BrainfuckInterpreter.js` (Le Moteur)
-
-Ce fichier définit la classe **`BrainfuckInterpreter`**. Il est entièrement indépendant du DOM et gère :
+### 1\. `BrainfuckInterpreter.js` (Le Moteur avec Threading)
 
 | Méthode | Rôle |
 | :--- | :--- |
-| `constructor(code, input)` | Initialise la mémoire et pré-calcule le `loopMap`. |
-| `buildLoopMap(code)` | Gère la validation et le mappage des crochets `[` et `]`. |
-| `step()` | La fonction clé : exécute **une seule instruction** (`>`, `<`, `+`, `-`, `.`, `,`, `[`, `]`). |
-| `runAll()` | Exécute `step()` en boucle jusqu'à l'arrêt. |
-| `getState()` | Fournit un instantané de l'état interne (`ptr`, `ip`, `output`, etc.) à l'interface. |
+| `constructor(code, input, threadId, parentId)` | Initialise un thread avec gestion du threading. |
+| `handleFork()` | **Nouveau** : Gère la commande `y` avec création d'un thread enfant. |
+| `step()` | Exécute une instruction (incluant `y`). |
+| `runAll()` | Exécute un thread jusqu'à l'arrêt. |
+| `runAllThreads()` | **Nouveau** : Exécute tous les threads actifs jusqu'à completion. |
+| `getAllThreadStates()` | **Nouveau** : Retourne l'état de tous les threads. |
+| `resetThreadManager()` | **Nouveau** : Remet à zéro le gestionnaire de threads. |
 
-### 2\. `index.html` (Le Contrôleur et la Vue)
+### 2\. `index.html` (Interface Multi-Thread)
 
-Ce fichier est responsable de l'interaction utilisateur :
+Nouvelles fonctionnalités UI :
+- **Section Thread Info** : Affiche l'ID du thread actuel et ses relations.
+- **Vue Multi-Thread** : Tableau de bord de tous les threads actifs.
+- **Contrôle de Limite** : Configuration de la limite maximale de threads.
+- **Coloration `y`** : La commande fork est mise en évidence en orange.
 
-1.  **Inclusion du Moteur** : Il charge `BrainfuckInterpreter.js` via `<script src="..."></script>`.
-2.  **Contrôle** : Le script intégré écoute les clics (`run-all`, `step-btn`, `reset-btn`).
-3.  **Mise à Jour de l'UI** : La fonction `updateUI()` est appelée après chaque action pour lire l'état via `interpreter.getState()` et rafraîchir tous les affichages visuels (mémoire, pointeurs, code en cours).
+-----
+
+## 🛡️ Sécurité et Limites
+
+- **Limite de threads** : 100 par défaut (configurable)
+- **Limite d'exécution** : 100 000 étapes par thread
+- **Protection mémoire** : Extension automatique si dépassement
+- **Validation syntaxe** : Détection des boucles `[]` non équilibrées
+
+-----
+
+## 🧪 Exemples de Test
+
+### Fork Simple
+```brainfuck
++++y>+++y
+```
+
+### Fibonacci avec Fork
+```brainfuck
++>+[>>+>y<<<-]
+```
+
+### ⚠️ Fork Bomb (À éviter !)
+```brainfuck
++[y+]
+```
 
 -----
 
@@ -86,4 +163,4 @@ Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une sugg
 
 Ce projet est sous licence MIT.
 
-**Auteur:**[Valéry Farcy]
+**Auteur:** [Valéry Farcy](https://github.com/vfarcy)
