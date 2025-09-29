@@ -1205,6 +1205,13 @@
                         
                         for (const [threadId, thread] of manager.threads) {
                             if (!thread.halted) {
+                                // Vérifier si le thread a atteint la fin AVANT d'appeler step()
+                                if (thread.ip >= thread.code.length) {
+                                    console.log(`🛑 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
+                                    thread.halted = true;
+                                    continue;
+                                }
+                                
                                 // Incrémenter l'historique du thread
                                 executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
                                 
