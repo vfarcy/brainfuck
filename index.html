@@ -1215,21 +1215,22 @@
                                     // Effet visuel d'exécution
                                     console.log(`⚡ T${threadId}: ${thread.code[thread.ip - 1] || 'N/A'} (IP: ${thread.ip - 1} → ${thread.ip})`);
                                 } else {
-                                    // Thread terminé
-                                    thread.halted = true;
-                                    threadsToRemove.push(threadId);
-                                    console.log(`🛑 Thread T${threadId} terminé. Restants: ${manager.activeThreads - 1}`);
+                                    // Thread terminé - pas besoin de manipulation manuelle
+                                    console.log(`🛑 Thread T${threadId} terminé`);
                                 }
                             }
                         }
                         
-                        // Nettoyer les threads terminés du gestionnaire
-                        threadsToRemove.forEach(threadId => {
-                            manager.threads.delete(threadId);
-                            manager.activeThreads--;
-                        });
+                        // Laisser le nettoyage automatique se faire
+                        // (suppression du nettoyage manuel conflictuel)
                         
-                        if (!anyProgress && manager.activeThreads === 0) {
+                        // Vérifier si tous les threads sont terminés
+                        let activeCount = 0;
+                        for (const [threadId, thread] of manager.threads) {
+                            if (!thread.halted) activeCount++;
+                        }
+                        
+                        if (activeCount === 0) {
                             console.log('🎯 Tous les threads sont terminés');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
