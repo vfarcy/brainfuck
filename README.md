@@ -212,6 +212,127 @@ Nouvelles fonctionnalités UI :
 
 -----
 
+## 🖥️ Messages de Log et Console
+
+L'interpréteur génère des **messages de debug détaillés** dans la console du navigateur (F12) pour faciliter le développement et le débogage des programmes multithreadés.
+
+### 📋 Types de Messages
+
+#### 🔧 Initialisation et Chargement
+```
+✅ BrainfuckInterpreter chargé avec succès
+✅ Toutes les méthodes critiques sont disponibles
+🔄 Reset complet du gestionnaire de threads
+```
+
+#### 🧵 Gestion des Threads
+```
+🧵 Création Thread T0 (parent: Tnone)
+📈 Thread principal créé, activeThreads = 1
+🔍 État du gestionnaire de threads:
+  - Total threads: 2
+  - ActiveThreads compteur: 2
+  - NextId: 2
+  - MaxThreads: 8
+```
+
+#### 🔀 Opérations de Fork
+```
+🔍 Thread T0 tente un fork (forks actuels: 0/2)
+🔍 Debug Fork: Threads actifs = 1, Limite = 8
+📋 Threads dans le manager: T0(ACTIVE, forks: 0/2)
+🔀 Fork créé: Parent T0 (forks: 1/2) → Enfant T1 | PTR: 0 → 1
+📊 Threads après fork: 2 total, 2 actifs
+```
+
+#### ⚡ Exécution Pas à Pas
+```
+📍 Thread T0 step: IP=0/5, instruction='+'
+⚡ T0: + (IP: 0 → 1)
+🔄 Executing step for 2 threads
+⚠️ Thread T0 a atteint sa limite de forks (2/2) - Fork ignoré
+```
+
+#### 🛑 Fin et Nettoyage
+```
+🛑 Thread T0 terminé (IP: 5/5)
+🛑 Thread T0 marqué comme terminé (IP: 5/5)
+🧹 Nettoyage forcé après step...
+🔍 Début nettoyage: 2 threads total
+  - T0: HALTED (IP: 5/5)
+  - T1: ACTIVE (IP: 4/5)
+🗑️ Thread T0 marqué pour nettoyage
+🧹 Thread T0 supprimé
+🧹 Nettoyé 1 threads terminés. Actifs: 1
+```
+
+#### ❌ Erreurs et Limitations
+```
+❌ Fork refusé: 8/8 threads
+⚠️ Thread T5 a atteint sa limite de forks (2/2) - Fork ignoré
+⚠️ Thread T3 déjà supprimé, ignoré
+```
+
+### 🔍 Comment Utiliser la Console
+
+1. **Ouvrir la console** :
+   - **Chrome/Firefox** : F12 → Onglet "Console"
+   - **Edge** : F12 → Onglet "Console"
+
+2. **Filtrer les messages** :
+   ```javascript
+   // Dans la console, tapez pour filtrer :
+   console.clear()  // Nettoyer
+   ```
+
+3. **Surveiller l'exécution** :
+   - Messages **🔀** : Création de nouveaux threads
+   - Messages **⚡** : Exécution d'instructions
+   - Messages **🛑** : Fin de threads
+   - Messages **🧹** : Nettoyage automatique
+
+### 📊 Exemple de Trace Complète
+
+#### Code : `+++f.`
+```
+✅ BrainfuckInterpreter chargé avec succès
+🔄 Reset complet du gestionnaire de threads
+🧵 Création Thread T0 (parent: Tnone)
+📍 Thread T0 step: IP=0/5, instruction='+'
+⚡ T0: + (IP: 0 → 1)
+📍 Thread T0 step: IP=1/5, instruction='+'
+⚡ T0: + (IP: 1 → 2)
+📍 Thread T0 step: IP=2/5, instruction='+'
+⚡ T0: + (IP: 2 → 3)
+📍 Thread T0 step: IP=3/5, instruction='f'
+🔍 Thread T0 tente un fork (forks actuels: 0/2)
+🔀 Fork créé: Parent T0 (forks: 1/2) → Enfant T1 | PTR: 0 → 1
+⚡ T0: f (IP: 3 → 4)
+🔄 Executing step for 2 threads
+📍 Thread T0 step: IP=4/5, instruction='.'
+⚡ T0: . (IP: 4 → 5)
+📍 Thread T1 step: IP=4/5, instruction='.'
+⚡ T1: . (IP: 4 → 5)
+🛑 Thread T0 marqué comme terminé (IP: 5/5)
+🛑 Thread T1 marqué comme terminé (IP: 5/5)
+🧹 Nettoyage forcé après step...
+🔍 Début nettoyage: 2 threads total
+🗑️ Thread T0 marqué pour nettoyage
+🗑️ Thread T1 marqué pour nettoyage
+🧹 Thread T0 supprimé
+🧹 Thread T1 supprimé
+🎯 Tous les threads sont terminés
+```
+
+### 💡 Conseils de Débogage
+
+- **🔍 Suivre l'IP** : Regarder la progression `IP: x → y` pour chaque thread
+- **📊 Surveiller les forks** : Compter les créations vs suppressions
+- **🧹 Vérifier le nettoyage** : S'assurer que les threads terminés sont supprimés
+- **⚠️ Attention aux limites** : Messages d'avertissement pour les fork bombs
+
+-----
+
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une suggestion d'amélioration :
