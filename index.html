@@ -576,6 +576,24 @@
     <script src="BrainfuckInterpreter.js"></script> 
 
     <script>
+        // Vérification du chargement de BrainfuckInterpreter
+        if (typeof BrainfuckInterpreter === 'undefined') {
+            console.error('❌ BrainfuckInterpreter non chargé !');
+            alert('Erreur: Le fichier BrainfuckInterpreter.js n\'a pas pu être chargé. Vérifiez votre connexion internet ou rechargez la page.');
+        } else {
+            console.log('✅ BrainfuckInterpreter chargé avec succès');
+            
+            // Vérification des méthodes critiques
+            const requiredMethods = ['resetThreadManager', 'cleanupHaltedThreads', 'debugThreadManager', 'getAllThreadStates'];
+            const missingMethods = requiredMethods.filter(method => typeof BrainfuckInterpreter[method] !== 'function');
+            
+            if (missingMethods.length > 0) {
+                console.warn('⚠️ Méthodes manquantes:', missingMethods);
+            } else {
+                console.log('✅ Toutes les méthodes critiques sont disponibles');
+            }
+        }
+
         let interpreter = null;
 
         // Références DOM
@@ -705,14 +723,26 @@
          */
         function initializeInterpreter() {
             try {
+                // Vérifier que la classe BrainfuckInterpreter est chargée
+                if (typeof BrainfuckInterpreter === 'undefined') {
+                    throw new Error('BrainfuckInterpreter non chargé');
+                }
+                
                 // Réinitialiser le gestionnaire de threads
-                BrainfuckInterpreter.resetThreadManager();
+                if (typeof BrainfuckInterpreter.resetThreadManager === 'function') {
+                    BrainfuckInterpreter.resetThreadManager();
+                } else {
+                    console.warn('resetThreadManager non disponible, initialisation basique');
+                    // Initialisation basique sans reset
+                }
                 
                 // Passage du code et des données d'entrée
                 interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
                 
                 // Debug initial
-                BrainfuckInterpreter.debugThreadManager();
+                if (typeof BrainfuckInterpreter.debugThreadManager === 'function') {
+                    BrainfuckInterpreter.debugThreadManager();
+                }
                 
                 updateUI();
                 runAllBtn.disabled = false;
@@ -881,9 +911,11 @@
             
             // Nettoyer les threads terminés périodiquement
             if (state.totalThreads > 1) {
-                const cleaned = BrainfuckInterpreter.cleanupHaltedThreads();
-                if (cleaned > 0) {
-                    console.log(`🧹 Nettoyage: ${cleaned} threads terminés supprimés`);
+                if (typeof BrainfuckInterpreter !== 'undefined' && typeof BrainfuckInterpreter.cleanupHaltedThreads === 'function') {
+                    const cleaned = BrainfuckInterpreter.cleanupHaltedThreads();
+                    if (cleaned > 0) {
+                        console.log(`🧹 Nettoyage: ${cleaned} threads terminés supprimés`);
+                    }
                 }
             }
             
@@ -1262,7 +1294,9 @@
                     
                     // Forcer le nettoyage des threads terminés après chaque step
                     console.log('🧹 Nettoyage forcé après step...');
-                    BrainfuckInterpreter.cleanupHaltedThreads();
+                    if (typeof BrainfuckInterpreter !== 'undefined' && typeof BrainfuckInterpreter.cleanupHaltedThreads === 'function') {
+                        BrainfuckInterpreter.cleanupHaltedThreads();
+                    }
                     
                     updateUI();
                 } catch (error) {
@@ -1290,7 +1324,11 @@
 
         resetBtn.addEventListener('click', () => {
             // Réinitialisation complète
-            BrainfuckInterpreter.resetThreadManager();
+            if (typeof BrainfuckInterpreter !== 'undefined' && typeof BrainfuckInterpreter.resetThreadManager === 'function') {
+                BrainfuckInterpreter.resetThreadManager();
+            } else {
+                console.warn('resetThreadManager non disponible lors du reset');
+            }
             
             // Reset des compteurs
             globalStepCounter = 0;
