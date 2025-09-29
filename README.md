@@ -1,14 +1,14 @@
 # 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
 
-Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `y` de fork**.
+Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
 -----
 
 ## ✨ Fonctionnalités Clés
 
 *   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-*   **🔀 Multithreading avec Fork** : Nouvelle commande `y` qui permet la création de threads parallèles.
-*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `y`).
+*   **🔀 Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
+*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `f`).
 *   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
 *   **Protection Fork Bomb** : Limite configurable du nombre de threads pour éviter les explosions.
 *   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
@@ -18,10 +18,10 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 
 -----
 
-## 🔀 Nouvelle Commande: Fork (`y`)
+## 🔀 Nouvelle Commande: Fork (`f`)
 
-### Comportement de `y`
-Quand la commande `y` est rencontrée, le thread actuel **fork** :
+### Comportement de `f`
+Quand la commande `f` est rencontrée, le thread actuel **fork** :
 
 | Thread | Action |
 |--------|--------|
@@ -32,7 +32,7 @@ Quand la commande `y` est rencontrée, le thread actuel **fork** :
 
 #### Exemple Simple
 ```brainfuck
-++y
+++f
 ```
 **Résultat :**
 - Thread T0 (parent) : `cell[0] = 0`
@@ -40,16 +40,16 @@ Quand la commande `y` est rencontrée, le thread actuel **fork** :
 
 #### ⚠️ Exemple Dangereux (Fork Bomb)
 ```brainfuck
-+[y+]
++[f+]
 ```
 **Attention !** Ce code créerait une explosion exponentielle de threads :
 1. `cell[0] = 1` → Entre dans la boucle
-2. `y` → Fork (Thread T0: `cell[0] = 0`, Thread T1: `cell[1] = 1`)
+2. `f` → Fork (Thread T0: `cell[0] = 0`, Thread T1: `cell[1] = 1`)
 3. `+` → Les deux threads incrémentent leur cellule (toutes deviennent `1`)
 4. `]` → Retour au `[` car les cellules ne sont pas nulles
 5. Répétition infinie avec doublement des threads à chaque tour !
 
-**Protection :** Une limite de 100 threads actifs par défaut empêche les fork bombs.
+**Protection :** Une limite de 8 threads actifs par défaut empêche les fork bombs.
 
 -----
 
@@ -65,7 +65,7 @@ Quand la commande `y` est rencontrée, le thread actuel **fork** :
 | `,` | Entrée caractère | ✅ Par thread |
 | `[` | Début de boucle | ✅ Par thread |
 | `]` | Fin de boucle | ✅ Par thread |
-| **`y`** | **Fork thread** | ✅ **Nouveau !** |
+| **`f`** | **Fork thread** | ✅ **Nouveau !** |
 
 -----
 
@@ -103,8 +103,8 @@ Le projet est conçu avec une séparation claire entre la Vue (HTML/UI) et le Mo
 | Méthode | Rôle |
 | :--- | :--- |
 | `constructor(code, input, threadId, parentId)` | Initialise un thread avec gestion du threading. |
-| `handleFork()` | **Nouveau** : Gère la commande `y` avec création d'un thread enfant. |
-| `step()` | Exécute une instruction (incluant `y`). |
+| `handleFork()` | **Nouveau** : Gère la commande `f` avec création d'un thread enfant. |
+| `step()` | Exécute une instruction (incluant `f`). |
 | `runAll()` | Exécute un thread jusqu'à l'arrêt. |
 | `runAllThreads()` | **Nouveau** : Exécute tous les threads actifs jusqu'à completion. |
 | `getAllThreadStates()` | **Nouveau** : Retourne l'état de tous les threads. |
@@ -116,7 +116,7 @@ Nouvelles fonctionnalités UI :
 - **Section Thread Info** : Affiche l'ID du thread actuel et ses relations.
 - **Vue Multi-Thread** : Tableau de bord de tous les threads actifs.
 - **Contrôle de Limite** : Configuration de la limite maximale de threads.
-- **Coloration `y`** : La commande fork est mise en évidence en orange.
+- **Coloration `f`** : La commande fork est mise en évidence en orange.
 
 -----
 
@@ -133,17 +133,17 @@ Nouvelles fonctionnalités UI :
 
 ### Fork Simple
 ```brainfuck
-+++y>+++y
++++f>+++f
 ```
 
 ### Fibonacci avec Fork
 ```brainfuck
-+>+[>>+>y<<<-]
++>+[>>+>f<<<-]
 ```
 
 ### ⚠️ Fork Bomb (À éviter !)
 ```brainfuck
-+[y+]
++[f+]
 ```
 
 -----
