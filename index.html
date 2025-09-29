@@ -1201,9 +1201,18 @@
                         // Mode multi-thread: exécuter une étape pour chaque thread actif
                         const manager = BrainfuckInterpreter.threadManager;
                         let anyProgress = false;
-                        const threadsToRemove = [];
                         
-                        for (const [threadId, thread] of manager.threads) {
+                        // Créer un snapshot des threads AVANT l'itération pour éviter les modifications concurrentes
+                        const threadsSnapshot = Array.from(manager.threads.entries());
+                        console.log(`🔄 Executing step for ${threadsSnapshot.length} threads`);
+                        
+                        for (const [threadId, thread] of threadsSnapshot) {
+                            // Vérifier que le thread existe toujours dans le gestionnaire
+                            if (!manager.threads.has(threadId)) {
+                                console.log(`⚠️ Thread T${threadId} déjà supprimé, ignoré`);
+                                continue;
+                            }
+                            
                             if (!thread.halted) {
                                 // Vérifier si le thread a atteint la fin AVANT d'appeler step()
                                 if (thread.ip >= thread.code.length) {
