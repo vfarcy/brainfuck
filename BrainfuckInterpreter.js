@@ -106,6 +106,7 @@ class BrainfuckInterpreter {
      */
     step() {
         if (this.ip >= this.code.length) {
+            console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
             this.halted = true;
             return false;
         }
@@ -426,18 +427,23 @@ class BrainfuckInterpreter {
         const manager = BrainfuckInterpreter.threadManager;
         if (!manager) return 0;
 
+        console.log(`🔍 Début nettoyage: ${manager.threads.size} threads total`);
+
         let cleaned = 0;
         const threadsToRemove = [];
 
         for (const [threadId, thread] of manager.threads) {
+            console.log(`  - T${threadId}: ${thread.halted ? 'HALTED' : 'ACTIVE'} (IP: ${thread.ip}/${thread.code.length})`);
             if (thread.halted) {
                 threadsToRemove.push(threadId);
+                console.log(`🗑️ Thread T${threadId} marqué pour nettoyage`);
             }
         }
 
         threadsToRemove.forEach(threadId => {
             manager.threads.delete(threadId);
             cleaned++;
+            console.log(`🧹 Thread T${threadId} supprimé`);
         });
 
         // Recalculer le compteur activeThreads
