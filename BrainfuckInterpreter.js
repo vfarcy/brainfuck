@@ -53,16 +53,20 @@ class BrainfuckInterpreter {
                 threads: new Map(),
                 nextId: 1,
                 activeThreads: 0,
-                maxThreads: 100 // Protection contre les fork bombs
+                maxThreads: 10 // Protection contre les fork bombs
             };
         }
         
         BrainfuckInterpreter.threadManager.threads.set(this.threadId, this);
         
+        // Debug lors de la création d'un thread
+        console.log(`🧵 Création Thread T${this.threadId} (parent: T${this.parentId || 'none'})`);
+        
         // Incrémenter activeThreads seulement pour le thread principal (threadId = 0)
         // Les threads enfants sont comptés dans handleFork()
         if (this.threadId === 0) {
             BrainfuckInterpreter.threadManager.activeThreads++;
+            console.log(`📈 Thread principal créé, activeThreads = ${BrainfuckInterpreter.threadManager.activeThreads}`);
         } 
     }
 
@@ -187,9 +191,11 @@ class BrainfuckInterpreter {
         }
         
         console.log(`🔍 Debug Fork: Threads actifs = ${activeThreadCount}, Limite = ${manager.maxThreads}`);
+        console.log(`📋 Threads dans le manager:`, Array.from(manager.threads.keys()));
         
         // Protection contre les fork bombs
         if (activeThreadCount >= manager.maxThreads) {
+            console.error(`❌ Fork refusé: ${activeThreadCount}/${manager.maxThreads} threads`);
             throw new Error(`Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé.`);
         }
         
@@ -358,7 +364,7 @@ class BrainfuckInterpreter {
             threads: new Map(),
             nextId: 1,
             activeThreads: 0,
-            maxThreads: 100
+            maxThreads: 10
         };
     }
 

@@ -547,6 +547,11 @@
         </div>
     </div>
     
+    <!-- Historique d'exécution -->
+    <div id="execution-log" style="margin-top: 20px;">
+        <!-- L'historique d'exécution s'affichera ici -->
+    </div>
+    
     <h2>Données d'Entrée (Input)</h2>
     <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
 
@@ -1185,8 +1190,11 @@
                     
                     // Incrémenter le compteur global
                     globalStepCounter++;
-                    document.getElementById('step-number').textContent = globalStepCounter;
-                    document.getElementById('step-counter').style.display = 'block';
+                    const stepNumberEl = document.getElementById('step-number');
+                    if (stepNumberEl) stepNumberEl.textContent = globalStepCounter;
+                    
+                    const stepCounterEl = document.getElementById('step-counter');
+                    if (stepCounterEl) stepCounterEl.style.display = 'block';
                     
                     if (state.totalThreads > 1) {
                         // Mode multi-thread: exécuter une étape pour chaque thread actif
@@ -1222,7 +1230,8 @@
                         
                         if (!anyProgress && manager.activeThreads === 0) {
                             console.log('🎯 Tous les threads sont terminés');
-                            document.getElementById('step-counter').style.display = 'none';
+                            const stepCounterEl = document.getElementById('step-counter');
+                            if (stepCounterEl) stepCounterEl.style.display = 'none';
                         }
                     } else {
                         // Mode single-thread classique
@@ -1264,13 +1273,23 @@
             // Reset des compteurs
             globalStepCounter = 0;
             executionHistory.clear();
-            document.getElementById('step-number').textContent = '0';
-            document.getElementById('step-counter').style.display = 'none';
+            
+            // Reset sécurisé des éléments DOM
+            const stepNumberEl = document.getElementById('step-number');
+            if (stepNumberEl) stepNumberEl.textContent = '0';
+            
+            const stepCounterEl = document.getElementById('step-counter');
+            if (stepCounterEl) stepCounterEl.style.display = 'none';
             
             // Nettoyer l'interface
-            document.querySelector('#output pre').textContent = '';
-            document.getElementById('memory-view').innerHTML = '';
-            document.getElementById('execution-log').innerHTML = '';
+            const outputEl = document.querySelector('#output pre');
+            if (outputEl) outputEl.textContent = '';
+            
+            const memoryViewEl = document.getElementById('memory-view');
+            if (memoryViewEl) memoryViewEl.innerHTML = '';
+            
+            const executionLogEl = document.getElementById('execution-log');
+            if (executionLogEl) executionLogEl.innerHTML = '';
             
             console.clear();
             console.log('🔄 Interpréteur réinitialisé');
