@@ -1,13 +1,13 @@
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
-const VALID_CHARS = '><+-.,[]y'; // Ajout de la commande 'y' pour le fork
+const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
 
 /**
  * BrainfuckInterpreter avec support du multithreading
  *
  * Interprète le code Brainfuck en gérant la mémoire, le pointeur de cellule,
  * et le pointeur d'instruction. Il supporte l'exécution pas à pas et le
- * multithreading avec la commande 'y' (fork).
+ * multithreading avec la commande 'f' (fork).
  */
 class BrainfuckInterpreter {
     /**
@@ -155,7 +155,7 @@ class BrainfuckInterpreter {
                 }
                 break;
 
-            case 'y':
+            case 'f':
                 this.handleFork();
                 break;
 
@@ -168,7 +168,7 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Gère la commande de fork 'y'
+     * Gère la commande de fork 'f'
      * Thread parent: cellule active = 0
      * Thread enfant: ptr++, cellule active = 1
      */
