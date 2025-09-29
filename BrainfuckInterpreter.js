@@ -46,6 +46,8 @@ class BrainfuckInterpreter {
         this.parentId = parentId;
         this.isForked = false;
         this.children = [];
+        this.forkCount = 0; // Nombre de forks créés par ce thread
+        this.maxForksPerThread = 3; // Limite de forks par thread
         
         // Gestionnaire global de threads (statique)
         if (!BrainfuckInterpreter.threadManager) {
@@ -182,6 +184,13 @@ class BrainfuckInterpreter {
         // Nettoyer d'abord les threads terminés
         BrainfuckInterpreter.cleanupHaltedThreads();
         
+        // Vérifier la limite de forks par thread
+        if (this.forkCount >= this.maxForksPerThread) {
+            console.warn(`⚠️ Thread T${this.threadId} a atteint sa limite de forks (${this.forkCount}/${this.maxForksPerThread})`);
+            // Pas d'erreur, on ignore simplement le fork
+            return;
+        }
+        
         // Compter seulement les threads actifs (non halted)
         let activeThreadCount = 0;
         for (const [threadId, thread] of manager.threads) {
@@ -193,10 +202,10 @@ class BrainfuckInterpreter {
         console.log(`🔍 Debug Fork: Threads actifs = ${activeThreadCount}, Limite = ${manager.maxThreads}`);
         console.log(`📋 Threads dans le manager:`, Array.from(manager.threads.keys()).map(id => {
             const thread = manager.threads.get(id);
-            return `T${id}(${thread.halted ? 'HALTED' : 'ACTIVE'})`;
+            return `T${id}(${thread.halted ? 'HALTED' : 'ACTIVE'}, forks: ${thread.forkCount}/${thread.maxForksPerThread})`;
         }).join(', '));
         
-        // Protection contre les fork bombs
+        // Protection contre les fork bombs globales
         if (activeThreadCount >= manager.maxThreads) {
             console.error(`❌ Fork refusé: ${activeThreadCount}/${manager.maxThreads} threads`);
             BrainfuckInterpreter.debugThreadManager();
@@ -245,7 +254,10 @@ class BrainfuckInterpreter {
         this.children.push(childId);
         childThread.isForked = true;
         
-        console.log(`🔀 Fork créé: Parent T${this.threadId} → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
+        // Incrémenter le compteur de forks du parent
+        this.forkCount++;
+        
+        console.log(`🔀 Fork créé: Parent T${this.threadId} (forks: ${this.forkCount}/${this.maxForksPerThread}) → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
         console.log(`📊 Threads après fork: ${manager.threads.size} total, ${activeThreadCount + 1} actifs`);
     }
 
@@ -354,6 +366,8 @@ class BrainfuckInterpreter {
             parentId: this.parentId,
             isForked: this.isForked,
             children: this.children,
+            forkCount: this.forkCount,
+            maxForksPerThread: this.maxForksPerThread,
             totalThreads: realActiveThreads,
             currentInstruction: this.code[this.ip] || null
         };
