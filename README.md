@@ -53,6 +53,70 @@ Quand la commande `f` est rencontrée, le thread actuel **fork** :
 
 -----
 
+## ⚡ Principe d'Ordonnancement des Threads
+
+### Modèle d'Exécution
+L'interpréteur utilise un **ordonnancement coopératif round-robin** pour gérer l'exécution des threads multiples :
+
+#### 🔄 Round-Robin Coopératif
+```
+Thread T0 → Thread T1 → Thread T2 → ... → Thread Tn → T0 → ...
+```
+
+### Fonctionnement Détaillé
+
+#### Mode "Step (Tous Threads)"
+1. **Snapshot** : Capture de l'état actuel de tous les threads
+2. **Itération séquentielle** : Chaque thread actif exécute **une instruction**
+3. **Gestion des forks** : Les nouveaux threads créés sont traités au cycle suivant
+4. **Nettoyage automatique** : Suppression immédiate des threads terminés
+
+#### Mode "Step Thread Actuel"  
+- Exécution d'**un seul thread** à la fois
+- Permet un contrôle fin thread par thread
+- Idéal pour le débogage d'interactions inter-threads
+
+### Gestion du Cycle de Vie
+
+| État | Description | Action |
+|------|-------------|---------|
+| **ACTIVE** | Thread en cours d'exécution | Participe au round-robin |
+| **HALTED** | Thread terminé (`IP >= code.length`) | Supprimé automatiquement |
+| **FORK** | Thread créant un enfant | Enfant ajouté au cycle suivant |
+
+### Exemple d'Ordonnancement
+
+#### Code : `+++f++f.`
+```
+Cycle 1: T0(IP=0): +    → cell[0]=1
+Cycle 2: T0(IP=1): +    → cell[0]=2  
+Cycle 3: T0(IP=2): +    → cell[0]=3
+Cycle 4: T0(IP=3): f    → Fork: T0(cell=0), T1(ptr=1,cell=1)
+Cycle 5: T0(IP=4): +    → cell[0]=1
+         T1(IP=4): +    → cell[1]=2
+Cycle 6: T0(IP=5): +    → cell[0]=2
+         T1(IP=5): f    → Fork: T1(cell=0), T2(ptr=2,cell=1)  
+Cycle 7: T0(IP=6): .    → Affiche chr(2), T0 HALTED
+         T1(IP=6): .    → Affiche chr(0), T1 HALTED
+         T2(IP=6): .    → Affiche chr(1), T2 HALTED
+```
+
+### Avantages de ce Modèle
+
+✅ **Prévisibilité** : Ordonnancement déterministe  
+✅ **Simplicité** : Pas de concurrence réelle, pas de synchronisation  
+✅ **Contrôle** : Possibilité d'exécution pas à pas  
+✅ **Débogage** : Visualisation claire de l'état de tous les threads  
+✅ **Sécurité** : Protection contre les fork bombs
+
+### Limitations
+
+⚠️ **Pas de parallélisme réel** : Exécution séquentielle simulée  
+⚠️ **Pas de synchronisation** : Pas de primitives de synchronisation entre threads  
+⚠️ **Ordonnancement fixe** : Pas de priorités ou d'ordonnancement adaptatif
+
+-----
+
 ## 🔧 Commandes Brainfuck Supportées
 
 | Commande | Action | Multithreading |
