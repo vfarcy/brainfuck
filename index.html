@@ -489,6 +489,71 @@
             transition: width 0.3s ease;
         }
 
+        /* Styles pour les zones d'entrée/sortie par thread */
+        .thread-io {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .thread-io-section {
+            margin-bottom: 8px;
+        }
+        
+        .thread-io-label {
+            font-weight: bold;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 3px;
+            display: block;
+        }
+        
+        .thread-input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 11px;
+            resize: none;
+            height: 40px;
+            box-sizing: border-box;
+        }
+        
+        .thread-output {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 11px;
+            background: #fff;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 60px;
+            overflow-y: auto;
+            min-height: 40px;
+            box-sizing: border-box;
+        }
+        
+        .thread-output:empty:before {
+            content: "Aucune sortie...";
+            color: #999;
+            font-style: italic;
+        }
+        
+        .thread-io-compact {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .thread-io-compact .thread-io-section {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
         </style>
 </head>
 <body>
@@ -552,11 +617,14 @@
         <!-- L'historique d'exécution s'affichera ici -->
     </div>
     
-    <h2>Données d'Entrée (Input)</h2>
-    <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
+    <!-- Zones d'entrée/sortie globales - mode single-thread -->
+    <div id="single-thread-io" style="display: block;">
+        <h2>Données d'Entrée (Input)</h2>
+        <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
 
-    <h2>Sortie (Output)</h2>
-    <pre id="output-view">En attente d'exécution...</pre>
+        <h2>Sortie (Output)</h2>
+        <pre id="output-view">En attente d'exécution...</pre>
+    </div>
 
     <hr>
 
@@ -736,8 +804,12 @@
                     // Initialisation basique sans reset
                 }
                 
-                // Passage du code et des données d'entrée
-                interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
+                // Passage du code et des données d'entrée globales pour le thread principal
+                const globalInput = inputData.value;
+                interpreter = new BrainfuckInterpreter(codeInput.value, globalInput); 
+                
+                // Initialiser les données d'entrée pour le thread principal (T0)
+                threadInputData.set(0, globalInput);
                 
                 // Appliquer la limite de threads depuis l'interface
                 const maxThreadsInput = document.getElementById('max-threads');
@@ -923,16 +995,18 @@
                 }
             }
             
-            // 5. Afficher la vue multi-thread si nécessaire
+            // 5. Afficher la vue multi-thread si nécessaire et gérer les zones I/O
             if (state.totalThreads > 1) {
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
+                document.getElementById('single-thread-io').style.display = 'none';
                 
                 // Afficher le bouton Step Single en mode multi-thread
                 stepSingleBtn.style.display = 'inline-block';
                 stepBtn.textContent = '👣 Step (Tous Threads)';
             } else {
                 document.getElementById('multi-thread-view').style.display = 'none';
+                document.getElementById('single-thread-io').style.display = 'block';
                 
                 // Masquer le bouton Step Single en mode single-thread
                 stepSingleBtn.style.display = 'none';
@@ -1036,6 +1110,9 @@
                     </div>
                 `;
                 
+                // Zones d'entrée et de sortie par thread
+                const ioHTML = generateThreadIOView(state);
+                
                 // Informations de base avec chronologie
                 const steps = executionHistory.get(state.threadId) || 0;
                 const detailsHTML = `
@@ -1045,8 +1122,7 @@
                         <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0} | 
                         <strong>Étapes:</strong> ${steps}<br>
                         <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
-                        <strong>Forks:</strong> ${state.forkCount || 0}/${state.maxForksPerThread || 2} | 
-                        <strong>Sortie:</strong> "${escapeHtml(state.output.slice(-20))}${state.output.length > 20 ? '...' : ''}"<br>
+                        <strong>Forks:</strong> ${state.forkCount || 0}/${state.maxForksPerThread || 2}<br>
                         ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
                         <div class="thread-timeline">
                             📊 Progrès: ${progress.toFixed(1)}% | 
@@ -1056,7 +1132,7 @@
                 `;
                 
                 // Contenu selon le mode d'affichage
-                let contentHTML = headerHTML + detailsHTML;
+                let contentHTML = headerHTML + ioHTML + detailsHTML;
                 
                 if (showDetailedThreadView) {
                     // Visualisation de la mémoire (fenêtre autour du PTR)
@@ -1074,6 +1150,9 @@
                 threadDiv.innerHTML = contentHTML;
                 container.appendChild(threadDiv);
                 
+                // Configurer les gestionnaires d'événements pour les zones I/O
+                setupThreadIOHandlers(threadDiv, state.threadId);
+                
                 // Ajouter effet visuel lors de l'exécution
                 if (!state.halted && Math.random() < 0.3) { // Animation occasionnelle
                     setTimeout(() => {
@@ -1084,6 +1163,68 @@
                     }, index * 100);
                 }
             });
+        }
+
+        // Génère la vue I/O pour un thread
+        function generateThreadIOView(state) {
+            const inputValue = threadInputData.get(state.threadId) || '';
+            const outputValue = state.output || '';
+            
+            if (showDetailedThreadView) {
+                // Vue détaillée avec zones complètes
+                return `
+                    <div class="thread-io">
+                        <div class="thread-io-section">
+                            <label class="thread-io-label">📥 Données d'Entrée (Input):</label>
+                            <textarea class="thread-input" 
+                                      data-thread-id="${state.threadId}" 
+                                      placeholder="Données pour les commandes ',' du thread T${state.threadId}">${inputValue}</textarea>
+                        </div>
+                        <div class="thread-io-section">
+                            <label class="thread-io-label">📤 Sortie (Output):</label>
+                            <div class="thread-output">${escapeHtml(outputValue)}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Vue compacte avec zones réduites côte à côte
+                return `
+                    <div class="thread-io thread-io-compact">
+                        <div class="thread-io-section">
+                            <label class="thread-io-label">📥 Input:</label>
+                            <textarea class="thread-input" 
+                                      data-thread-id="${state.threadId}" 
+                                      placeholder="Input T${state.threadId}">${inputValue}</textarea>
+                        </div>
+                        <div class="thread-io-section">
+                            <label class="thread-io-label">📤 Output:</label>
+                            <div class="thread-output">${escapeHtml(outputValue)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Configure les gestionnaires d'événements pour les zones I/O d'un thread
+        function setupThreadIOHandlers(threadDiv, threadId) {
+            const inputArea = threadDiv.querySelector(`textarea[data-thread-id="${threadId}"]`);
+            if (inputArea) {
+                inputArea.addEventListener('input', (e) => {
+                    const newValue = e.target.value;
+                    threadInputData.set(threadId, newValue);
+                    console.log(`📝 Input thread T${threadId} mis à jour: "${newValue}"`);
+                    
+                    // Mettre à jour l'input du thread correspondant dans l'interpréteur
+                    if (interpreter && interpreter.threadManager) {
+                        const thread = interpreter.threadManager.threads.get(threadId);
+                        if (thread && thread.input !== newValue) {
+                            thread.input = newValue;
+                            thread.inputPointer = 0; // Reset du pointeur d'entrée
+                            console.log(`🔄 Thread T${threadId} input synchronisé`);
+                        }
+                    }
+                });
+            }
         }
 
         // Génère un log d'exécution pour un thread
@@ -1353,9 +1494,10 @@
                 console.warn('resetThreadManager non disponible lors du reset');
             }
             
-            // Reset des compteurs
+            // Reset des compteurs et données
             globalStepCounter = 0;
             executionHistory.clear();
+            threadInputData.clear();
             
             // Reset sécurisé des éléments DOM
             const stepNumberEl = document.getElementById('step-number');
@@ -1373,6 +1515,10 @@
             
             const executionLogEl = document.getElementById('execution-log');
             if (executionLogEl) executionLogEl.innerHTML = '';
+            
+            // Remettre les zones I/O en mode single-thread
+            document.getElementById('single-thread-io').style.display = 'block';
+            document.getElementById('multi-thread-view').style.display = 'none';
             
             console.clear();
             console.log('🔄 Interpréteur réinitialisé');
@@ -1393,6 +1539,7 @@
         let showDetailedThreadView = true;
         let globalStepCounter = 0;
         let executionHistory = new Map(); // Historique d'exécution par thread
+        let threadInputData = new Map(); // Données d'entrée par thread
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {

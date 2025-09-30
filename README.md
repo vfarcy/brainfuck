@@ -333,6 +333,56 @@ L'interpréteur génère des **messages de debug détaillés** dans la console d
 
 -----
 
+## 🎛️ Interface Utilisateur
+
+### 🔧 **Modes d'Affichage**
+
+L'interface s'adapte automatiquement selon le type d'exécution :
+
+#### 📱 **Mode Single-Thread** (par défaut)
+- **Zone d'entrée globale** : Pour les données lues par la commande `,`
+- **Zone de sortie globale** : Affiche la sortie de la commande `.`
+- **Boutons** : `▶ Exécuter D'un Coup`, `👣 Exécuter Pas à Pas`, `🔄 Réinitialiser`
+
+#### 🔀 **Mode Multi-Thread** (activé automatiquement avec la commande `f`)
+- **Zones I/O individuelles** : Chaque thread a ses propres zones d'entrée et de sortie
+- **Vue détaillée/compacte** : Bouton `👁️ Vue Détaillée` pour basculer entre les modes
+- **Boutons supplémentaires** : `👣 Step (Tous Threads)`, `👤 Step (Thread Actuel)`
+
+### 📥📤 **Gestion des Données par Thread**
+
+#### **Données d'Entrée (Input)**
+- **Mode Single-Thread** : Zone globale partagée
+- **Mode Multi-Thread** : 
+  - Zone individuelle pour chaque thread
+  - Mise à jour en temps réel
+  - Héritage automatique depuis le thread parent
+  - Modification possible pendant l'exécution
+
+#### **Données de Sortie (Output)**
+- **Mode Single-Thread** : Sortie globale unique
+- **Mode Multi-Thread** :
+  - Sortie séparée par thread
+  - Mise à jour en temps réel
+  - Historique complet conservé
+  - Affichage avec scroll automatique
+
+### 🎨 **Codes Couleur des Threads**
+
+- **🔵 Bleu** : Thread actuel en cours d'exécution
+- **🟢 Vert** : Threads actifs (en attente)
+- **🔴 Rouge** : Threads terminés (halted)
+- **🟡 Jaune** : Indication d'exécution en cours
+
+### 💡 **Utilisation Pratique**
+
+1. **Pour débuter** : Utilisez le mode single-thread avec les exemples simples
+2. **Pour tester les forks** : Ajoutez une commande `f` et observez le passage automatique en mode multi-thread
+3. **Pour déboguer** : Utilisez le mode pas à pas avec la vue détaillée des threads
+4. **Pour des données complexes** : Modifiez les zones d'entrée individuelles pendant l'exécution
+
+-----
+
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une suggestion d'amélioration :
