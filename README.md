@@ -364,13 +364,16 @@ L'interface s'adapte automatiquement selon le type d'exécution :
 - **🎨 Identification par Couleur** : Chaque thread a sa propre couleur
 - **🏷️ Légende Interactive** : Affichage des couleurs et relations parent-enfant
 - **📊 Temps Réel** : Mise à jour immédiate lors de l'exécution
+- **🔢 Caractères Non-Imprimables** : Affichage en hexadécimal (ex: `0x0A` pour nouvelle ligne)
 
 **Exemple de Sortie Multi-Thread :**
 ```
-ABC123XYZ
-T0: ABC (bleu)
-T1: 123 (vert) 
-T2: XYZ (orange)
+Hello0x0AWorld0x09!
+T0: Hello (bleu)
+T1: 0x0A (vert - nouvelle ligne) 
+T2: World (orange)
+T3: 0x09 (violet - tabulation)
+T4: ! (rouge)
 ```
 
 ### 🎨 **Codes Couleur des Threads**

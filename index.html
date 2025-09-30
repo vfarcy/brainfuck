@@ -593,6 +593,23 @@
         .thread-output-T6 { color: #607D8B; font-weight: bold; }
         .thread-output-T7 { color: #E91E63; font-weight: bold; }
         
+        /* Style pour les caractères non-imprimables en hexa */
+        .hex-char {
+            background: #f0f0f0;
+            padding: 1px 3px;
+            border-radius: 2px;
+            font-size: 0.9em;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+            margin: 0 1px;
+        }
+        
+        .hex-char:hover {
+            background: #e0e0e0;
+            border-color: #bbb;
+        }
+        
         /* Légende des couleurs de threads */
         .thread-legend-item {
             display: inline-block;
@@ -1312,17 +1329,49 @@
                 }
                 
             } else {
-                // Mode single-thread : sortie simple
+                // Mode single-thread : sortie simple avec formatage des caractères
                 const state = interpreter.getState();
                 const output = state.output || '';
                 
                 if (output.length > 0) {
-                    outputView.textContent = output;
+                    // Formatter chaque caractère pour afficher les non-imprimables en hexa
+                    let formattedOutput = '';
+                    for (let i = 0; i < output.length; i++) {
+                        const charCode = output.charCodeAt(i);
+                        formattedOutput += formatOutputChar(charCode);
+                    }
+                    outputView.innerHTML = formattedOutput;
                 } else {
                     outputView.innerHTML = '<span style="color: #999; font-style: italic;">Aucune sortie produite</span>';
                 }
                 
                 document.getElementById('output-legend').style.display = 'none';
+            }
+        }
+
+        // Formate un caractère pour l'affichage (imprimable ou hexa)
+        function formatOutputChar(charCode) {
+            // Les caractères imprimables ASCII sont généralement entre 32 (espace) et 126 (~)
+            if (charCode >= 32 && charCode <= 126) {
+                return escapeHtml(String.fromCharCode(charCode));
+            } else {
+                // Pour les caractères non imprimables, afficher en hexadécimal
+                const hexValue = '0x' + charCode.toString(16).toUpperCase().padStart(2, '0');
+                
+                // Noms spéciaux pour certains caractères courants
+                let charName = '';
+                switch (charCode) {
+                    case 0: charName = 'NULL'; break;
+                    case 7: charName = 'BELL'; break;
+                    case 8: charName = 'BACKSPACE'; break;
+                    case 9: charName = 'TAB'; break;
+                    case 10: charName = 'LF (Nouvelle ligne)'; break;
+                    case 13: charName = 'CR (Retour chariot)'; break;
+                    case 27: charName = 'ESC'; break;
+                    default: charName = `Code ASCII ${charCode}`;
+                }
+                
+                return `<span class="hex-char" title="${charName}">${hexValue}</span>`;
             }
         }
 
@@ -1338,9 +1387,17 @@
                 if (output && output.length > 0) {
                     if (hasContent) {
                         // Ajouter un petit séparateur visuel entre les outputs des threads
-                        result += '<span style="color: #ccc;">|</span>';
+                        result += '<span style="color: #ccc; margin: 0 2px;">|</span>';
                     }
-                    result += `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${escapeHtml(output)}</span>`;
+                    
+                    // Formatter chaque caractère de la sortie
+                    let formattedOutput = '';
+                    for (let i = 0; i < output.length; i++) {
+                        const charCode = output.charCodeAt(i);
+                        formattedOutput += formatOutputChar(charCode);
+                    }
+                    
+                    result += `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${formattedOutput}</span>`;
                     hasContent = true;
                 }
             });
