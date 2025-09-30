@@ -1,6 +1,6 @@
 # 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--09--30-lightgrey.svg)
 
