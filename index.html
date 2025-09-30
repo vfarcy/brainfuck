@@ -630,6 +630,26 @@
         .thread-output-T6 .hex-char:hover { background: #cfd8dc; }
         .thread-output-T7 .hex-char:hover { background: #f8bbd9; }
         
+        /* Styles pour les caractères texte colorés par thread */
+        .thread-char-T0 { color: #2196F3; font-weight: bold; }
+        .thread-char-T1 { color: #4CAF50; font-weight: bold; }
+        .thread-char-T2 { color: #FF9800; font-weight: bold; }
+        .thread-char-T3 { color: #9C27B0; font-weight: bold; }
+        .thread-char-T4 { color: #F44336; font-weight: bold; }
+        .thread-char-T5 { color: #795548; font-weight: bold; }
+        .thread-char-T6 { color: #607D8B; font-weight: bold; }
+        .thread-char-T7 { color: #E91E63; font-weight: bold; }
+        
+        /* Styles pour les caractères hexadécimaux colorés par thread */
+        .thread-hex-T0 { border-color: #2196F3; background: #e3f2fd; color: #1565c0; }
+        .thread-hex-T1 { border-color: #4CAF50; background: #e8f5e8; color: #2e7d32; }
+        .thread-hex-T2 { border-color: #FF9800; background: #fff3e0; color: #ef6c00; }
+        .thread-hex-T3 { border-color: #9C27B0; background: #f3e5f5; color: #7b1fa2; }
+        .thread-hex-T4 { border-color: #F44336; background: #ffebee; color: #d32f2f; }
+        .thread-hex-T5 { border-color: #795548; background: #efebe9; color: #5d4037; }
+        .thread-hex-T6 { border-color: #607D8B; background: #eceff1; color: #455a64; }
+        .thread-hex-T7 { border-color: #E91E63; background: #fce4ec; color: #c2185b; }
+        
         /* Légende des couleurs de threads */
         .thread-legend-item {
             display: inline-block;
@@ -1378,11 +1398,12 @@
             }
         }
 
-        // Formate un caractère pour l'affichage (imprimable ou hexa)
-        function formatOutputChar(charCode) {
+        // Formate un caractère pour l'affichage (imprimable ou hexa) avec couleur de thread
+        function formatOutputChar(charCode, threadId = null) {
             // Les caractères imprimables ASCII sont généralement entre 32 (espace) et 126 (~)
             if (charCode >= 32 && charCode <= 126) {
-                return escapeHtml(String.fromCharCode(charCode));
+                const char = escapeHtml(String.fromCharCode(charCode));
+                return threadId !== null ? `<span class="thread-char-T${threadId}">${char}</span>` : char;
             } else {
                 // Pour les caractères non imprimables, afficher en hexadécimal
                 const hexValue = '0x' + charCode.toString(16).toUpperCase().padStart(2, '0');
@@ -1400,7 +1421,8 @@
                     default: charName = `Code ASCII ${charCode}`;
                 }
                 
-                return `<span class="hex-char" title="${charName}">${hexValue}</span>`;
+                const hexClass = threadId !== null ? `hex-char thread-hex-T${threadId}` : 'hex-char';
+                return `<span class="${hexClass}" title="${charName}">${hexValue}</span>`;
             }
         }
 
@@ -1419,11 +1441,11 @@
                         result += '<span style="color: #ccc; margin: 0 2px;">|</span>';
                     }
                     
-                    // Formatter chaque caractère de la sortie
+                    // Formatter chaque caractère de la sortie avec la couleur du thread
                     let formattedOutput = '';
                     for (let i = 0; i < output.length; i++) {
                         const charCode = output.charCodeAt(i);
-                        formattedOutput += formatOutputChar(charCode);
+                        formattedOutput += formatOutputChar(charCode, threadId);
                     }
                     
                     result += `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${formattedOutput}</span>`;
