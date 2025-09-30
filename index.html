@@ -1351,6 +1351,46 @@
             const allStates = interpreter.getAllThreadStates();
             const isMultiThread = allStates.length > 1;
             
+            console.log('🎨 DEBUG updateGlobalOutput: allStates =', allStates);
+            console.log('🎨 DEBUG updateGlobalOutput: isMultiThread =', isMultiThread);
+            
+            // FALLBACK: Si getAllThreadStates retourne vide, essayer le gestionnaire global
+            if (allStates.length === 0 && BrainfuckInterpreter.threadManager) {
+                console.log('🎨 DEBUG: Trying global thread manager as fallback');
+                const globalStates = [];
+                for (const [threadId, thread] of BrainfuckInterpreter.threadManager.threads) {
+                    globalStates.push(thread.getState());
+                }
+                console.log('🎨 DEBUG: Global states found:', globalStates);
+                
+                if (globalStates.length > 0) {
+                    // Utiliser les états du gestionnaire global
+                    const sortedStates = globalStates.sort((a, b) => a.threadId - b.threadId);
+                    const isGlobalMultiThread = sortedStates.length > 1;
+                    
+                    if (isGlobalMultiThread) {
+                        let threadOutputs = new Map();
+                        sortedStates.forEach(state => {
+                            const output = state.output || '';
+                            if (output.length > 0) {
+                                threadOutputs.set(state.threadId, output);
+                            }
+                        });
+                        
+                        const globalOutput = buildAnnotatedOutput(threadOutputs);
+                        outputView.innerHTML = globalOutput;
+                        
+                        if (threadOutputs.size > 0) {
+                            updateThreadLegend(sortedStates);
+                            document.getElementById('output-legend').style.display = 'block';
+                        } else {
+                            document.getElementById('output-legend').style.display = 'none';
+                        }
+                        return;
+                    }
+                }
+            }
+            
             if (isMultiThread) {
                 // Mode multi-thread : construire la sortie globale avec annotations
                 let threadOutputs = new Map();
@@ -1363,8 +1403,12 @@
                     }
                 });
                 
+                console.log('🎨 DEBUG updateGlobalOutput: threadOutputs collected =', threadOutputs);
+                
                 // Construire la sortie unifiée
                 const globalOutput = buildAnnotatedOutput(threadOutputs);
+                
+                console.log('🎨 DEBUG updateGlobalOutput: setting innerHTML to:', globalOutput);
                 
                 // Afficher avec le HTML coloré
                 outputView.innerHTML = globalOutput;
@@ -1402,8 +1446,8 @@
         function formatOutputChar(charCode, threadId = null) {
             // Les caractères imprimables ASCII sont généralement entre 32 (espace) et 126 (~)
             if (charCode >= 32 && charCode <= 126) {
-                const char = escapeHtml(String.fromCharCode(charCode));
-                return threadId !== null ? `<span class="thread-char-T${threadId}">${char}</span>` : char;
+                // Pour les caractères imprimables, on laisse le wrapper du thread gérer la couleur
+                return escapeHtml(String.fromCharCode(charCode));
             } else {
                 // Pour les caractères non imprimables, afficher en hexadécimal
                 const hexValue = '0x' + charCode.toString(16).toUpperCase().padStart(2, '0');
@@ -1421,8 +1465,8 @@
                     default: charName = `Code ASCII ${charCode}`;
                 }
                 
-                const hexClass = threadId !== null ? `hex-char thread-hex-T${threadId}` : 'hex-char';
-                return `<span class="${hexClass}" title="${charName}">${hexValue}</span>`;
+                // Les styles .thread-output-T{X} .hex-char géreront déjà la couleur
+                return `<span class="hex-char" title="${charName}">${hexValue}</span>`;
             }
         }
 
@@ -1431,11 +1475,15 @@
             let result = '';
             let hasContent = false;
             
+            console.log('🎨 DEBUG buildAnnotatedOutput: threadOutputs =', threadOutputs);
+            
             // Trier les threads par ID pour un affichage cohérent
             const sortedThreads = Array.from(threadOutputs.entries()).sort((a, b) => a[0] - b[0]);
             
             sortedThreads.forEach(([threadId, output]) => {
                 if (output && output.length > 0) {
+                    console.log(`🎨 DEBUG: Processing thread T${threadId}, output length: ${output.length}`);
+                    
                     if (hasContent) {
                         // Ajouter un petit séparateur visuel entre les outputs des threads
                         result += '<span style="color: #ccc; margin: 0 2px;">|</span>';
@@ -1445,10 +1493,14 @@
                     let formattedOutput = '';
                     for (let i = 0; i < output.length; i++) {
                         const charCode = output.charCodeAt(i);
-                        formattedOutput += formatOutputChar(charCode, threadId);
+                        const formatted = formatOutputChar(charCode, threadId);
+                        formattedOutput += formatted;
                     }
                     
-                    result += `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${formattedOutput}</span>`;
+                    const threadSpan = `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${formattedOutput}</span>`;
+                    console.log(`🎨 DEBUG: Thread T${threadId} span:`, threadSpan);
+                    
+                    result += threadSpan;
                     hasContent = true;
                 }
             });
@@ -1458,6 +1510,7 @@
                 return '<span style="color: #999; font-style: italic;">Aucune sortie produite</span>';
             }
             
+            console.log('🎨 DEBUG: Final result HTML:', result);
             return result;
         }
 
