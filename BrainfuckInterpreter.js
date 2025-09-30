@@ -181,7 +181,8 @@ class BrainfuckInterpreter {
 
             case 'f':
                 this.handleFork();
-                break;
+                // Pas d'incrémentation automatique - handleFork() gère l'IP
+                return true;
 
             default:
                 break;
