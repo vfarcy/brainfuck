@@ -617,13 +617,29 @@
         <!-- L'historique d'exécution s'affichera ici -->
     </div>
     
-    <!-- Zones d'entrée/sortie globales - mode single-thread -->
-    <div id="single-thread-io" style="display: block;">
-        <h2>Données d'Entrée (Input)</h2>
-        <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
+    <!-- Zones d'entrée/sortie globales -->
+    <div id="global-io">
+        <h2>📥 Données d'Entrée (Input)</h2>
+        <div id="input-section">
+            <!-- Zone d'entrée globale pour le mode single-thread -->
+            <div id="single-thread-input" style="display: block;">
+                <textarea id="bf-input" rows="3" cols="80" placeholder="Entrez les données lues par la commande ',' (virgule) ici. Par exemple: 'Hello'"></textarea>
+            </div>
+            
+            <!-- Zones d'entrée par thread pour le mode multi-thread -->
+            <div id="multi-thread-inputs" style="display: none;">
+                <!-- Les zones d'entrée par thread s'afficheront ici -->
+            </div>
+        </div>
 
-        <h2>Sortie (Output)</h2>
+        <h2>📤 Sortie (Output) - Globale Unifiée</h2>
         <pre id="output-view">En attente d'exécution...</pre>
+        
+        <!-- Légende des threads dans la sortie (visible uniquement en mode multi-thread) -->
+        <div id="output-legend" style="display: none; margin-top: 10px; padding: 8px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 4px;">
+            <strong>🏷️ Légende des Threads:</strong>
+            <div id="thread-colors-legend"></div>
+        </div>
     </div>
 
     <hr>
