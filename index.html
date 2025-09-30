@@ -610,6 +610,26 @@
             border-color: #bbb;
         }
         
+        /* Couleurs des threads pour les caractères hexadécimaux */
+        .thread-output-T0 .hex-char { border-color: #2196F3; background: #e3f2fd; color: #1565c0; }
+        .thread-output-T1 .hex-char { border-color: #4CAF50; background: #e8f5e8; color: #2e7d32; }
+        .thread-output-T2 .hex-char { border-color: #FF9800; background: #fff3e0; color: #ef6c00; }
+        .thread-output-T3 .hex-char { border-color: #9C27B0; background: #f3e5f5; color: #7b1fa2; }
+        .thread-output-T4 .hex-char { border-color: #F44336; background: #ffebee; color: #d32f2f; }
+        .thread-output-T5 .hex-char { border-color: #795548; background: #efebe9; color: #5d4037; }
+        .thread-output-T6 .hex-char { border-color: #607D8B; background: #eceff1; color: #455a64; }
+        .thread-output-T7 .hex-char { border-color: #E91E63; background: #fce4ec; color: #c2185b; }
+        
+        /* Effet hover pour les hex-char colorés */
+        .thread-output-T0 .hex-char:hover { background: #bbdefb; }
+        .thread-output-T1 .hex-char:hover { background: #c8e6c9; }
+        .thread-output-T2 .hex-char:hover { background: #ffe0b2; }
+        .thread-output-T3 .hex-char:hover { background: #e1bee7; }
+        .thread-output-T4 .hex-char:hover { background: #ffcdd2; }
+        .thread-output-T5 .hex-char:hover { background: #d7ccc8; }
+        .thread-output-T6 .hex-char:hover { background: #cfd8dc; }
+        .thread-output-T7 .hex-char:hover { background: #f8bbd9; }
+        
         /* Légende des couleurs de threads */
         .thread-legend-item {
             display: inline-block;
@@ -1423,10 +1443,14 @@
             
             allStates.forEach((state, index) => {
                 const color = threadColors[state.threadId % threadColors.length];
+                const hasNonPrintable = state.output && /[\x00-\x1F\x7F-\xFF]/.test(state.output);
+                const badgeExample = hasNonPrintable ? `<span class="hex-char" style="border-color: ${color}; background: ${color}20; color: ${color}; font-size: 0.8em;">0x0A</span>` : '';
+                
                 legendHTML += `
                     <span class="thread-legend-item">
                         <span class="thread-legend-color" style="background-color: ${color};"></span>
                         T${state.threadId}${state.parentId !== null ? ` (parent: T${state.parentId})` : ' (principal)'}
+                        ${badgeExample}
                     </span>
                 `;
             });

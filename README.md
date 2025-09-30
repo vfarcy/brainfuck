@@ -361,19 +361,19 @@ L'interface s'adapte automatiquement selon le type d'exécution :
 
 #### **Données de Sortie (Output)**
 - **🌟 Sortie Globale Unifiée** : Une seule zone de sortie pour tous les threads
-- **🎨 Identification par Couleur** : Chaque thread a sa propre couleur
+- **🎨 Identification par Couleur** : Chaque thread a sa propre couleur (texte ET hexadécimal)
 - **🏷️ Légende Interactive** : Affichage des couleurs et relations parent-enfant
 - **📊 Temps Réel** : Mise à jour immédiate lors de l'exécution
-- **🔢 Caractères Non-Imprimables** : Affichage en hexadécimal (ex: `0x0A` pour nouvelle ligne)
+- **🔢 Caractères Non-Imprimables** : Affichage en hexadécimal coloré par thread
 
 **Exemple de Sortie Multi-Thread :**
 ```
-Hello0x0AWorld0x09!
-T0: Hello (bleu)
-T1: 0x0A (vert - nouvelle ligne) 
-T2: World (orange)
-T3: 0x09 (violet - tabulation)
-T4: ! (rouge)
+Hello🔵0x0A🟢World🟠0x09🟣!🔴
+🔵 T0: Hello (bleu)
+🟢 T1: 0x0A (vert - nouvelle ligne avec badge vert) 
+🟠 T2: World (orange)
+🟣 T3: 0x09 (violet - tabulation avec badge violet)
+🔴 T4: ! (rouge)
 ```
 
 ### 🎨 **Codes Couleur des Threads**
