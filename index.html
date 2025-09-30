@@ -554,6 +554,61 @@
             margin-bottom: 0;
         }
 
+        /* Styles pour les zones d'entrée par thread en mode multi-thread */
+        .multi-thread-input {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .multi-thread-input-label {
+            font-weight: bold;
+            font-size: 12px;
+            color: #555;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        .multi-thread-input textarea {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            height: 50px;
+            box-sizing: border-box;
+        }
+
+        /* Couleurs pour identifier les threads dans la sortie */
+        .thread-output-T0 { color: #2196F3; font-weight: bold; }
+        .thread-output-T1 { color: #4CAF50; font-weight: bold; }
+        .thread-output-T2 { color: #FF9800; font-weight: bold; }
+        .thread-output-T3 { color: #9C27B0; font-weight: bold; }
+        .thread-output-T4 { color: #F44336; font-weight: bold; }
+        .thread-output-T5 { color: #795548; font-weight: bold; }
+        .thread-output-T6 { color: #607D8B; font-weight: bold; }
+        .thread-output-T7 { color: #E91E63; font-weight: bold; }
+        
+        /* Légende des couleurs de threads */
+        .thread-legend-item {
+            display: inline-block;
+            margin-right: 15px;
+            font-size: 12px;
+        }
+        
+        .thread-legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
         </style>
 </head>
 <body>
@@ -924,8 +979,8 @@
 
             const state = interpreter.getState();
 
-            // 1. Mise à jour des compteurs et sortie
-            outputView.textContent = state.output;
+            // 1. Mise à jour des compteurs et sortie avec annotations de threads
+            updateGlobalOutput();
             ipView.textContent = state.ip;
             ptrView.textContent = state.ptr;
 
@@ -1015,14 +1070,21 @@
             if (state.totalThreads > 1) {
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
-                document.getElementById('single-thread-io').style.display = 'none';
+                
+                // Basculer vers les zones d'entrée par thread
+                document.getElementById('single-thread-input').style.display = 'none';
+                updateMultiThreadInputs();
+                document.getElementById('multi-thread-inputs').style.display = 'block';
                 
                 // Afficher le bouton Step Single en mode multi-thread
                 stepSingleBtn.style.display = 'inline-block';
                 stepBtn.textContent = '👣 Step (Tous Threads)';
             } else {
                 document.getElementById('multi-thread-view').style.display = 'none';
-                document.getElementById('single-thread-io').style.display = 'block';
+                
+                // Revenir à la zone d'entrée globale
+                document.getElementById('single-thread-input').style.display = 'block';
+                document.getElementById('multi-thread-inputs').style.display = 'none';
                 
                 // Masquer le bouton Step Single en mode single-thread
                 stepSingleBtn.style.display = 'none';
@@ -1181,13 +1243,12 @@
             });
         }
 
-        // Génère la vue I/O pour un thread
+        // Génère la vue I/O pour un thread (entrée seulement, sortie globale)
         function generateThreadIOView(state) {
             const inputValue = threadInputData.get(state.threadId) || '';
-            const outputValue = state.output || '';
             
             if (showDetailedThreadView) {
-                // Vue détaillée avec zones complètes
+                // Vue détaillée avec zone d'entrée complète
                 return `
                     <div class="thread-io">
                         <div class="thread-io-section">
@@ -1196,29 +1257,144 @@
                                       data-thread-id="${state.threadId}" 
                                       placeholder="Données pour les commandes ',' du thread T${state.threadId}">${inputValue}</textarea>
                         </div>
-                        <div class="thread-io-section">
-                            <label class="thread-io-label">📤 Sortie (Output):</label>
-                            <div class="thread-output">${escapeHtml(outputValue)}</div>
-                        </div>
                     </div>
                 `;
             } else {
-                // Vue compacte avec zones réduites côte à côte
+                // Vue compacte avec zone d'entrée réduite
                 return `
-                    <div class="thread-io thread-io-compact">
+                    <div class="thread-io">
                         <div class="thread-io-section">
-                            <label class="thread-io-label">📥 Input:</label>
+                            <label class="thread-io-label">📥 Input T${state.threadId}:</label>
                             <textarea class="thread-input" 
                                       data-thread-id="${state.threadId}" 
                                       placeholder="Input T${state.threadId}">${inputValue}</textarea>
                         </div>
-                        <div class="thread-io-section">
-                            <label class="thread-io-label">📤 Output:</label>
-                            <div class="thread-output">${escapeHtml(outputValue)}</div>
-                        </div>
                     </div>
                 `;
             }
+        }
+
+        // Met à jour la sortie globale unifiée avec annotations des threads
+        function updateGlobalOutput() {
+            if (!interpreter) return;
+            
+            const allStates = interpreter.getAllThreadStates();
+            const isMultiThread = allStates.length > 1;
+            
+            if (isMultiThread) {
+                // Mode multi-thread : construire la sortie globale avec annotations
+                let globalOutput = '';
+                let threadOutputs = new Map();
+                
+                // Collecter les sorties de tous les threads
+                allStates.forEach(state => {
+                    threadOutputs.set(state.threadId, state.output || '');
+                });
+                
+                // Construire la sortie unifiée en intercalant les caractères avec annotations
+                globalOutput = buildAnnotatedOutput(threadOutputs);
+                
+                // Afficher avec le HTML coloré
+                outputView.innerHTML = globalOutput;
+                
+                // Afficher la légende des threads
+                updateThreadLegend(allStates);
+                document.getElementById('output-legend').style.display = 'block';
+                
+            } else {
+                // Mode single-thread : sortie simple
+                const state = interpreter.getState();
+                outputView.textContent = state.output;
+                document.getElementById('output-legend').style.display = 'none';
+            }
+        }
+
+        // Construit une sortie annotée avec couleurs pour identifier les threads
+        function buildAnnotatedOutput(threadOutputs) {
+            // Pour simplifier, on concatène les sorties avec indication du thread
+            let result = '';
+            let hasContent = false;
+            
+            threadOutputs.forEach((output, threadId) => {
+                if (output && output.length > 0) {
+                    if (hasContent) result += ' ';
+                    result += `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${escapeHtml(output)}</span>`;
+                    hasContent = true;
+                }
+            });
+            
+            return result || 'En attente d\'exécution...';
+        }
+
+        // Met à jour la légende des couleurs de threads
+        function updateThreadLegend(allStates) {
+            const legendContainer = document.getElementById('thread-colors-legend');
+            if (!legendContainer) return;
+            
+            let legendHTML = '';
+            const threadColors = [
+                '#2196F3', '#4CAF50', '#FF9800', '#9C27B0', 
+                '#F44336', '#795548', '#607D8B', '#E91E63'
+            ];
+            
+            allStates.forEach((state, index) => {
+                const color = threadColors[state.threadId % threadColors.length];
+                legendHTML += `
+                    <span class="thread-legend-item">
+                        <span class="thread-legend-color" style="background-color: ${color};"></span>
+                        T${state.threadId}${state.parentId !== null ? ` (parent: T${state.parentId})` : ' (principal)'}
+                    </span>
+                `;
+            });
+            
+            legendContainer.innerHTML = legendHTML;
+        }
+
+        // Met à jour les zones d'entrée en mode multi-thread
+        function updateMultiThreadInputs() {
+            if (!interpreter) return;
+            
+            const allStates = interpreter.getAllThreadStates();
+            const container = document.getElementById('multi-thread-inputs');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            allStates.forEach(state => {
+                const inputValue = threadInputData.get(state.threadId) || '';
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'multi-thread-input';
+                
+                inputDiv.innerHTML = `
+                    <label class="multi-thread-input-label">
+                        📥 Thread T${state.threadId} - Données d'Entrée:
+                    </label>
+                    <textarea data-thread-id="${state.threadId}" 
+                              placeholder="Données pour les commandes ',' du thread T${state.threadId}">${inputValue}</textarea>
+                `;
+                
+                container.appendChild(inputDiv);
+                
+                // Configurer les gestionnaires d'événements
+                const textarea = inputDiv.querySelector('textarea');
+                if (textarea) {
+                    textarea.addEventListener('input', (e) => {
+                        const newValue = e.target.value;
+                        threadInputData.set(state.threadId, newValue);
+                        console.log(`📝 Input thread T${state.threadId} mis à jour: "${newValue}"`);
+                        
+                        // Mettre à jour l'input du thread correspondant dans l'interpréteur
+                        if (interpreter && interpreter.threadManager) {
+                            const thread = interpreter.threadManager.threads.get(state.threadId);
+                            if (thread && thread.input !== newValue) {
+                                thread.input = newValue;
+                                thread.inputPointer = 0; // Reset du pointeur d'entrée
+                                console.log(`🔄 Thread T${state.threadId} input synchronisé`);
+                            }
+                        }
+                    });
+                }
+            });
         }
 
         // Configure les gestionnaires d'événements pour les zones I/O d'un thread
@@ -1533,8 +1709,10 @@
             if (executionLogEl) executionLogEl.innerHTML = '';
             
             // Remettre les zones I/O en mode single-thread
-            document.getElementById('single-thread-io').style.display = 'block';
+            document.getElementById('single-thread-input').style.display = 'block';
+            document.getElementById('multi-thread-inputs').style.display = 'none';
             document.getElementById('multi-thread-view').style.display = 'none';
+            document.getElementById('output-legend').style.display = 'none';
             
             console.clear();
             console.log('🔄 Interpréteur réinitialisé');

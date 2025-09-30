@@ -352,20 +352,26 @@ L'interface s'adapte automatiquement selon le type d'exécution :
 ### 📥📤 **Gestion des Données par Thread**
 
 #### **Données d'Entrée (Input)**
-- **Mode Single-Thread** : Zone globale partagée
+- **Mode Single-Thread** : Zone globale unique
 - **Mode Multi-Thread** : 
-  - Zone individuelle pour chaque thread
+  - Zones individuelles pour chaque thread
   - Mise à jour en temps réel
   - Héritage automatique depuis le thread parent
   - Modification possible pendant l'exécution
 
 #### **Données de Sortie (Output)**
-- **Mode Single-Thread** : Sortie globale unique
-- **Mode Multi-Thread** :
-  - Sortie séparée par thread
-  - Mise à jour en temps réel
-  - Historique complet conservé
-  - Affichage avec scroll automatique
+- **🌟 Sortie Globale Unifiée** : Une seule zone de sortie pour tous les threads
+- **🎨 Identification par Couleur** : Chaque thread a sa propre couleur
+- **🏷️ Légende Interactive** : Affichage des couleurs et relations parent-enfant
+- **📊 Temps Réel** : Mise à jour immédiate lors de l'exécution
+
+**Exemple de Sortie Multi-Thread :**
+```
+ABC123XYZ
+T0: ABC (bleu)
+T1: 123 (vert) 
+T2: XYZ (orange)
+```
 
 ### 🎨 **Codes Couleur des Threads**
 
