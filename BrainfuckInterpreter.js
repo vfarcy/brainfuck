@@ -47,8 +47,7 @@ class BrainfuckInterpreter {
         this.parentId = parentId;
         this.isForked = false;
         this.children = [];
-        this.forkCount = 0; // Nombre de forks créés par ce thread
-        this.maxForksPerThread = 2; // Limite de forks par thread
+        this.forkCount = 0; // Nombre de forks créés par ce thread (pour statistiques)
         
         // Gestionnaire de threads par instance (non statique)
         if (threadId === 0) {
@@ -209,13 +208,7 @@ class BrainfuckInterpreter {
         this.cleanupHaltedThreads();
         
         // Vérifier la limite de forks par thread
-        console.log(`🔍 Thread T${this.threadId} tente un fork (forks actuels: ${this.forkCount}/${this.maxForksPerThread})`);
-        
-        if (this.forkCount >= this.maxForksPerThread) {
-            console.warn(`⚠️ Thread T${this.threadId} a atteint sa limite de forks (${this.forkCount}/${this.maxForksPerThread}) - Fork ignoré`);
-            // Pas d'erreur, on ignore simplement le fork
-            return;
-        }
+        console.log(`🔍 Thread T${this.threadId} tente un fork (forks créés: ${this.forkCount})`);
         
         // Compter seulement les threads actifs (non halted)
         let activeThreadCount = 0;
@@ -228,13 +221,13 @@ class BrainfuckInterpreter {
         console.log(`🔍 Debug Fork: Threads actifs = ${activeThreadCount}, Limite = ${manager.maxThreads}`);
         console.log(`📋 Threads dans le manager:`, Array.from(manager.threads.keys()).map(id => {
             const thread = manager.threads.get(id);
-            return `T${id}(${thread.halted ? 'HALTED' : 'ACTIVE'}, forks: ${thread.forkCount}/${thread.maxForksPerThread})`;
+            return `T${id}(${thread.halted ? 'HALTED' : 'ACTIVE'}, forks: ${thread.forkCount})`;
         }).join(', '));
         
-        // Protection contre les fork bombs globales
+        // Protection contre les fork bombs - Limite globale de threads
         if (activeThreadCount >= manager.maxThreads) {
             console.error(`❌ Fork refusé: ${activeThreadCount}/${manager.maxThreads} threads`);
-            throw new Error(`🛡️ Protection fork bomb: Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé. Augmentez la limite ou simplifiez le programme.`);
+            throw new Error(`🛡️ Protection fork bomb: Limite globale de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé. Augmentez la limite ou simplifiez le programme.`);
         }
         
         const childId = manager.nextId++;

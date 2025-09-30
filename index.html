@@ -675,7 +675,7 @@
         <label for="max-threads">🛡️ Limite max de threads:</label>
         <input type="number" id="max-threads" value="8" min="1" max="1000" style="width: 80px;">
         <div class="warning-text">
-            ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]")
+            ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]"). Limite globale de sécurité.
         </div>
     </div>
     
@@ -1246,7 +1246,7 @@
                         <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0} | 
                         <strong>Étapes:</strong> ${steps}<br>
                         <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
-                        <strong>Forks:</strong> ${state.forkCount || 0}/${state.maxForksPerThread || 2}<br>
+                        <strong>Forks créés:</strong> ${state.forkCount || 0}<br>
                         ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
                         <div class="thread-timeline">
                             📊 Progrès: ${progress.toFixed(1)}% | 

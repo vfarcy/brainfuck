@@ -6,15 +6,15 @@
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.2.4
+## 🆕 Nouveautés v1.2.5
 
+- **🧹 Simplification Protection** : Suppression de la redondance - garde seulement la limite globale `maxThreads` (plus simple et efficace)
 - **🎯 Interface Adaptative** : La zone "État de l'Interpréteur" se masque automatiquement en mode multi-thread pour éviter la redondance
 - **🌟 Sortie Globale Unifiée** : Toutes les sorties des threads dans une seule zone avec identification par couleur
 - **🎨 Caractères Hexadécimaux Colorés** : Les caractères non-imprimables héritent de la couleur de leur thread
 - **📥 Zones d'Entrée par Thread** : Gestion individualisée des données d'entrée en mode multi-thread
 - **🤖 Versioning Automatique** : Système de gestion des versions avec mise à jour automatique
 - **📊 Pied de Page Informatif** : Affichage de la version et date de build en temps réel
-- **🛡️ Protection Renforcée** : Messages d'erreur améliorés et gestion robuste des fork bombs
 
 -----
 
@@ -24,7 +24,7 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 *   **🔀 Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
 *   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `f`).
 *   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
-*   **Protection Fork Bomb** : Limite configurable du nombre de threads pour éviter les explosions.
+*   **🛡️ Protection Fork Bomb** : Limite globale configurable du nombre de threads pour éviter les explosions.
 *   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
 *   **Exécution Complète Multi-Thread** : Exécute tous les threads jusqu'à completion.
 *   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée et visualiser la sortie.
@@ -63,7 +63,7 @@ Quand la commande `f` est rencontrée, le thread actuel **fork** :
 4. `]` → Retour au `[` car les cellules ne sont pas nulles
 5. Répétition infinie avec doublement des threads à chaque tour !
 
-**Protection :** Une limite de 8 threads actifs par défaut empêche les fork bombs.
+**Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
 
 -----
 
