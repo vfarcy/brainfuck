@@ -1,4 +1,4 @@
-// Version 1.2.2 - Correction activeThreadsCount + try-catch robuste
+// Version 1.2.2 - Mise à jour automatique du 2025-09-30
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork

@@ -1,5 +1,8 @@
 # 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
 
+![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
 -----
