@@ -6,8 +6,9 @@
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.2.3
+## 🆕 Nouveautés v1.2.4
 
+- **🎯 Interface Adaptative** : La zone "État de l'Interpréteur" se masque automatiquement en mode multi-thread pour éviter la redondance
 - **🌟 Sortie Globale Unifiée** : Toutes les sorties des threads dans une seule zone avec identification par couleur
 - **🎨 Caractères Hexadécimaux Colorés** : Les caractères non-imprimables héritent de la couleur de leur thread
 - **📥 Zones d'Entrée par Thread** : Gestion individualisée des données d'entrée en mode multi-thread
@@ -375,11 +376,13 @@ L'interface s'adapte automatiquement selon le type d'exécution :
 #### 📱 **Mode Single-Thread** (par défaut)
 - **Zone d'entrée globale** : Pour les données lues par la commande `,`
 - **Zone de sortie globale** : Affiche la sortie de la commande `.`
+- **État de l'interpréteur** : Affichage détaillé (IP, PTR, code, mémoire)
 - **Boutons** : `▶ Exécuter D'un Coup`, `👣 Exécuter Pas à Pas`, `🔄 Réinitialiser`
 
 #### 🔀 **Mode Multi-Thread** (activé automatiquement avec la commande `f`)
 - **Zones I/O individuelles** : Chaque thread a ses propres zones d'entrée et de sortie
 - **Vue détaillée/compacte** : Bouton `👁️ Vue Détaillée` pour basculer entre les modes
+- **🎯 Interface optimisée** : La zone "État de l'Interpréteur" se masque automatiquement (informations déjà disponibles par thread)
 - **Boutons supplémentaires** : `👣 Step (Tous Threads)`, `👤 Step (Thread Actuel)`
 
 ### 📥📤 **Gestion des Données par Thread**
@@ -420,8 +423,17 @@ Hello🔵0x0A🟢World🟠0x09🟣!🔴
 
 1. **Pour débuter** : Utilisez le mode single-thread avec les exemples simples
 2. **Pour tester les forks** : Ajoutez une commande `f` et observez le passage automatique en mode multi-thread
-3. **Pour déboguer** : Utilisez le mode pas à pas avec la vue détaillée des threads
+3. **Pour déboguer** : 
+   - **Mode single-thread** : Utilisez la zone "État de l'Interpréteur" pour un suivi détaillé
+   - **Mode multi-thread** : Utilisez la vue détaillée des threads (bouton `👁️`) pour analyser chaque thread individuellement
 4. **Pour des données complexes** : Modifiez les zones d'entrée individuelles pendant l'exécution
+
+### 🔄 **Transitions Automatiques**
+
+L'interface s'adapte intelligemment selon le contexte :
+- **Single → Multi** : Lors du premier fork (`f`), l'interface bascule automatiquement
+- **Masquage conditionnel** : La zone "État de l'Interpréteur" disparaît en mode multi-thread pour éviter la duplication d'informations
+- **Réinitialisation** : Le bouton `🔄 Réinitialiser` revient toujours au mode single-thread
 
 -----
 
