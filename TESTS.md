@@ -92,6 +92,22 @@
 
 ---
 
+## 8. Test Gestion Données d'Entrée Multi-Thread
+```brainfuck
+f,f.
+```
+**Instructions spéciales :**
+1. Après le premier fork, deux zones d'entrée apparaissent
+2. Entrer des données différentes dans chaque zone (ex: "A" pour T0, "B" pour T1)
+3. Exécuter le step suivant
+
+**Résultat attendu :**
+- **T0** : Lit "A" (65), affiche 'A'
+- **T1** : Lit "B" (66), affiche 'B'
+- **Observer :** Gestion correcte des données d'entrée séparées, pas d'erreur "shift is not a function"
+
+---
+
 ## 🔍 Debug et Logs Console
 
 ### Messages Attendus :

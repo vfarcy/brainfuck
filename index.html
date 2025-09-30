@@ -1504,7 +1504,7 @@
                         if (interpreter && interpreter.threadManager) {
                             const thread = interpreter.threadManager.threads.get(state.threadId);
                             if (thread && thread.input !== newValue) {
-                                thread.input = newValue;
+                                thread.input = newValue.split(''); // Convertir en tableau
                                 thread.inputPointer = 0; // Reset du pointeur d'entrée
                                 console.log(`🔄 Thread T${state.threadId} input synchronisé`);
                             }
@@ -1527,7 +1527,7 @@
                     if (interpreter && interpreter.threadManager) {
                         const thread = interpreter.threadManager.threads.get(threadId);
                         if (thread && thread.input !== newValue) {
-                            thread.input = newValue;
+                            thread.input = newValue.split(''); // Convertir en tableau
                             thread.inputPointer = 0; // Reset du pointeur d'entrée
                             console.log(`🔄 Thread T${threadId} input synchronisé`);
                         }

@@ -161,6 +161,10 @@ class BrainfuckInterpreter {
 
             case ',':
                 // Lit le caractère et utilise 0 si l'entrée est vide
+                // S'assurer que this.input est un tableau
+                if (!Array.isArray(this.input)) {
+                    this.input = (typeof this.input === 'string' ? this.input : '').split('');
+                }
                 const char = this.input.shift();
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
                 break;
@@ -237,7 +241,9 @@ class BrainfuckInterpreter {
         BrainfuckInterpreter.tempThreadManager.set(this.threadId, this);
         
         // Créer le thread enfant avec le constructeur
-        const childThread = new BrainfuckInterpreter(this.code, this.input.join(''), childId, this.threadId);
+        // S'assurer que l'input est une chaîne pour le constructeur
+        const inputString = Array.isArray(this.input) ? this.input.join('') : (typeof this.input === 'string' ? this.input : '');
+        const childThread = new BrainfuckInterpreter(this.code, inputString, childId, this.threadId);
         
         // Nettoyer le gestionnaire temporaire
         delete BrainfuckInterpreter.tempThreadManager;
