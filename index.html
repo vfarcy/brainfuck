@@ -1192,6 +1192,8 @@
             if (interpreter) {
                 try {
                     const state = interpreter.getState();
+                    console.log('🔍 Debug - state.totalThreads:', state.totalThreads);
+                    console.log('🔍 Debug - getAllThreadStates().length:', interpreter.getAllThreadStates().length);
                     
                     if (state.totalThreads > 1) {
                         // Exécution multi-thread
