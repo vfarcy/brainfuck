@@ -354,13 +354,15 @@ class BrainfuckInterpreter {
         let totalSteps = 0;
         const maxTotalSteps = 500000; // Limite globale plus élevée
 
-        // Compter les threads actifs
-        let activeThreadsCount = 0;
-        for (const [threadId, thread] of manager.threads) {
-            if (!thread.halted) activeThreadsCount++;
-        }
-
-        while (activeThreadsCount > 0 && totalSteps < maxTotalSteps) {
+        while (totalSteps < maxTotalSteps) {
+            // Recompter les threads actifs à chaque itération (pour gérer les nouveaux forks)
+            let activeThreadsCount = 0;
+            for (const [threadId, thread] of manager.threads) {
+                if (!thread.halted) activeThreadsCount++;
+            }
+            
+            if (activeThreadsCount === 0) break;
+            
             let anyProgress = false;
             const threadsToRemove = [];
             
@@ -391,7 +393,6 @@ class BrainfuckInterpreter {
             // Nettoyer les threads terminés du gestionnaire
             threadsToRemove.forEach(threadId => {
                 manager.threads.delete(threadId);
-                activeThreadsCount--;
             });
             
             if (!anyProgress) break;
