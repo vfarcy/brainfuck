@@ -1200,12 +1200,12 @@
                     const results = interpreter.runAllThreads();
                     console.log('✅ Exécution terminée. Résultats:', results);
                     
-                    // Afficher un résumé
+                    // Log des résultats sans popup
                     if (results.length > 1) {
-                        const summary = results.map(r => 
-                            `T${r.threadId}: "${r.output}"`
-                        ).join('\n');
-                        alert(`Exécution multi-thread terminée!\n\nRésultats:\n${summary}`);
+                        console.log(`✅ Exécution multi-thread terminée avec ${results.length} threads`);
+                        results.forEach(r => {
+                            console.log(`Thread T${r.threadId}: "${r.output}"`);
+                        });
                     } else {
                         console.log('✅ Exécution terminée (pas de forks détectés)');
                     }
