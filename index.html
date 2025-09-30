@@ -1195,21 +1195,19 @@
                     console.log('🔍 Debug - state.totalThreads:', state.totalThreads);
                     console.log('🔍 Debug - getAllThreadStates().length:', interpreter.getAllThreadStates().length);
                     
-                    if (state.totalThreads > 1) {
-                        // Exécution multi-thread
-                        console.log('🚀 Démarrage exécution multi-thread...');
-                        const results = interpreter.runAllThreads();
-                        console.log('✅ Exécution terminée. Résultats:', results);
-                        
-                        // Afficher un résumé
+                    // Toujours démarrer en mode multi-thread pour détecter les forks dynamiquement
+                    console.log('🚀 Démarrage exécution multi-thread (détection dynamique des forks)...');
+                    const results = interpreter.runAllThreads();
+                    console.log('✅ Exécution terminée. Résultats:', results);
+                    
+                    // Afficher un résumé
+                    if (results.length > 1) {
                         const summary = results.map(r => 
                             `T${r.threadId}: "${r.output}"`
                         ).join('\n');
                         alert(`Exécution multi-thread terminée!\n\nRésultats:\n${summary}`);
                     } else {
-                        // Exécution single-thread classique
-                        interpreter.runAll();
-                        console.log('✅ Exécution single-thread terminée');
+                        console.log('✅ Exécution terminée (pas de forks détectés)');
                     }
                     
                     updateUI();
