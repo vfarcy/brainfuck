@@ -353,10 +353,11 @@ class BrainfuckInterpreter {
         const results = [];
         let totalSteps = 0;
         const maxTotalSteps = 500000; // Limite globale plus élevée
+        let activeThreadsCount = 0; // Déclaration en dehors de la boucle
 
         while (totalSteps < maxTotalSteps) {
             // Recompter les threads actifs à chaque itération (pour gérer les nouveaux forks)
-            let activeThreadsCount = 0;
+            activeThreadsCount = 0;
             for (const [threadId, thread] of manager.threads) {
                 if (!thread.halted) activeThreadsCount++;
             }
