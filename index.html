@@ -516,7 +516,7 @@
     <!-- Contrôle pour la limite de threads -->
     <div id="max-threads-control">
         <label for="max-threads">🛡️ Limite max de threads:</label>
-        <input type="number" id="max-threads" value="100" min="1" max="1000" style="width: 80px;">
+        <input type="number" id="max-threads" value="8" min="1" max="1000" style="width: 80px;">
         <div class="warning-text">
             ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]")
         </div>
@@ -738,6 +738,12 @@
                 
                 // Passage du code et des données d'entrée
                 interpreter = new BrainfuckInterpreter(codeInput.value, inputData.value); 
+                
+                // Appliquer la limite de threads depuis l'interface
+                const maxThreadsInput = document.getElementById('max-threads');
+                if (maxThreadsInput && interpreter) {
+                    interpreter.setMaxThreads(parseInt(maxThreadsInput.value));
+                }
                 
                 // Debug initial
                 if (typeof BrainfuckInterpreter.debugThreadManager === 'function') {
