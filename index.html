@@ -910,12 +910,10 @@
             updateThreadInfo(state);
             
             // Nettoyer les threads terminés périodiquement
-            if (state.totalThreads > 1) {
-                if (typeof BrainfuckInterpreter !== 'undefined' && typeof BrainfuckInterpreter.cleanupHaltedThreads === 'function') {
-                    const cleaned = BrainfuckInterpreter.cleanupHaltedThreads();
-                    if (cleaned > 0) {
-                        console.log(`🧹 Nettoyage: ${cleaned} threads terminés supprimés`);
-                    }
+            if (state.totalThreads > 1 && interpreter) {
+                const cleaned = interpreter.cleanupHaltedThreads();
+                if (cleaned > 0) {
+                    console.log(`🧹 Nettoyage: ${cleaned} threads terminés supprimés`);
                 }
             }
             
@@ -960,7 +958,7 @@
             }
             
             // Calculer les threads réels
-            const manager = BrainfuckInterpreter.threadManager;
+            const manager = interpreter ? interpreter.threadManager : null;
             let activeCount = 0;
             let totalCount = 0;
             if (manager) {
@@ -992,7 +990,9 @@
 
         // Nouvelle fonction pour la vue multi-thread
         function updateMultiThreadView() {
-            const allStates = BrainfuckInterpreter.getAllThreadStates();
+            if (!interpreter) return;
+            
+            const allStates = interpreter.getAllThreadStates();
             const container = document.getElementById('threads-container');
             
             container.innerHTML = '';
@@ -1193,7 +1193,7 @@
                     if (state.totalThreads > 1) {
                         // Exécution multi-thread
                         console.log('🚀 Démarrage exécution multi-thread...');
-                        const results = BrainfuckInterpreter.runAllThreads();
+                        const results = interpreter.runAllThreads();
                         console.log('✅ Exécution terminée. Résultats:', results);
                         
                         // Afficher un résumé
@@ -1294,8 +1294,8 @@
                     
                     // Forcer le nettoyage des threads terminés après chaque step
                     console.log('🧹 Nettoyage forcé après step...');
-                    if (typeof BrainfuckInterpreter !== 'undefined' && typeof BrainfuckInterpreter.cleanupHaltedThreads === 'function') {
-                        BrainfuckInterpreter.cleanupHaltedThreads();
+                    if (interpreter) {
+                        interpreter.cleanupHaltedThreads();
                     }
                     
                     updateUI();
@@ -1360,8 +1360,8 @@
         // Gestionnaire pour la limite de threads
         document.getElementById('max-threads').addEventListener('change', (e) => {
             const newLimit = parseInt(e.target.value);
-            if (newLimit > 0) {
-                BrainfuckInterpreter.setMaxThreads(newLimit);
+            if (newLimit > 0 && interpreter) {
+                interpreter.setMaxThreads(newLimit);
                 console.log(`Limite de threads mise à jour: ${newLimit}`);
             }
         });
