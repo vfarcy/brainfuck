@@ -1,9 +1,19 @@
 # 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Build](https://img.shields.io/badge/build-2025--09--30-lightgrey.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
+
+## 🆕 Nouveautés v1.2.3
+
+- **🌟 Sortie Globale Unifiée** : Toutes les sorties des threads dans une seule zone avec identification par couleur
+- **🎨 Caractères Hexadécimaux Colorés** : Les caractères non-imprimables héritent de la couleur de leur thread
+- **📥 Zones d'Entrée par Thread** : Gestion individualisée des données d'entrée en mode multi-thread
+- **🤖 Versioning Automatique** : Système de gestion des versions avec mise à jour automatique
+- **📊 Pied de Page Informatif** : Affichage de la version et date de build en temps réel
+- **🛡️ Protection Renforcée** : Messages d'erreur améliorés et gestion robuste des fork bombs
 
 -----
 
@@ -143,10 +153,13 @@ Ce projet ne nécessite aucune dépendance externe ni configuration de serveur.
 ### Structure du Projet
 
 ```
-brainjs/
+brainfuck/
 ├── index.html                # Interface utilisateur avec support multi-thread
-├── BrainfuckInterpreter.js   # Moteur avec threading (commande 'y')
-└── README.md                 # Ce fichier
+├── BrainfuckInterpreter.js   # Moteur d'interprétation avec multithreading
+├── package.json              # Configuration NPM et scripts de versioning  
+├── update-version.js         # Script de mise à jour automatique des versions
+├── README.md                 # Documentation principale (ce fichier)
+└── GITHUB_PAGES_GUIDE.md    # Guide de déploiement et troubleshooting
 ```
 
 ### Lancement
@@ -156,8 +169,25 @@ brainjs/
     git clone https://github.com/vfarcy/brainfuck.git
     cd brainfuck
     ```
+
 2.  **Ouvrir l'application** :
     Ouvrez le fichier **`index.html`** directement dans votre navigateur web.
+
+3.  **Version en ligne** :
+    Accédez directement à la version déployée : [GitHub Pages](https://vfarcy.github.io/brainfuck/)
+
+### Configuration Optionnelle (Développement)
+
+```bash
+# Installer les dépendances NPM (optionnel, pour le versioning)
+npm install
+
+# Scripts de développement disponibles
+npm run version:patch  # Incrémenter la version patch
+npm run version:minor  # Incrémenter la version minor  
+npm run version:major  # Incrémenter la version major
+npm run build          # Mettre à jour les versions manuellement
+```
 
 -----
 
@@ -395,14 +425,83 @@ Hello🔵0x0A🟢World🟠0x09🟣!🔴
 
 -----
 
+## 🔧 Développement et Versioning
+
+### 📦 Gestion des Versions
+
+Ce projet utilise un **système de versioning automatique** basé sur le [Semantic Versioning](https://semver.org/) :
+
+- **MAJOR** (X.y.z) : Changements incompatibles avec les versions précédentes
+- **MINOR** (x.Y.z) : Nouvelles fonctionnalités compatibles
+- **PATCH** (x.y.Z) : Corrections de bugs
+
+#### **🤖 Scripts de Versioning**
+
+```bash
+# Incrémenter automatiquement la version
+npm run version:patch   # 1.2.3 → 1.2.4 (corrections)
+npm run version:minor   # 1.2.3 → 1.3.0 (nouvelles fonctionnalités)
+npm run version:major   # 1.2.3 → 2.0.0 (changements majeurs)
+
+# Mettre à jour manuellement tous les fichiers
+npm run build
+```
+
+#### **📂 Fichiers Mis à Jour Automatiquement**
+
+- **`package.json`** : Version principale du projet
+- **`BrainfuckInterpreter.js`** : Commentaire de version avec date
+- **`index.html`** : Cache-busting, pied de page, constantes JavaScript
+- **`README.md`** : Badges de version et licence
+
+### 🛠️ Structure du Projet
+
+```
+brainfuck/
+├── BrainfuckInterpreter.js    # Cœur de l'interpréteur multithreading
+├── index.html                 # Interface utilisateur complète
+├── package.json               # Configuration NPM et scripts
+├── update-version.js          # Script de versioning automatique
+├── README.md                  # Documentation principale
+└── GITHUB_PAGES_GUIDE.md     # Guide de déploiement
+```
+
+### 🧪 Tests et Exemples
+
+#### **Programmes de Test Recommandés**
+
+```brainfuck
+# Tests simples
++++f.              # Fork simple: T0=3, T1=3
+++f>++f.            # Fork avec déplacement
++++f>+++f.          # Test multi-thread classique
+
+# Tests avancés (augmentez la limite de threads si nécessaire)
+++++f>++++f>++++f.  # 4 threads avec sorties différentes
+++[f+]              # Attention: Fork bomb potentiel!
+```
+
+#### **Configuration de Débogage**
+
+- **Console développeur** (F12) : Messages détaillés d'exécution
+- **Mode pas à pas** : Analyse thread par thread
+- **Vue détaillée** : Mémoire, état et historique complets
+- **Limite de threads** : Ajustable dans l'interface (défaut: 8)
+
+-----
+
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une suggestion d'amélioration :
 
-1.  Faites un *fork* du projet.
-2.  Créez une nouvelle branche pour votre fonctionnalité (`git checkout -b feature/nom-de-la-feature`).
-3.  *Committez* vos changements.
-4.  Ouvrez une **Pull Request** (PR).
+1.  **Forkez** le projet et clonez votre fork
+2.  **Créez une branche** pour votre fonctionnalité (`git checkout -b feature/nom-feature`)
+3.  **Développez** en suivant les conventions du projet
+4.  **Testez** vos modifications avec différents programmes Brainfuck
+5.  **Committez** avec des messages clairs (`git commit -m "feat: description"`)
+6.  **Mettez à jour** la version si nécessaire (`npm run version:patch`)
+7.  **Poussez** votre branche (`git push origin feature/nom-feature`)
+8.  **Ouvrez** une **Pull Request** avec une description détaillée
 
 -----
 

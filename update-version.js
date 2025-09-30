@@ -62,22 +62,25 @@ htmlContent = htmlContent.replace(
 fs.writeFileSync(htmlPath, htmlContent);
 console.log(`✅ ${htmlPath} mis à jour`);
 
-// 3. Optionnel: Mettre à jour README.md avec la version
+// 3. Mettre à jour README.md avec la version
 const readmePath = 'README.md';
 if (fs.existsSync(readmePath)) {
     let readmeContent = fs.readFileSync(readmePath, 'utf8');
     
-    // Ajouter/mettre à jour un badge de version
-    if (!readmeContent.includes('![Version]')) {
-        const title = readmeContent.split('\n')[0];
-        readmeContent = readmeContent.replace(
-            title,
-            `${title}\n\n![Version](https://img.shields.io/badge/version-${version}-blue.svg)\n![License](https://img.shields.io/badge/license-MIT-green.svg)`
-        );
-        
-        fs.writeFileSync(readmePath, readmeContent);
-        console.log(`✅ ${readmePath} mis à jour avec badges`);
-    }
+    // Mettre à jour le badge de version
+    readmeContent = readmeContent.replace(
+        /!\[Version\]\(https:\/\/img\.shields\.io\/badge\/version-[^-]+-blue\.svg\)/,
+        `![Version](https://img.shields.io/badge/version-${version}-blue.svg)`
+    );
+    
+    // Mettre à jour le badge de build
+    readmeContent = readmeContent.replace(
+        /!\[Build\]\(https:\/\/img\.shields\.io\/badge\/build-[^-]+-lightgrey\.svg\)/,
+        `![Build](https://img.shields.io/badge/build-${timestamp.replace(/-/g, '--')}-lightgrey.svg)`
+    );
+    
+    fs.writeFileSync(readmePath, readmeContent);
+    console.log(`✅ ${readmePath} mis à jour avec badges`);
 }
 
 console.log(`🎉 Mise à jour terminée pour la version ${version}!`);
