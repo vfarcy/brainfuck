@@ -1,4 +1,4 @@
-// Version 1.2.5 - Mise à jour automatique du 2025-09-30
+// Version 1.3.0 - Mise à jour automatique du 2025-09-30
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -156,7 +156,15 @@ class BrainfuckInterpreter {
                 break;
 
             case '.':
-                this.output += String.fromCharCode(this.memory[this.ptr]);
+                const outputChar = String.fromCharCode(this.memory[this.ptr]);
+                console.log(`🔍 DEBUG: Before output update - this.output.length=${this.output.length}, adding char code: ${this.memory[this.ptr]}`);
+                this.output += outputChar;
+                console.log(`🔍 DEBUG: After output update - this.output.length=${this.output.length}, charCodeAt(0)=${this.output.length > 0 ? this.output.charCodeAt(this.output.length-1) : 'N/A'}`);
+                // Notifier le callback d'output si défini
+                if (typeof window !== 'undefined' && window.onThreadOutput) {
+                    console.log(`🔍 DEBUG: Calling callback with threadId=${this.threadId}, output.length=${this.output.length}`);
+                    window.onThreadOutput(this.threadId, this.output);
+                }
                 break;
 
             case ',':
@@ -264,7 +272,7 @@ class BrainfuckInterpreter {
         manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
-        // Thread parent: garde sa valeur actuelle (correction v1.2.5)
+        // Thread parent: garde sa valeur actuelle (correction v1.3.0)
         // Thread enfant: ptr++, cellule active = 1
         childThread.ptr++;
         if (childThread.ptr >= childThread.memory.length) {
@@ -408,6 +416,11 @@ class BrainfuckInterpreter {
                 if (!thread.halted) currentActiveCount++;
             }
             throw new Error(`Limite d'exécution globale atteinte (${maxTotalSteps} étapes) avec ${currentActiveCount} threads actifs`);
+        }
+
+        // Forcer la capture des outputs avant de retourner les résultats
+        if (typeof window !== 'undefined' && window.captureThreadOutputsForRunAll) {
+            window.captureThreadOutputsForRunAll(results);
         }
 
         return results.sort((a, b) => a.threadId - b.threadId);

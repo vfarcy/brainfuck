@@ -6,21 +6,21 @@ Quand la commande `f` est rencontrée, le thread actuel **fork** :
 | **Parent** | **Garde sa valeur actuelle** (pas d'écrasement) |
 | **Enfant** | Le pointeur avance d'une position (`ptr++`) et la nouvelle cellule est mise à `1` |aScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--09--30-lightgrey.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.2.5
+## 🆕 Nouveautés v1.3.0
 
-- **🧹 Simplification Protection** : Suppression de la redondance - garde seulement la limite globale `maxThreads` (plus simple et efficace)
-- **🎯 Interface Adaptative** : La zone "État de l'Interpréteur" se masque automatiquement en mode multi-thread pour éviter la redondance
-- **🌟 Sortie Globale Unifiée** : Toutes les sorties des threads dans une seule zone avec identification par couleur
-- **🎨 Caractères Hexadécimaux Colorés** : Les caractères non-imprimables héritent de la couleur de leur thread
-- **📥 Zones d'Entrée par Thread** : Gestion individualisée des données d'entrée en mode multi-thread
-- **🤖 Versioning Automatique** : Système de gestion des versions avec mise à jour automatique
-- **📊 Pied de Page Informatif** : Affichage de la version et date de build en temps réel
+- **🎨 Coloration des Threads** : Sortie multi-thread avec identification visuelle par couleur pour chaque thread
+- **� Légende Interactive** : Affichage d'une légende colorée pour identifier les threads en mode multi-thread
+- **🔄 Skip Fork Behavior** : Correction du comportement des forks - les données du parent sont préservées au lieu d'être écrasées
+- **📝 Documentation Corrigée** : Mise à jour du README pour refléter le vrai comportement "Skip Fork" au lieu de "Restart Fork"
+- **⚡ Capture Temps Réel** : Système de capture des sorties en temps réel pendant l'exécution
+- **📊 Cache Persistant** : Système de cache pour préserver les sorties des threads même après nettoyage
+- **🎁 Interface Unifiée** : Sortie globale unifiée fonctionnant à la fois en mode pas-à-pas et exécution complète
 
 -----
 
@@ -38,14 +38,38 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 
 -----
 
+## 🎨 Identification Visuelle des Threads
+
+### Coloration Automatique
+Chaque thread possède sa propre couleur pour faciliter l'identification visuelle :
+
+| Thread | Couleur | Code Hex |
+|--------|---------|----------|
+| **T0** | 🔵 Bleu | `#2196F3` |
+| **T1** | 🟢 Vert | `#4CAF50` |
+| **T2** | 🟠 Orange | `#FF9800` |
+| **T3** | 🟣 Violet | `#9C27B0` |
+| **T4** | 🔴 Rouge | `#F44336` |
+| **T5** | 🟤 Marron | `#795548` |
+| **T6** | 🔘 Bleu-gris | `#607D8B` |
+| **T7** | 🩷 Rose | `#E91E63` |
+
+### Affichage dans l'Interface
+- **Sortie Globale** : Chaque caractère affiché porte la couleur de son thread d'origine
+- **Caractères Hexadécimaux** : Les caractères non-imprimables (ex: `0x01`) héritent de la couleur de leur thread
+- **Légende Interactive** : Une légende colorée s'affiche automatiquement en mode multi-thread
+- **Séparateurs Visuels** : Un séparateur `|` gris sépare les sorties de différents threads
+
+-----
+
 ## 🔀 Nouvelle Commande: Fork (`f`)
 
-### Comportement de `f`
+### Comportement de `f` (Skip Fork)
 Quand la commande `f` est rencontrée, le thread actuel **fork** :
 
 | Thread | Action |
-|--------|--------|
-| **Parent** | La cellule active est mise à `0` |
+|--------|---------|
+| **Parent** | **Garde sa valeur actuelle** (pas d'écrasement) |
 | **Enfant** | Le pointeur avance d'une position (`ptr++`) et la nouvelle cellule est mise à `1` |
 
 ### Exemples

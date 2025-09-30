@@ -122,7 +122,7 @@
         
         /* --- Styles de Sortie et Mémoire --- */
         #output-view, #code-view {
-            white-space: pre-wrap;
+            white-space: normal;
             border: 1px solid #ddd;
             padding: 10px;
             background-color: #fff;
@@ -584,14 +584,14 @@
         }
 
         /* Couleurs pour identifier les threads dans la sortie */
-        .thread-output-T0 { color: #2196F3; font-weight: bold; }
-        .thread-output-T1 { color: #4CAF50; font-weight: bold; }
-        .thread-output-T2 { color: #FF9800; font-weight: bold; }
-        .thread-output-T3 { color: #9C27B0; font-weight: bold; }
-        .thread-output-T4 { color: #F44336; font-weight: bold; }
-        .thread-output-T5 { color: #795548; font-weight: bold; }
-        .thread-output-T6 { color: #607D8B; font-weight: bold; }
-        .thread-output-T7 { color: #E91E63; font-weight: bold; }
+        #output-view .thread-output-T0 { color: #2196F3 !important; font-weight: bold !important; }
+        #output-view .thread-output-T1 { color: #4CAF50 !important; font-weight: bold !important; }
+        #output-view .thread-output-T2 { color: #FF9800 !important; font-weight: bold !important; }
+        #output-view .thread-output-T3 { color: #9C27B0 !important; font-weight: bold !important; }
+        #output-view .thread-output-T4 { color: #F44336 !important; font-weight: bold !important; }
+        #output-view .thread-output-T5 { color: #795548 !important; font-weight: bold !important; }
+        #output-view .thread-output-T6 { color: #607D8B !important; font-weight: bold !important; }
+        #output-view .thread-output-T7 { color: #E91E63 !important; font-weight: bold !important; }
         
         /* Style pour les caractères non-imprimables en hexa */
         .hex-char {
@@ -611,14 +611,14 @@
         }
         
         /* Couleurs des threads pour les caractères hexadécimaux */
-        .thread-output-T0 .hex-char { border-color: #2196F3; background: #e3f2fd; color: #1565c0; }
-        .thread-output-T1 .hex-char { border-color: #4CAF50; background: #e8f5e8; color: #2e7d32; }
-        .thread-output-T2 .hex-char { border-color: #FF9800; background: #fff3e0; color: #ef6c00; }
-        .thread-output-T3 .hex-char { border-color: #9C27B0; background: #f3e5f5; color: #7b1fa2; }
-        .thread-output-T4 .hex-char { border-color: #F44336; background: #ffebee; color: #d32f2f; }
-        .thread-output-T5 .hex-char { border-color: #795548; background: #efebe9; color: #5d4037; }
-        .thread-output-T6 .hex-char { border-color: #607D8B; background: #eceff1; color: #455a64; }
-        .thread-output-T7 .hex-char { border-color: #E91E63; background: #fce4ec; color: #c2185b; }
+        #output-view .thread-output-T0 .hex-char { border-color: #2196F3 !important; background: #e3f2fd !important; color: #1565c0 !important; }
+        #output-view .thread-output-T1 .hex-char { border-color: #4CAF50 !important; background: #e8f5e8 !important; color: #2e7d32 !important; }
+        #output-view .thread-output-T2 .hex-char { border-color: #FF9800 !important; background: #fff3e0 !important; color: #ef6c00 !important; }
+        #output-view .thread-output-T3 .hex-char { border-color: #9C27B0 !important; background: #f3e5f5 !important; color: #7b1fa2 !important; }
+        #output-view .thread-output-T4 .hex-char { border-color: #F44336 !important; background: #ffebee !important; color: #d32f2f !important; }
+        #output-view .thread-output-T5 .hex-char { border-color: #795548 !important; background: #efebe9 !important; color: #5d4037 !important; }
+        #output-view .thread-output-T6 .hex-char { border-color: #607D8B !important; background: #eceff1 !important; color: #455a64 !important; }
+        #output-view .thread-output-T7 .hex-char { border-color: #E91E63 !important; background: #fce4ec !important; color: #c2185b !important; }
         
         /* Effet hover pour les hex-char colorés */
         .thread-output-T0 .hex-char:hover { background: #bbdefb; }
@@ -772,7 +772,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.2.5"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.3.0"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -794,6 +794,9 @@
         }
 
         let interpreter = null;
+        
+        // Cache des sorties des threads pour la coloration
+        let threadOutputsCache = new Map();
 
         // Références DOM
         const codeInput = document.getElementById('bf-code');
@@ -934,6 +937,10 @@
                     console.warn('resetThreadManager non disponible, initialisation basique');
                     // Initialisation basique sans reset
                 }
+                
+                // Réinitialiser le cache des sorties
+                threadOutputsCache.clear();
+                console.log('🧹 Cache des sorties vidé');
                 
                 // Passage du code et des données d'entrée globales pour le thread principal
                 const globalInput = inputData.value;
@@ -1164,8 +1171,8 @@
             if (state.halted) {
                 runAllBtn.disabled = true;
                 stepBtn.disabled = true;
-                if (!outputView.textContent.includes("terminé")) {
-                    outputView.textContent += "\n\n--- Programme terminé ---";
+                if (!outputView.innerHTML.includes("terminé")) {
+                    outputView.innerHTML += "\n\n--- Programme terminé ---";
                 }
             }
         }
@@ -1340,6 +1347,80 @@
             }
         }
 
+
+
+        // Callback appelé à chaque output de thread
+        window.onThreadOutput = function(threadId, currentOutput) {
+            console.log(`🎯 Thread T${threadId} output update: length=${currentOutput.length}, chars=[${currentOutput.split('').map(c => c.charCodeAt(0)).join(',')}]`);
+            threadOutputsCache.set(threadId, currentOutput);
+        };
+
+        // Callback appelé à la fin de runAllThreads pour capturer les outputs finaux
+        window.captureThreadOutputsForRunAll = function(results) {
+            console.log('🎯 captureThreadOutputsForRunAll called with results:', results);
+            results.forEach(result => {
+                if (result.output && result.output.length > 0) {
+                    console.log(`🎯 Capturing final output for T${result.threadId}: length=${result.output.length}`);
+                    threadOutputsCache.set(result.threadId, result.output);
+                }
+            });
+            console.log('🎯 Final cache after runAll:', Array.from(threadOutputsCache.entries()));
+        };
+
+        // Capture les sorties des threads pendant l'exécution
+        function captureThreadOutputs() {
+            console.log('📦 DEBUG captureThreadOutputs: Starting capture...');
+            
+            if (!interpreter) {
+                console.log('📦 DEBUG: No interpreter found');
+                return;
+            }
+            
+            // Essayer d'abord la méthode normale
+            let allStates = interpreter.getAllThreadStates();
+            console.log('📦 DEBUG: interpreter.getAllThreadStates() =', allStates);
+            
+            // Fallback vers le gestionnaire global
+            if (allStates.length === 0 && BrainfuckInterpreter.threadManager) {
+                console.log('📦 DEBUG: Trying global thread manager');
+                allStates = [];
+                for (const [threadId, thread] of BrainfuckInterpreter.threadManager.threads) {
+                    const state = thread.getState();
+                    console.log(`📦 DEBUG: Thread T${threadId} state:`, state);
+                    allStates.push(state);
+                }
+                console.log('📦 DEBUG: Global states found:', allStates);
+            }
+            
+            // Si toujours aucun état, vérification directe des threads
+            if (allStates.length === 0) {
+                console.log('📦 DEBUG: No states found, checking threads directly...');
+                if (BrainfuckInterpreter.threadManager && BrainfuckInterpreter.threadManager.threads) {
+                    console.log('📦 DEBUG: Direct thread inspection:');
+                    for (const [tid, thread] of BrainfuckInterpreter.threadManager.threads) {
+                        console.log(`   T${tid}: halted=${thread.halted}, output="${thread.output}", length=${(thread.output||'').length}`);
+                        if (thread.output && thread.output.length > 0) {
+                            threadOutputsCache.set(tid, thread.output);
+                        }
+                    }
+                }
+            }
+            
+            // Mettre à jour le cache avec les sorties actuelles
+            let updatedCount = 0;
+            allStates.forEach(state => {
+                const output = state.output || '';
+                console.log(`📦 DEBUG: Thread T${state.threadId} output: "${output}" (length: ${output.length})`);
+                if (output.length > 0) {
+                    threadOutputsCache.set(state.threadId, output);
+                    updatedCount++;
+                }
+            });
+            
+            console.log(`📦 Cache des sorties mis à jour: ${updatedCount} threads with output`);
+            console.log('📦 Current cache:', Array.from(threadOutputsCache.entries()));
+        }
+
         // Met à jour la sortie globale unifiée avec annotations des threads
         function updateGlobalOutput() {
             if (!interpreter) {
@@ -1348,80 +1429,79 @@
                 return;
             }
             
-            const allStates = interpreter.getAllThreadStates();
-            const isMultiThread = allStates.length > 1;
-            
-            console.log('🎨 DEBUG updateGlobalOutput: allStates =', allStates);
-            console.log('🎨 DEBUG updateGlobalOutput: isMultiThread =', isMultiThread);
-            
-            // FALLBACK: Si getAllThreadStates retourne vide, essayer le gestionnaire global
-            if (allStates.length === 0 && BrainfuckInterpreter.threadManager) {
-                console.log('🎨 DEBUG: Trying global thread manager as fallback');
-                const globalStates = [];
-                for (const [threadId, thread] of BrainfuckInterpreter.threadManager.threads) {
-                    globalStates.push(thread.getState());
-                }
-                console.log('🎨 DEBUG: Global states found:', globalStates);
-                
-                if (globalStates.length > 0) {
-                    // Utiliser les états du gestionnaire global
-                    const sortedStates = globalStates.sort((a, b) => a.threadId - b.threadId);
-                    const isGlobalMultiThread = sortedStates.length > 1;
-                    
-                    if (isGlobalMultiThread) {
-                        let threadOutputs = new Map();
-                        sortedStates.forEach(state => {
-                            const output = state.output || '';
-                            if (output.length > 0) {
-                                threadOutputs.set(state.threadId, output);
-                            }
-                        });
-                        
-                        const globalOutput = buildAnnotatedOutput(threadOutputs);
-                        outputView.innerHTML = globalOutput;
-                        
-                        if (threadOutputs.size > 0) {
-                            updateThreadLegend(sortedStates);
-                            document.getElementById('output-legend').style.display = 'block';
-                        } else {
-                            document.getElementById('output-legend').style.display = 'none';
-                        }
-                        return;
-                    }
-                }
+            // Capturer les sorties des threads actifs seulement si le cache est vide
+            // (pour éviter d'écraser le cache rempli par runAllThreads)
+            if (threadOutputsCache.size === 0) {
+                console.log('🎨 DEBUG: Cache vide, capturing thread outputs...');
+                captureThreadOutputs();
+            } else {
+                console.log('🎨 DEBUG: Cache non-vide, skipping capture to preserve data');
             }
             
-            if (isMultiThread) {
-                // Mode multi-thread : construire la sortie globale avec annotations
-                let threadOutputs = new Map();
-                
-                // Collecter les sorties de tous les threads
-                allStates.forEach(state => {
-                    const output = state.output || '';
-                    if (output.length > 0) {
-                        threadOutputs.set(state.threadId, output);
-                    }
-                });
-                
-                console.log('🎨 DEBUG updateGlobalOutput: threadOutputs collected =', threadOutputs);
-                
-                // Construire la sortie unifiée
-                const globalOutput = buildAnnotatedOutput(threadOutputs);
+            const allStates = interpreter.getAllThreadStates();
+            const isMultiThread = allStates.length > 1 || threadOutputsCache.size > 1;
+            
+            console.log('🎨 DEBUG updateGlobalOutput: allStates =', allStates);
+            console.log('🎨 DEBUG updateGlobalOutput: threadOutputsCache =', threadOutputsCache);
+            console.log('🎨 DEBUG updateGlobalOutput: isMultiThread =', isMultiThread);
+            
+            // Utiliser le cache si nous avons des outputs capturés, même en single-thread
+            if (threadOutputsCache.size > 0) {
+                console.log('🎨 DEBUG: Taking cache path with', threadOutputsCache.size, 'threads');
+                // Mode avec cache : utiliser les sorties capturées
+                const globalOutput = buildAnnotatedOutput(threadOutputsCache);
                 
                 console.log('🎨 DEBUG updateGlobalOutput: setting innerHTML to:', globalOutput);
                 
                 // Afficher avec le HTML coloré
                 outputView.innerHTML = globalOutput;
+                console.log('🎨 DEBUG: After setting innerHTML, outputView.innerHTML =', outputView.innerHTML);
                 
-                // Afficher la légende des threads seulement s'il y a de la sortie
-                if (threadOutputs.size > 0) {
-                    updateThreadLegend(allStates);
-                    document.getElementById('output-legend').style.display = 'block';
+                // Diagnostic complet
+                const outputElement = document.getElementById('output-view');
+                console.log('🔍 DIAGNOSTIC outputView element:', outputElement);
+                console.log('🔍 DIAGNOSTIC tagName:', outputElement.tagName);
+                console.log('🔍 DIAGNOSTIC computed styles:', window.getComputedStyle(outputElement));
+                console.log('🔍 DIAGNOSTIC color property:', window.getComputedStyle(outputElement).color);
+                console.log('🔍 DIAGNOSTIC background property:', window.getComputedStyle(outputElement).backgroundColor);
+                
+                // Chercher le span avec la classe thread-output-T0
+                setTimeout(() => {
+                    const threadSpan = outputElement.querySelector('.thread-output-T0');
+                    if (threadSpan) {
+                        console.log('🔍 DIAGNOSTIC thread span found:', threadSpan);
+                        console.log('🔍 DIAGNOSTIC thread span styles:', window.getComputedStyle(threadSpan));
+                        console.log('🔍 DIAGNOSTIC thread span color:', window.getComputedStyle(threadSpan).color);
+                        console.log('🔍 DIAGNOSTIC thread span background:', window.getComputedStyle(threadSpan).backgroundColor);
+                    } else {
+                        console.log('🔍 DIAGNOSTIC: No thread span found!');
+                    }
+                }, 100);
+                
+                // Afficher la légende des threads s'il y a des outputs dans le cache
+                if (threadOutputsCache.size > 0) {
+                    // Créer des états simulés pour la légende basés sur le cache
+                    const simulatedStates = [];
+                    for (const [threadId, output] of threadOutputsCache) {
+                        simulatedStates.push({
+                            threadId: threadId,
+                            parentId: threadId === 0 ? null : 0, // Supposer que T0 est le parent
+                            output: output
+                        });
+                    }
+                    updateThreadLegend(simulatedStates);
+                    
+                    if (threadOutputsCache.size > 1) {
+                        document.getElementById('output-legend').style.display = 'block';
+                    } else {
+                        document.getElementById('output-legend').style.display = 'none';
+                    }
                 } else {
                     document.getElementById('output-legend').style.display = 'none';
                 }
                 
             } else {
+                console.log('🎨 DEBUG: Taking single-thread path (cache is empty)');
                 // Mode single-thread : sortie simple avec formatage des caractères
                 const state = interpreter.getState();
                 const output = state.output || '';
@@ -1465,7 +1545,7 @@
                     default: charName = `Code ASCII ${charCode}`;
                 }
                 
-                // Les styles .thread-output-T{X} .hex-char géreront déjà la couleur
+                // Utiliser les classes CSS au lieu des styles inline
                 return `<span class="hex-char" title="${charName}">${hexValue}</span>`;
             }
         }
@@ -1497,6 +1577,7 @@
                         formattedOutput += formatted;
                     }
                     
+                    // Utiliser les classes CSS avec identification du thread
                     const threadSpan = `<span class="thread-output-T${threadId}" title="Thread T${threadId}">${formattedOutput}</span>`;
                     console.log(`🎨 DEBUG: Thread T${threadId} span:`, threadSpan);
                     
@@ -1749,7 +1830,9 @@
                         console.log('✅ Exécution terminée (pas de forks détectés)');
                     }
                     
+                    console.log('🔍 AVANT updateUI() - outputView.innerHTML =', document.getElementById('output-view').innerHTML);
                     updateUI();
+                    console.log('🔍 APRES updateUI() - outputView.innerHTML =', document.getElementById('output-view').innerHTML);
                 } catch (error) {
                     alert(`❌ Erreur d'exécution: ${error.message}`);
                     console.error(error);
@@ -1822,6 +1905,9 @@
                                     // Thread terminé - pas besoin de manipulation manuelle
                                     console.log(`🛑 Thread T${threadId} terminé`);
                                 }
+                                
+                                // Capturer les outputs après chaque step
+                                captureThreadOutputs();
                             }
                         }
                         
@@ -1853,6 +1939,9 @@
                     if (interpreter) {
                         interpreter.cleanupHaltedThreads();
                     }
+                    
+                    // Capturer les sorties après chaque étape
+                    captureThreadOutputs();
                     
                     updateUI();
                 } catch (error) {
