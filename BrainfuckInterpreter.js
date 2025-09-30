@@ -1,3 +1,4 @@
+// Version 1.2.2 - Correction activeThreadsCount + try-catch robuste
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -338,31 +339,32 @@ class BrainfuckInterpreter {
      * @returns {Array} Résultats de tous les threads
      */
     runAllThreads() {
-        const manager = this.threadManager;
-        if (!manager) {
-            return [{
-                threadId: this.threadId,
-                parentId: this.parentId,
-                output: this.runAll(),
-                finalPtr: this.ptr,
-                finalMemory: this.memory.slice(0, 50),
-                children: this.children
-            }];
-        }
-        
-        const results = [];
-        let totalSteps = 0;
-        const maxTotalSteps = 500000; // Limite globale plus élevée
-        let activeThreadsCount = 0; // Déclaration en dehors de la boucle
-
-        while (totalSteps < maxTotalSteps) {
-            // Recompter les threads actifs à chaque itération (pour gérer les nouveaux forks)
-            activeThreadsCount = 0;
-            for (const [threadId, thread] of manager.threads) {
-                if (!thread.halted) activeThreadsCount++;
+        try {
+            const manager = this.threadManager;
+            if (!manager) {
+                return [{
+                    threadId: this.threadId,
+                    parentId: this.parentId,
+                    output: this.runAll(),
+                    finalPtr: this.ptr,
+                    finalMemory: this.memory.slice(0, 50),
+                    children: this.children
+                }];
             }
             
-            if (activeThreadsCount === 0) break;
+            const results = [];
+            let totalSteps = 0;
+            const maxTotalSteps = 500000; // Limite globale plus élevée
+            let activeThreadsCount = 0; // Déclaration en dehors de la boucle
+
+            while (totalSteps < maxTotalSteps) {
+                // Recompter les threads actifs à chaque itération (pour gérer les nouveaux forks)
+                activeThreadsCount = 0;
+                for (const [threadId, thread] of manager.threads) {
+                    if (!thread.halted) activeThreadsCount++;
+                }
+                
+                if (activeThreadsCount === 0) break;
             
             let anyProgress = false;
             const threadsToRemove = [];
@@ -400,10 +402,20 @@ class BrainfuckInterpreter {
         }
 
         if (totalSteps >= maxTotalSteps) {
-            throw new Error(`Limite d'exécution globale atteinte (${maxTotalSteps} étapes) avec ${activeThreadsCount} threads actifs`);
+            // Recalculer le nombre de threads actifs pour le message d'erreur
+            let currentActiveCount = 0;
+            for (const [threadId, thread] of manager.threads) {
+                if (!thread.halted) currentActiveCount++;
+            }
+            throw new Error(`Limite d'exécution globale atteinte (${maxTotalSteps} étapes) avec ${currentActiveCount} threads actifs`);
         }
 
         return results.sort((a, b) => a.threadId - b.threadId);
+        } catch (error) {
+            console.error('❌ Erreur dans runAllThreads:', error.message);
+            console.error('❌ Stack trace:', error.stack);
+            throw new Error(`Erreur d'exécution multi-thread: ${error.message}`);
+        }
     }
 
     /**
