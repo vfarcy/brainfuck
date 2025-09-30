@@ -267,10 +267,14 @@ class BrainfuckInterpreter {
         manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
-        // Thread parent: cellule active = 0
+        // Thread parent: cellule active = 0 SEULEMENT si elle était vide
         console.log(`🔍 DEBUG Fork T${this.threadId}: Avant fork - PTR=${this.ptr}, memory[${this.ptr}]=${this.memory[this.ptr]}`);
-        this.memory[this.ptr] = 0;
-        console.log(`🔍 DEBUG Fork T${this.threadId}: Après écrasement parent - memory[${this.ptr}]=${this.memory[this.ptr]}`);
+        
+        // CORRECTION: Ne pas écraser les données existantes
+        const originalValue = this.memory[this.ptr];
+        // this.memory[this.ptr] = 0; // COMMENTÉ - ne plus écraser
+        
+        console.log(`🔍 DEBUG Fork T${this.threadId}: Données préservées - memory[${this.ptr}]=${this.memory[this.ptr]}`);
         
         // Thread enfant: ptr++, cellule active = 1
         childThread.ptr++;
