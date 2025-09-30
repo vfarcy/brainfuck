@@ -234,7 +234,7 @@ class BrainfuckInterpreter {
         // Protection contre les fork bombs globales
         if (activeThreadCount >= manager.maxThreads) {
             console.error(`❌ Fork refusé: ${activeThreadCount}/${manager.maxThreads} threads`);
-            throw new Error(`Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé.`);
+            throw new Error(`🛡️ Protection fork bomb: Limite de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé. Augmentez la limite ou simplifiez le programme.`);
         }
         
         const childId = manager.nextId++;
