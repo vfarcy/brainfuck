@@ -278,6 +278,12 @@ class BrainfuckInterpreter {
         // Incrémenter le compteur de forks du parent
         this.forkCount++;
         
+        // IMPORTANT: Avancer l'IP pour éviter la re-exécution de 'f'
+        // Le parent continue après l'instruction fork
+        this.ip++;
+        // L'enfant commence également après l'instruction fork
+        childThread.ip++;
+        
         console.log(`🔀 Fork créé: Parent T${this.threadId} (forks: ${this.forkCount}/${this.maxForksPerThread}) → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
         console.log(`📊 Threads après fork: ${manager.threads.size} total`);
     }
