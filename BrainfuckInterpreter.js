@@ -253,10 +253,10 @@ class BrainfuckInterpreter {
         childThread.ip = this.ip;
         childThread.output = this.output;
         
-        // Partager le gestionnaire avec l'enfant
+        // Partager le gestionnaire avec l'enfant et s'assurer qu'il est ajouté
         childThread.threadManager = this.threadManager;
         
-        // Ajouter au gestionnaire
+        // Ajouter au gestionnaire (même si le constructeur n'a pas pu le faire)
         manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
