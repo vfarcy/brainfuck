@@ -993,11 +993,14 @@
             if (!interpreter) return;
             
             const allStates = interpreter.getAllThreadStates();
+            console.log('🔍 Debug updateMultiThreadView - Nombre de threads:', allStates.length);
+            console.log('🔍 Debug updateMultiThreadView - États des threads:', allStates);
             const container = document.getElementById('threads-container');
             
             container.innerHTML = '';
             
             allStates.forEach((state, index) => {
+                console.log(`🔍 Debug - Affichage thread T${state.threadId}, halted: ${state.halted}`);
                 const threadDiv = document.createElement('div');
                 const currentThreadId = interpreter ? interpreter.getState().threadId : 0;
                 const isCurrentThread = state.threadId === currentThreadId;
