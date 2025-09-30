@@ -1503,10 +1503,14 @@
                         // Mettre à jour l'input du thread correspondant dans l'interpréteur
                         if (interpreter && interpreter.threadManager) {
                             const thread = interpreter.threadManager.threads.get(state.threadId);
-                            if (thread && thread.input !== newValue) {
-                                thread.input = newValue.split(''); // Convertir en tableau
-                                thread.inputPointer = 0; // Reset du pointeur d'entrée
-                                console.log(`🔄 Thread T${state.threadId} input synchronisé`);
+                            if (thread) {
+                                // Comparer avec la version chaîne du tableau actuel
+                                const currentInputString = Array.isArray(thread.input) ? thread.input.join('') : (thread.input || '');
+                                if (currentInputString !== newValue) {
+                                    thread.input = newValue.split(''); // Convertir en tableau
+                                    // Pas de inputPointer car BrainfuckInterpreter utilise shift()
+                                    console.log(`🔄 Thread T${state.threadId} input synchronisé: "${newValue}"`);
+                                }
                             }
                         }
                     });
@@ -1526,10 +1530,14 @@
                     // Mettre à jour l'input du thread correspondant dans l'interpréteur
                     if (interpreter && interpreter.threadManager) {
                         const thread = interpreter.threadManager.threads.get(threadId);
-                        if (thread && thread.input !== newValue) {
-                            thread.input = newValue.split(''); // Convertir en tableau
-                            thread.inputPointer = 0; // Reset du pointeur d'entrée
-                            console.log(`🔄 Thread T${threadId} input synchronisé`);
+                        if (thread) {
+                            // Comparer avec la version chaîne du tableau actuel
+                            const currentInputString = Array.isArray(thread.input) ? thread.input.join('') : (thread.input || '');
+                            if (currentInputString !== newValue) {
+                                thread.input = newValue.split(''); // Convertir en tableau
+                                // Pas de inputPointer car BrainfuckInterpreter utilise shift()
+                                console.log(`🔄 Thread T${threadId} input synchronisé: "${newValue}"`);
+                            }
                         }
                     }
                 });

@@ -163,9 +163,12 @@ class BrainfuckInterpreter {
                 // Lit le caractère et utilise 0 si l'entrée est vide
                 // S'assurer que this.input est un tableau
                 if (!Array.isArray(this.input)) {
+                    console.warn(`⚠️ Thread T${this.threadId}: this.input n'est pas un tableau:`, typeof this.input, this.input);
                     this.input = (typeof this.input === 'string' ? this.input : '').split('');
+                    console.log(`🔧 Thread T${this.threadId}: this.input converti en tableau:`, this.input);
                 }
                 const char = this.input.shift();
+                console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
                 break;
 
