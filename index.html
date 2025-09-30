@@ -1234,6 +1234,11 @@
                     const allThreadStates = interpreter.getAllThreadStates();
                     const hasMultipleThreads = allThreadStates.length > 1;
                     
+                    console.log(`🔍 Debug step: ${allThreadStates.length} threads, hasMultiple: ${hasMultipleThreads}`);
+                    allThreadStates.forEach(t => {
+                        console.log(`  T${t.threadId}: IP=${t.ip}/${t.code.length}, halted=${t.halted}, instruction='${t.currentInstruction || 'EOF'}'`);
+                    });
+                    
                     // Incrémenter le compteur global
                     globalStepCounter++;
                     const stepNumberEl = document.getElementById('step-number');
