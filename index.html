@@ -736,18 +736,21 @@
 
     <hr>
 
-    <h2>État de l'Interpréteur</h2>
-    <p>
-        Pointeur d'Instruction (IP): <span id="ip-view">0</span>
-        &nbsp;|&nbsp;
-        Pointeur de Cellule (PTR): <span id="ptr-view">0</span>
-    </p>
+    <!-- État de l'interpréteur (visible uniquement en mode single-thread) -->
+    <div id="single-thread-state">
+        <h2>État de l'Interpréteur</h2>
+        <p>
+            Pointeur d'Instruction (IP): <span id="ip-view">0</span>
+            &nbsp;|&nbsp;
+            Pointeur de Cellule (PTR): <span id="ptr-view">0</span>
+        </p>
 
-    <h3>Code en cours d'exécution</h3>
-    <pre id="code-view"></pre>
+        <h3>Code en cours d'exécution</h3>
+        <pre id="code-view"></pre>
 
-    <h3>Mémoire (Cellules autour du PTR)</h3>
-    <div id="memory-view"></div>
+        <h3>Mémoire (Cellules autour du PTR)</h3>
+        <div id="memory-view"></div>
+    </div>
 
     <script src="BrainfuckInterpreter.js?v=1.2.4"></script> 
 
@@ -1108,6 +1111,9 @@
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
                 
+                // Masquer l'état single-thread en mode multi-thread (éviter la redondance)
+                document.getElementById('single-thread-state').style.display = 'none';
+                
                 // Basculer vers les zones d'entrée par thread
                 document.getElementById('single-thread-input').style.display = 'none';
                 updateMultiThreadInputs();
@@ -1118,6 +1124,9 @@
                 stepBtn.textContent = '👣 Step (Tous Threads)';
             } else {
                 document.getElementById('multi-thread-view').style.display = 'none';
+                
+                // Afficher l'état single-thread en mode single-thread
+                document.getElementById('single-thread-state').style.display = 'block';
                 
                 // Revenir à la zone d'entrée globale
                 document.getElementById('single-thread-input').style.display = 'block';
@@ -1821,6 +1830,9 @@
             document.getElementById('multi-thread-inputs').style.display = 'none';
             document.getElementById('multi-thread-view').style.display = 'none';
             document.getElementById('output-legend').style.display = 'none';
+            
+            // Réafficher l'état single-thread
+            document.getElementById('single-thread-state').style.display = 'block';
             
             console.clear();
             console.log('🔄 Interpréteur réinitialisé');
