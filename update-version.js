@@ -36,6 +36,29 @@ htmlContent = htmlContent.replace(
     `BrainfuckInterpreter.js?v=${version}`
 );
 
+// Mettre à jour la version dans le pied de page
+htmlContent = htmlContent.replace(
+    /<span id="app-version">[^<]*<\/span>/,
+    `<span id="app-version">${version}</span>`
+);
+
+// Mettre à jour la date de build
+htmlContent = htmlContent.replace(
+    /<span id="build-date">[^<]*<\/span>/,
+    `<span id="build-date">${timestamp}</span>`
+);
+
+// Mettre à jour les constantes JavaScript de version
+htmlContent = htmlContent.replace(
+    /const APP_VERSION = '[^']*';/,
+    `const APP_VERSION = '${version}';`
+);
+
+htmlContent = htmlContent.replace(
+    /const BUILD_DATE = '[^']*';/,
+    `const BUILD_DATE = '${timestamp}';`
+);
+
 fs.writeFileSync(htmlPath, htmlContent);
 console.log(`✅ ${htmlPath} mis à jour`);
 
