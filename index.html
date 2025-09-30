@@ -1230,6 +1230,10 @@
                 try {
                     const state = interpreter.getState();
                     
+                    // Vérifier le nombre réel de threads dans le gestionnaire
+                    const allThreadStates = interpreter.getAllThreadStates();
+                    const hasMultipleThreads = allThreadStates.length > 1;
+                    
                     // Incrémenter le compteur global
                     globalStepCounter++;
                     const stepNumberEl = document.getElementById('step-number');
@@ -1238,9 +1242,14 @@
                     const stepCounterEl = document.getElementById('step-counter');
                     if (stepCounterEl) stepCounterEl.style.display = 'block';
                     
-                    if (state.totalThreads > 1) {
+                    if (hasMultipleThreads) {
                         // Mode multi-thread: exécuter une étape pour chaque thread actif
-                        const manager = BrainfuckInterpreter.threadManager;
+                        const manager = interpreter.threadManager;
+                        if (!manager) {
+                            console.error('❌ Pas de gestionnaire de threads disponible');
+                            return;
+                        }
+                        
                         let anyProgress = false;
                         
                         // Créer un snapshot des threads AVANT l'itération pour éviter les modifications concurrentes
