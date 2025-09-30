@@ -95,10 +95,10 @@ Imaginez que votre programme soit une **recette de cuisine** et chaque thread so
 👨‍🍳 T1 : [f] , f .  ← Commence au début de la recette !
 ```
 
-## 🔄 **Principe Fondamental : "Chaque Clone Refait TOUT"**
+## 🔄 **Principe Fondamental : "Skip Fork - Continue Après"**
 
 ### **⚠️ Point Crucial :**
-Quand un thread est créé par fork, il ne continue **PAS** après le fork. Il recommence **depuis le début** du programme !
+Quand un thread est créé par fork, il **continue APRÈS** le fork qui l'a créé, sans exécuter cette instruction fork. Les deux threads (parent et enfant) reprennent **à la même position suivante**.
 
 ## 📖 **Exemple Détaillé : Code `f,f.`**
 
@@ -117,56 +117,55 @@ Code:      f   ,   f   .
 T0: [f] , f .  ← Position 0
 ```
 - T0 exécute le fork → Crée T1
-- T0 avance à la position 1
+- **Les deux** avancent à la position 1
 
 #### **🕑 Temps 2 : Après le premier fork**
 ```
 T0: f [,] f .  ← Position 1  
-T1: [f] , f .  ← Position 0 (recommence !)
+T1: f [,] f .  ← Position 1 (continue après le fork !)
 ```
-- T0 exécute `,` (lit une entrée)
-- T1 exécute `f` (fork encore !) → Crée T2
+- T0 exécute `,` (lit entrée "a")
+- T1 exécute `,` (lit entrée "b")
+- **Les deux** avancent à la position 2
 
-#### **🕒 Temps 3 : Prolifération**
+#### **🕒 Temps 3 : Deuxième fork**
 ```
 T0: f , [f] .  ← Position 2
-T1: f [,] f .  ← Position 1  
-T2: [f] , f .  ← Position 0 (nouveau clone)
+T1: f , [f] .  ← Position 2
 ```
-- T0 exécute `f` (fork) → Crée T3
-- T1 exécute `,` (lit une entrée)
-- T2 exécute `f` (fork) → Crée T4
+- T0 exécute `f` (fork) → Crée T2 **qui commence en position 3**
+- T1 exécute `f` (fork) → Crée T3 **qui commence en position 3**
+- T0 et T1 avancent à la position 3
 
-#### **🕓 Temps 4 : Explosion finale**
+#### **🕓 Temps 4 : Affichage final**
 ```
-T0: f , f [.]  ← Position 3 (affiche)
-T1: f , [f] .  ← Position 2 (fork → T5)
-T2: f [,] f .  ← Position 1 (lit)
-T3: [f] , f .  ← Position 0 (fork → T6)
-T4: [f] , f .  ← Position 0 (fork → T7)
+T0: f , f [.]  ← Position 3 (affiche "a")
+T1: f , f [.]  ← Position 3 (affiche "b")
+T2:       [.]  ← Position 3 (affiche valeur par défaut)
+T3:       [.]  ← Position 3 (affiche valeur par défaut)
 ```
 
-**Et ça continue... jusqu'à la limite de 8 threads !**
+**Résultat prévisible : 2 threads lisent, puis 4 threads affichent !**
 
 ## 🎯 **Pourquoi ce Comportement ?**
 
 ### **Avantages Pédagogiques :**
 
 1. **🔍 Simplicité Conceptuelle**
-   - Chaque thread est une **copie exacte** du programme original
-   - Pas de logique complexe de "où continuer"
+   - Les threads continuent logiquement **après** l'instruction qui les crée
+   - Comportement **prévisible** et **intuitif**
 
 2. **👀 Visualisation Claire**
-   - On voit exactement combien de threads sont créés
-   - L'explosion est **visible** et **mesurable**
+   - Croissance **contrôlée** du nombre de threads
+   - Pas d'explosion exponentielle incontrôlée
 
 3. **🛡️ Protection Naturelle**
-   - La limite de threads empêche les fork bombs
-   - Comportement prévisible
+   - Évite naturellement les fork bombs excessives
+   - Comportement plus **stable** et **analysable**
 
 4. **📊 Analyse Comportementale**
-   - Permet d'étudier les patterns de création
-   - Montre l'impact des algorithmes récursifs
+   - Permet l'étude de patterns de parallélisme **réalistes**
+   - Montre un modèle proche des **vrais systèmes**
 
 ## 🧪 **Exemples Pratiques**
 
@@ -188,13 +187,14 @@ f.
 - T1 : affiche (cellule à 0 car nouveau)
 - **Sortie :** `0x01|0x00`
 
-### **Exemple 3 : Fork Conditionnel**
+### **Exemple 3 : Skip Fork avec Données**
 ```brainfuck
-+++[>f<-]
++f,.
 ```
 **Résultat :**
-- Crée 3 threads (un par boucle)
-- Chaque nouveau thread recommence tout
+- T0 : incrémente → fork → lit "a" → affiche "a"
+- T1 : continue après fork → lit "b" → affiche "b"
+- **Sortie :** `0x61|0x62` ("a"|"b")
 
 ## 🚨 **Pièges Courants**
 
@@ -202,28 +202,31 @@ f.
 ```brainfuck
 f,f.
 ```
-**On pourrait penser :**
-- T0 : fork → lit "a" → fork → affiche "a"
-- T1 : lit "b" → affiche "b"
+**On pourrait penser (incorrectement) :**
+- Que les threads recommencent depuis le début du programme
 
-**Mais en réalité :**
-- T0, T1, T2, T3 exécutent tous le programme complet
-- Seuls T0 et T1 ont des données à lire
+**En réalité (skip fork) :**
+- T0 et T1 continuent après chaque fork
+- T0 : fork → `,` → fork → `.`
+- T1 : `,` → fork → `.` (skip le premier fork)
+- T2 et T3 : `.` seulement (créés au deuxième fork)
 
 ### **✅ Bonne Compréhension**
-Chaque thread est comme un **programme indépendant** qui recommence depuis le début, mais avec sa propre mémoire et position.
+Chaque thread **continue** là où le fork l'a placé, créant un parallélisme **logique** et **prévisible**.
 
-## 🎓 **Métaphore Alternative : L'Arbre Généalogique**
+## 🎓 **Métaphore : La Ligne de Production**
 
 ```
-        T0 (Grand-parent)
-       ↙  ↘
-     T1    T2 (Enfants de T0)
-    ↙ ↘   ↙ ↘
-   T3 T4 T5 T6 (Petits-enfants)
+        T0 (Ouvrier principal)
+         ↓
+    [Fork] ← Duplication
+       ↙ ↘
+     T1   T0 (continuent ensemble)
+      ↓    ↓
+   [Tâche] [Tâche] (même étape suivante)
 ```
 
-Chaque descendant **hérite** du code complet mais commence sa **propre vie** depuis le début.
+Chaque **duplication** crée un nouvel ouvrier qui commence **à la même étape suivante**, pas au début de la ligne !
 
 ## 🔬 **Valeur Éducative**
 
@@ -236,7 +239,7 @@ Ce comportement enseigne :
 
 ## 💡 **En Résumé**
 
-Le fork en Brainfuck n'est **pas** un "saut" ou une "division". C'est une **duplication complète** où chaque nouveau thread recommence le programme depuis le début, créant des patterns d'exécution fascinants à observer et analyser ! 🚀
+Le fork en Brainfuck est un **"Skip Fork"** : chaque nouveau thread **continue après** l'instruction fork qui l'a créé, permettant un parallélisme **logique** et **contrôlé**, plus proche des vrais systèmes multi-threadés ! 🚀
 
 -----
 

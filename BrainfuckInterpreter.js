@@ -156,7 +156,10 @@ class BrainfuckInterpreter {
                 break;
 
             case '.':
-                this.output += String.fromCharCode(this.memory[this.ptr]);
+                console.log(`🔍 DEBUG T${this.threadId}: Affichage - PTR=${this.ptr}, memory[${this.ptr}]=${this.memory[this.ptr]}`);
+                const outputChar = String.fromCharCode(this.memory[this.ptr]);
+                console.log(`🔍 DEBUG T${this.threadId}: Caractère affiché = "${outputChar}" (code: ${this.memory[this.ptr]})`);
+                this.output += outputChar;
                 break;
 
             case ',':
@@ -265,7 +268,9 @@ class BrainfuckInterpreter {
         
         // Appliquer les règles du fork
         // Thread parent: cellule active = 0
+        console.log(`🔍 DEBUG Fork T${this.threadId}: Avant fork - PTR=${this.ptr}, memory[${this.ptr}]=${this.memory[this.ptr]}`);
         this.memory[this.ptr] = 0;
+        console.log(`🔍 DEBUG Fork T${this.threadId}: Après écrasement parent - memory[${this.ptr}]=${this.memory[this.ptr]}`);
         
         // Thread enfant: ptr++, cellule active = 1
         childThread.ptr++;
@@ -274,6 +279,7 @@ class BrainfuckInterpreter {
             childThread.memory = childThread.memory.concat(new Array(MEMORY_SIZE).fill(0));
         }
         childThread.memory[childThread.ptr] = 1;
+        console.log(`🔍 DEBUG Fork T${childId}: Enfant - PTR=${childThread.ptr}, memory[${childThread.ptr}]=${childThread.memory[childThread.ptr]}`);
         
         // Enregistrer la relation parent-enfant
         this.children.push(childId);
