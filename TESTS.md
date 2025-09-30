@@ -1,13 +1,23 @@
-# 🧪 Programmes de Test - Visualisation Multithreadée
+# 🧪 Programmes de Test - Interpréteur Brainfuck Multithreadé
+
+## 🎯 Instructions de Test Préliminaires
+
+1. **Ouvrir l'interpréteur** : Lancez `index.html` dans le navigateur
+2. **Console de développement** : Ouvrir F12 pour voir les logs détaillés
+3. **Mode de test** : Utiliser "Step (Tous Threads)" pour l'analyse détaillée
+4. **Observation** : Interface adaptative selon single/multi-thread
+
+---
 
 ## 1. Test Simple - Fork Basique
 ```brainfuck
 +++f+++.
 ```
 **Résultat attendu :**
-- Thread T1 (parent) : cell=0, affiche '\x03' (3)
-- Thread T2 (enfant) : ptr++, cell=1, affiche '\x04' (4)
-- **Observer :** Compteur d'étapes, barres de progression, historique
+- **T0** (principal) : cell[0]=3, fork, cell[0]=0, cell[0]+++=3, affiche `0x03` (bleu)
+- **T1** (enfant) : ptr=1, cell[1]=1, cell[1]+++=4, affiche `0x04` (vert)
+- **Sortie globale unifiée** : `0x030x04` avec couleurs distinctes
+- **Observer :** Légende des threads, zones d'entrée séparées
 
 ---
 
@@ -16,32 +26,32 @@
 +f+f+.
 ```
 **Résultat attendu :**
-- 4 threads créés au total
-- Chaque thread avec une valeur différente
-- **Observer :** Répartition des étapes entre threads dans l'historique
+- **4 threads créés** : T0, T1, T2, T3
+- **Explosion contrôlée** : Chaque thread crée des enfants
+- **Observer :** Protection limite (8 threads maximum)
+- **Interface** : Masquage automatique "État Interpréteur" en mode multi-thread
 
 ---
 
-## 3. Test avec Boucles
+## 3. Test avec Boucles et Divergence
 ```brainfuck
 ++f[+.]
 ```
 **Résultat attendu :**
-- Thread parent : entre en boucle infinie, affiche caractères
-- Thread enfant : ptr=1, cell=0, s'arrête immédiatement
-- **Observer :** Différence de progression entre threads
+- **T0** (parent) : cell[0]=2, fork, cell[0]=0, entre en boucle infinie, affiche continuellement
+- **T1** (enfant) : ptr=1, cell[1]=1, n'entre pas en boucle ([1] != 0), s'arrête après une exécution
+- **Observer :** Différence de comportement visible dans les zones de sortie
 
 ---
 
-## 4. Test Progression Visuelle
+## 4. Test Caractères Non-Imprimables
 ```brainfuck
->++++[<++++>-]<f>++++[<++++>-]<.
+++++++++++f.
 ```
 **Résultat attendu :**
-- Code plus long pour mieux voir les barres de progression
-- Thread parent : calcul de 16 puis fork
-- Thread enfant : même calcul, affiche résultat
-- **Observer :** Barres de progression qui avancent progressivement
+- **T0** : cell[0]=10, fork, cell[0]=0, affiche `0x00` (NULL) en bleu
+- **T1** : ptr=1, cell[1]=1, affiche `0x01` en vert
+- **Observer :** Badges hexadécimaux colorés avec tooltips informatifs
 
 ---
 
@@ -50,57 +60,111 @@
 +[f]
 ```
 **Résultat attendu :**
-- Limitation automatique à 10 threads
-- Message d'erreur dans la console
-- **Observer :** Protection contre la création excessive de threads
+- **Limitation automatique** à 8 threads maximum
+- **Message d'erreur** : "Protection fork bomb: Limite globale de threads atteinte (8/8). Fork refusé."
+- **Observer :** Protection robuste contre les fork bombs
 
 ---
 
-## 6. Test Debug et Logs
+## 6. Test Interface Adaptative
 ```brainfuck
-+++f++.f.
++++.
+```
+**Puis :**
+```brainfuck
++++f.
+```
+**Observer :**
+- **Mode single-thread** : Zone "État Interpréteur" visible
+- **Mode multi-thread** : Zone "État Interpréteur" masquée automatiquement
+- **Transition fluide** entre les modes
+
+---
+
+## 7. Test Mixte Imprimable/Non-Imprimable
+```brainfuck
+++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.+++++++..+++.>++.f.
 ```
 **Résultat attendu :**
-- Création de plusieurs threads à différents moments
-- **Observer :** 
-  - Console logs détaillés : `⚡ T{id}: {commande} (IP: avant → après)`
-  - Compteur d'étapes qui s'incrémente
-  - Historique d'exécution mis à jour en temps réel
+- **T0** : Affiche "Hello " avec caractères normaux
+- **T1** : Affiche caractère suivant
+- **Observer :** Mélange de texte normal et badges hexadécimaux colorés
 
 ---
 
-## 🎯 Instructions de Test
+## 🔍 Debug et Logs Console
 
-1. **Ouvrir l'interpréteur** : Cliquez sur `index.html` dans le navigateur
-2. **Coller un programme** : Utilisez un des codes ci-dessus
-3. **Exécution pas à pas** : Utilisez le bouton "Step" pour voir l'évolution
-4. **Observer les éléments** :
-   - 📊 Compteur d'étapes (coin supérieur droit)
-   - 📈 Barres de progression (vue multi-thread)
-   - 📋 Historique d'exécution (section dédiée)
-   - ✨ Animations de pulse/flash
-5. **Console** : Ouvrir les outils développeur (F12) pour voir les logs détaillés
-6. **Reset** : Tester le bouton Reset pour vérifier la remise à zéro complète
+### Messages Attendus :
+```
+🔍 État du gestionnaire de threads:
+  - Total threads: X
+  - ActiveThreads compteur: Y
+⚡ T0: + (IP: 0 → 1)
+🔀 Fork créé: Parent T0 → Enfant T1 | PTR: 0 → 1
+🛑 Thread TX terminé (IP: X/Y)
+🧹 Nettoyage forcé après step...
+```
 
----
-
-## ✅ Points à Vérifier
-
-- [ ] Compteur d'étapes apparaît et s'incrémente correctement
-- [ ] Barres de progression se remplissent selon l'avancement IP
-- [ ] Historique montre les statistiques par thread
-- [ ] Animations visuelles fonctionnent sans ralentir
-- [ ] Console logs sont clairs et informatifs
-- [ ] Reset remet tout à zéro (compteurs, historique, interface)
-- [ ] Interface s'adapte au mode single/multi-thread
-- [ ] Protection fork bomb fonctionne (max 10 threads)
+### Logs à Surveiller :
+- Création et suppression de threads
+- Évolution des pointeurs IP et PTR
+- Messages de protection fork bomb
+- Nettoyage automatique des threads terminés
 
 ---
 
-## 🐛 En cas de Problème
+## ✅ Checklist de Validation
 
-Si vous rencontrez des issues :
-1. Vérifiez la console pour les erreurs JavaScript
-2. Assurez-vous que le code Brainfuck est valide
-3. Testez d'abord avec des programmes simples
-4. Utilisez le bouton Reset entre les tests
+### Interface Utilisateur :
+- [ ] **Sortie globale unifiée** avec couleurs par thread
+- [ ] **Légende dynamique** affichant les relations parent-enfant
+- [ ] **Zones d'entrée séparées** pour chaque thread
+- [ ] **Caractères hexadécimaux** avec couleurs de thread
+- [ ] **Interface adaptative** : masquage auto "État Interpréteur"
+- [ ] **Pied de page** avec version correcte (v1.2.5)
+
+### Fonctionnalités Core :
+- [ ] **Protection fork bomb** : Limite 8 threads
+- [ ] **Nettoyage automatique** des threads terminés
+- [ ] **Gestion d'erreurs** robuste avec messages clairs
+- [ ] **Reset complet** : Nettoyage total de l'état
+- [ ] **Cache busting** : Version 1.2.5 dans l'URL du script
+
+### Console & Debug :
+- [ ] **Messages structurés** avec émojis identificateurs
+- [ ] **Gestion d'erreurs** avec stack traces
+- [ ] **Nettoyage logs** : Début/fin de processus clairs
+- [ ] **Validation** : Pas d'erreurs JavaScript critiques
+
+---
+
+## 🚨 Tests de Stress
+
+### Test Limite Exacte :
+```brainfuck
+ffffffff
+```
+**Attendu :** Doit échouer au 8ème fork avec message d'erreur
+
+### Test Complexité :
+```brainfuck
++++f>+++f>+++f>+++f>+++f>+++f.
+```
+**Attendu :** 7 threads, puis arrêt avec message d'erreur au 8ème
+
+---
+
+## �️ En Cas de Problème
+
+### Étapes de Diagnostic :
+1. **Console F12** : Vérifier les erreurs JavaScript
+2. **Version** : Confirmer v1.2.5 en bas de page
+3. **Cache** : Actualiser avec Ctrl+F5
+4. **Reset** : Utiliser le bouton Reset entre les tests
+5. **Logs** : Filtrer les messages par émoji (🔍, ⚡, 🔀, etc.)
+
+### Points de Vérification :
+- Version cohérente partout (1.2.5)
+- Pas de références à `maxForksPerThread` (supprimé)
+- Protection compte bien le total de threads
+- Interface s'adapte automatiquement
