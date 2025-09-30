@@ -49,27 +49,37 @@ class BrainfuckInterpreter {
         this.forkCount = 0; // Nombre de forks créés par ce thread
         this.maxForksPerThread = 2; // Limite de forks par thread
         
-        // Gestionnaire global de threads (statique)
-        if (!BrainfuckInterpreter.threadManager) {
-            BrainfuckInterpreter.threadManager = {
+        // Gestionnaire de threads par instance (non statique)
+        if (threadId === 0) {
+            // Thread principal - créer un nouveau gestionnaire
+            this.threadManager = {
                 threads: new Map(),
                 nextId: 1,
-                activeThreads: 0,
                 maxThreads: 8 // Protection contre les fork bombs
             };
+            this.threadManager.threads.set(this.threadId, this);
+        } else {
+            // Thread enfant - récupérer le gestionnaire du parent
+            const parentThread = this.getParentThread();
+            this.threadManager = parentThread ? parentThread.threadManager : null;
+            if (this.threadManager) {
+                this.threadManager.threads.set(this.threadId, this);
+            }
         }
         
-        BrainfuckInterpreter.threadManager.threads.set(this.threadId, this);
-        
         // Debug lors de la création d'un thread
-        console.log(`🧵 Création Thread T${this.threadId} (parent: T${this.parentId || 'none'})`);
-        
-        // Incrémenter activeThreads seulement pour le thread principal (threadId = 0)
-        // Les threads enfants sont comptés dans handleFork()
-        if (this.threadId === 0) {
-            BrainfuckInterpreter.threadManager.activeThreads++;
-            console.log(`📈 Thread principal créé, activeThreads = ${BrainfuckInterpreter.threadManager.activeThreads}`);
-        } 
+        console.log(`🧵 Création Thread T${this.threadId} (parent: T${this.parentId || 'none'})`); 
+    }
+
+    /**
+     * Récupère le thread parent depuis le gestionnaire statique temporaire
+     * @returns {BrainfuckInterpreter|null} Le thread parent ou null
+     */
+    getParentThread() {
+        if (!this.parentId || !BrainfuckInterpreter.threadManager) {
+            return null;
+        }
+        return BrainfuckInterpreter.threadManager.threads.get(this.parentId) || null;
     }
 
     /**
@@ -182,13 +192,14 @@ class BrainfuckInterpreter {
      * Thread enfant: ptr++, cellule active = 1
      */
     handleFork() {
-        const manager = BrainfuckInterpreter.threadManager;
+        const manager = this.threadManager;
+        if (!manager) {
+            console.error('❌ Pas de gestionnaire de threads disponible');
+            return;
+        }
         
-        // Nettoyer d'abord les threads terminés (DOUBLE NETTOYAGE)
-        BrainfuckInterpreter.cleanupHaltedThreads();
-        
-        // Forcer un second nettoyage pour être sûr
-        setTimeout(() => BrainfuckInterpreter.cleanupHaltedThreads(), 0);
+        // Nettoyer d'abord les threads terminés
+        this.cleanupHaltedThreads();
         
         // Vérifier la limite de forks par thread
         console.log(`🔍 Thread T${this.threadId} tente un fork (forks actuels: ${this.forkCount}/${this.maxForksPerThread})`);
@@ -245,7 +256,10 @@ class BrainfuckInterpreter {
         childThread.forkCount = 0; // Le thread enfant commence avec 0 forks
         childThread.maxForksPerThread = this.maxForksPerThread; // Même limite que le parent
         
-        // Ajouter au gestionnaire MANUELLEMENT
+        // Partager le gestionnaire avec l'enfant
+        childThread.threadManager = this.threadManager;
+        
+        // Ajouter au gestionnaire
         manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
@@ -268,7 +282,32 @@ class BrainfuckInterpreter {
         this.forkCount++;
         
         console.log(`🔀 Fork créé: Parent T${this.threadId} (forks: ${this.forkCount}/${this.maxForksPerThread}) → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
-        console.log(`📊 Threads après fork: ${manager.threads.size} total, ${activeThreadCount + 1} actifs`);
+        console.log(`📊 Threads après fork: ${manager.threads.size} total`);
+    }
+
+    /**
+     * Nettoie les threads terminés du gestionnaire d'instance
+     * @returns {number} Nombre de threads nettoyés
+     */
+    cleanupHaltedThreads() {
+        const manager = this.threadManager;
+        if (!manager) return 0;
+
+        let cleaned = 0;
+        const threadsToRemove = [];
+
+        for (const [threadId, thread] of manager.threads) {
+            if (thread.halted) {
+                threadsToRemove.push(threadId);
+            }
+        }
+
+        threadsToRemove.forEach(threadId => {
+            manager.threads.delete(threadId);
+            cleaned++;
+        });
+
+        return cleaned;
     }
 
     /**
@@ -349,7 +388,7 @@ class BrainfuckInterpreter {
      */
     getState() {
         // Calculer le nombre réel de threads actifs
-        const manager = BrainfuckInterpreter.threadManager;
+        const manager = this.threadManager;
         let realActiveThreads = 0;
         if (manager) {
             for (const [threadId, thread] of manager.threads) {
