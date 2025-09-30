@@ -156,10 +156,7 @@ class BrainfuckInterpreter {
                 break;
 
             case '.':
-                console.log(`🔍 DEBUG T${this.threadId}: Affichage - PTR=${this.ptr}, memory[${this.ptr}]=${this.memory[this.ptr]}`);
-                const outputChar = String.fromCharCode(this.memory[this.ptr]);
-                console.log(`🔍 DEBUG T${this.threadId}: Caractère affiché = "${outputChar}" (code: ${this.memory[this.ptr]})`);
-                this.output += outputChar;
+                this.output += String.fromCharCode(this.memory[this.ptr]);
                 break;
 
             case ',':
@@ -267,15 +264,7 @@ class BrainfuckInterpreter {
         manager.threads.set(childId, childThread);
         
         // Appliquer les règles du fork
-        // Thread parent: cellule active = 0 SEULEMENT si elle était vide
-        console.log(`🔍 DEBUG Fork T${this.threadId}: Avant fork - PTR=${this.ptr}, memory[${this.ptr}]=${this.memory[this.ptr]}`);
-        
-        // CORRECTION: Ne pas écraser les données existantes
-        const originalValue = this.memory[this.ptr];
-        // this.memory[this.ptr] = 0; // COMMENTÉ - ne plus écraser
-        
-        console.log(`🔍 DEBUG Fork T${this.threadId}: Données préservées - memory[${this.ptr}]=${this.memory[this.ptr]}`);
-        
+        // Thread parent: garde sa valeur actuelle (correction v1.2.5)
         // Thread enfant: ptr++, cellule active = 1
         childThread.ptr++;
         if (childThread.ptr >= childThread.memory.length) {
@@ -283,7 +272,6 @@ class BrainfuckInterpreter {
             childThread.memory = childThread.memory.concat(new Array(MEMORY_SIZE).fill(0));
         }
         childThread.memory[childThread.ptr] = 1;
-        console.log(`🔍 DEBUG Fork T${childId}: Enfant - PTR=${childThread.ptr}, memory[${childThread.ptr}]=${childThread.memory[childThread.ptr]}`);
         
         // Enregistrer la relation parent-enfant
         this.children.push(childId);

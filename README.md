@@ -1,4 +1,10 @@
-# 🧠 BrainJS: Interpréteur Brainfuck en JavaScript avec Multithreading
+# 🧠 BrainJS: Interpréteur Brainfuck### Comportement de `f`
+Quand la commande `f` est rencontrée, le thread actuel **fork** :
+
+| Thread | Action |
+|--------|---------|
+| **Parent** | **Garde sa valeur actuelle** (pas d'écrasement) |
+| **Enfant** | Le pointeur avance d'une position (`ptr++`) et la nouvelle cellule est mise à `1` |aScript avec Multithreading
 
 ![Version](https://img.shields.io/badge/version-1.2.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -49,7 +55,7 @@ Quand la commande `f` est rencontrée, le thread actuel **fork** :
 ++f
 ```
 **Résultat :**
-- Thread T0 (parent) : `cell[0] = 0`
+- Thread T0 (parent) : `cell[0] = 2` (valeur préservée)
 - Thread T1 (enfant) : `cell[1] = 1`
 
 #### ⚠️ Exemple Dangereux (Fork Bomb)
@@ -58,8 +64,8 @@ Quand la commande `f` est rencontrée, le thread actuel **fork** :
 ```
 **Attention !** Ce code créerait une explosion exponentielle de threads :
 1. `cell[0] = 1` → Entre dans la boucle
-2. `f` → Fork (Thread T0: `cell[0] = 0`, Thread T1: `cell[1] = 1`)
-3. `+` → Les deux threads incrémentent leur cellule (toutes deviennent `1`)
+2. `f` → Fork (Thread T0: garde `cell[0] = 1`, Thread T1: `cell[1] = 1`)
+3. `+` → Les deux threads incrémentent leur cellule (toutes deviennent `2`)
 4. `]` → Retour au `[` car les cellules ne sont pas nulles
 5. Répétition infinie avec doublement des threads à chaque tour !
 
@@ -183,9 +189,9 @@ f.
 +f.
 ```
 **Résultat :**
-- T0 : incrémente → fork → affiche
-- T1 : affiche (cellule à 0 car nouveau)
-- **Sortie :** `0x01|0x00`
+- T0 : incrémente → fork (garde valeur) → affiche
+- T1 : affiche (cellule à 1 car enfant)
+- **Sortie :** `0x01|0x01`
 
 ### **Exemple 3 : Skip Fork avec Données**
 ```brainfuck
