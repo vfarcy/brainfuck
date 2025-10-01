@@ -235,4 +235,4 @@ f[>+<-]    # Copier PID
 
 ---
 
-*Mis à jour pour BrainJS v1.6.1 - Corrections des exemples fork pour éviter les boucles infinies*
+*Mis à jour pour BrainJS v1.6.2 - Corrections des exemples fork pour éviter les boucles infinies*
