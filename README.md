@@ -1,6 +1,6 @@
 # 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
 
@@ -116,6 +116,18 @@ f[f]      # Fork récursif
 **Attention !** Chaque parent crée continuellement de nouveaux enfants.
 
 **Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
+
+#### ⚠️ Patterns à Éviter - Boucles Infinies
+
+```brainfuck
+# ❌ INCORRECT - Boucle infinie après fork
++++f[+++.]   # Parent reçoit PID=1, boucle infiniment
+
+# ✅ CORRECT - Nettoyage de cellule
++++f[+++.[-]]   # [-] vide la cellule pour sortir
+```
+
+**Règle importante :** Toujours nettoyer les cellules après usage dans les boucles qui suivent un fork.
 
 -----
 
