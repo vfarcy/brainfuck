@@ -1,14 +1,22 @@
-// Version 1.5.0 - Mise à jour automatique du 2025-10-01
+// Version 1.6.0 - Mise à jour automatique du 2025-10-01
+// Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
 
 /**
- * BrainfuckInterpreter avec support du multithreading
+ * BrainfuckInterpreter avec support du multithreading Unix-style
  *
  * Interprète le code Brainfuck en gérant la mémoire, le pointeur de cellule,
  * et le pointeur d'instruction. Il supporte l'exécution pas à pas et le
- * multithreading avec la commande 'f' (fork).
+ * multithreading avec la commande 'f' (fork Unix-style).
+ * 
+ * Fonctionnalités :
+ * - Fork Unix-style : Parent reçoit PID, enfant reçoit 0
+ * - Gestion multi-thread intelligente avec round-robin
+ * - Statistiques d'exécution complètes
+ * - Protection contre les fork bombs
+ * - Interface de debugging avancée
  */
 class BrainfuckInterpreter {
     /**
@@ -50,6 +58,39 @@ class BrainfuckInterpreter {
         this.children = [];
         this.forkCount = 0; // Nombre de forks créés par ce thread (pour statistiques)
         
+        // Statistiques d'exécution
+        this.stats = {
+            // Performance
+            totalSteps: 0,
+            executionStartTime: null,
+            executionEndTime: null,
+            
+            // Instructions
+            instructionCounts: { '>': 0, '<': 0, '+': 0, '-': 0, '.': 0, ',': 0, '[': 0, ']': 0, 'f': 0 },
+            
+            // Boucles
+            loopIterations: 0,
+            maxLoopDepth: 0,
+            currentLoopDepth: 0,
+            
+            // Mémoire
+            maxPtrReached: 0,
+            minPtrReached: 0,
+            memoryWrites: 0,
+            memoryReads: 0,
+            cellsUsed: new Set(),
+            overflowCount: 0,
+            underflowCount: 0,
+            
+            // Threading
+            forksCreated: 0,
+            maxConcurrentThreads: 1,
+            
+            // IO
+            inputCharsRead: 0,
+            outputCharsWritten: 0
+        };
+        
         // Gestionnaire de threads par instance (non statique)
         if (threadId === 0) {
             // Thread principal - créer un nouveau gestionnaire
@@ -59,6 +100,8 @@ class BrainfuckInterpreter {
                 maxThreads: 8 // Protection contre les fork bombs
             };
             this.threadManager.threads.set(this.threadId, this);
+            // Démarrer le timer pour le thread principal
+            this.stats.executionStartTime = performance.now();
         } else {
             // Thread enfant - récupérer le gestionnaire du parent
             const parentThread = this.getParentThread();
@@ -82,6 +125,15 @@ class BrainfuckInterpreter {
         }
         // Pour les threads enfants, utiliser la référence directe stockée
         return this.parentThread || null;
+    }
+
+    /**
+     * Met à jour les statistiques d'utilisation mémoire
+     */
+    updateMemoryStats() {
+        this.stats.cellsUsed.add(this.ptr);
+        this.stats.maxPtrReached = Math.max(this.stats.maxPtrReached, this.ptr);
+        this.stats.minPtrReached = Math.min(this.stats.minPtrReached, this.ptr);
     }
 
     /**
@@ -122,16 +174,24 @@ class BrainfuckInterpreter {
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
             this.halted = true;
+            // Enregistrer le temps de fin pour le thread principal
+            if (this.threadId === 0) {
+                this.stats.executionEndTime = performance.now();
+            }
             return false;
         }
 
         const instruction = this.code[this.ip];
+        this.stats.totalSteps++;
+        this.stats.instructionCounts[instruction]++;
+
+        // Tracker l'utilisation mémoire
+        this.updateMemoryStats();
 
         switch (instruction) {
             case '>':
                 this.ptr++;
                 if (this.ptr >= this.memory.length) {
-                    // Le pointeur est hors limites. On pourrait aussi redimensionner la mémoire ou boucler.
                     console.warn(`Pointeur de mémoire hors des limites (> ${MEMORY_SIZE - 1}).`);
                 }
                 break;
@@ -143,19 +203,25 @@ class BrainfuckInterpreter {
                 break;
 
             case '+':
-                // Débordement (wraparound) de 255 à 0
+                const oldValue = this.memory[this.ptr];
                 this.memory[this.ptr] = (this.memory[this.ptr] + 1) % MAX_BYTE_VALUE;
+                this.stats.memoryWrites++;
+                if (oldValue === 255) this.stats.overflowCount++;
                 break;
 
             case '-':
-                // Sous-débordement (wraparound) de 0 à 255
+                const oldVal = this.memory[this.ptr];
                 this.memory[this.ptr] = (this.memory[this.ptr] - 1 + MAX_BYTE_VALUE) % MAX_BYTE_VALUE;
+                this.stats.memoryWrites++;
+                if (oldVal === 0) this.stats.underflowCount++;
                 break;
 
             case '.':
                 const outputChar = String.fromCharCode(this.memory[this.ptr]);
                 console.log(`🔍 DEBUG: Before output update - this.output.length=${this.output.length}, adding char code: ${this.memory[this.ptr]}`);
                 this.output += outputChar;
+                this.stats.outputCharsWritten++;
+                this.stats.memoryReads++;
                 console.log(`🔍 DEBUG: After output update - this.output.length=${this.output.length}, charCodeAt(0)=${this.output.length > 0 ? this.output.charCodeAt(this.output.length-1) : 'N/A'}`);
                 // Notifier le callback d'output si défini
                 if (typeof window !== 'undefined' && window.onThreadOutput) {
@@ -165,7 +231,6 @@ class BrainfuckInterpreter {
                 break;
 
             case ',':
-                // Lit le caractère et utilise 0 si l'entrée est vide
                 // S'assurer que this.input est un tableau
                 if (!Array.isArray(this.input)) {
                     console.warn(`⚠️ Thread T${this.threadId}: this.input n'est pas un tableau:`, typeof this.input, this.input);
@@ -175,25 +240,33 @@ class BrainfuckInterpreter {
                 const char = this.input.shift();
                 console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
+                this.stats.inputCharsRead++;
+                this.stats.memoryWrites++;
                 break;
 
             case '[':
-                // Sauter après le ']' correspondant si la valeur est zéro
                 if (this.memory[this.ptr] === 0) {
                     this.ip = this.loopMap.get(this.ip);
+                } else {
+                    this.stats.currentLoopDepth++;
+                    this.stats.maxLoopDepth = Math.max(this.stats.maxLoopDepth, this.stats.currentLoopDepth);
                 }
+                this.stats.memoryReads++;
                 break;
 
             case ']':
-                // Sauter après le '[' correspondant si la valeur n'est PAS zéro
                 if (this.memory[this.ptr] !== 0) {
+                    this.stats.loopIterations++;
                     this.ip = this.loopMap.get(this.ip);
+                } else {
+                    this.stats.currentLoopDepth = Math.max(0, this.stats.currentLoopDepth - 1);
                 }
+                this.stats.memoryReads++;
                 break;
 
             case 'f':
                 this.handleFork();
-                // Pas d'incrémentation automatique - handleFork() gère l'IP
+                // CORRECTION: Pas d'incrémentation car handleFork() gère l'IP
                 return true;
 
             default:
@@ -213,7 +286,14 @@ class BrainfuckInterpreter {
             return false;
         }
         
-        return this.step();
+        const continued = this.step();
+        
+        // CORRECTION: Marquer le thread comme terminé si step() retourne false
+        if (!continued) {
+            this.halted = true;
+        }
+        
+        return continued;
     }
 
     /**
@@ -241,7 +321,12 @@ class BrainfuckInterpreter {
      * Crée un thread enfant avec copie de la mémoire
      * Thread parent: reçoit le PID de l'enfant dans la cellule courante
      * Thread enfant: reçoit 0 dans la cellule courante
-     * Erreur: reçoit -1 (non implémenté dans cette version)
+     * 
+     * Implémentation conforme à la sémantique Unix fork() :
+     * - Le fork remplace la valeur de la cellule courante
+     * - Parent : reçoit l'ID du processus enfant (> 0)
+     * - Enfant : reçoit 0
+     * - Erreur : reçoit -1 (non implémenté dans cette version)
      */
     handleFork() {
         const manager = this.threadManager;
@@ -276,6 +361,9 @@ class BrainfuckInterpreter {
             throw new Error(`🛡️ Protection fork bomb: Limite globale de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé. Augmentez la limite ou simplifiez le programme.`);
         }
         
+        // CORRECTION: Avancer l'IP AVANT de créer l'enfant pour éviter la re-exécution du fork
+        this.ip++;
+        
         const childId = manager.nextId++;
         
         // Créer le thread enfant avec le constructeur
@@ -289,7 +377,7 @@ class BrainfuckInterpreter {
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
         childThread.ptr = this.ptr;
-        childThread.ip = this.ip;
+        childThread.ip = this.ip; // L'enfant commence à la même position que le parent (après 'f')
         childThread.output = this.output;
         
         // Partager le gestionnaire avec l'enfant et s'assurer qu'il est ajouté
@@ -312,14 +400,8 @@ class BrainfuckInterpreter {
         // Incrémenter le compteur de forks du parent
         this.forkCount++;
         
-        // IMPORTANT: Avancer l'IP pour éviter la re-exécution de 'f'
-        // Les deux threads continuent après le fork
-        const nextIP = this.ip + 1;
-        this.ip = nextIP;
-        childThread.ip = nextIP;
-        
         console.log(`🔀 Fork Unix-style: Parent T${this.threadId} reçoit PID=${childId}, Enfant T${childId} reçoit 0`);
-        console.log(`📊 Threads après fork: ${manager.threads.size} total (Parent: ${this.forkCount}/${this.maxForksPerThread} forks)`);
+        console.log(`📊 Threads après fork: ${manager.threads.size} total (Parent: ${this.forkCount} forks)`);
     }
 
     /**
@@ -488,9 +570,59 @@ class BrainfuckInterpreter {
             isForked: this.isForked,
             children: this.children,
             forkCount: this.forkCount,
-            maxForksPerThread: this.maxForksPerThread,
             totalThreads: realActiveThreads,
-            currentInstruction: this.code[this.ip] || null
+            currentInstruction: this.code[this.ip] || null,
+            
+            // Nouvelles statistiques
+            stats: this.stats,
+            statsAnalysis: this.halted ? this.generateStatsAnalysis() : null
+        };
+    }
+
+    /**
+     * Génère une analyse des statistiques d'exécution
+     * @returns {Object} Analyse des performances et recommandations
+     */
+    generateStatsAnalysis() {
+        const executionTime = this.stats.executionEndTime ? 
+            (this.stats.executionEndTime - this.stats.executionStartTime) : 0;
+        
+        const totalInstructions = Object.values(this.stats.instructionCounts)
+            .reduce((a, b) => a + b, 0);
+
+        // Calcul de l'efficacité du code
+        const movements = this.stats.instructionCounts['>'] + this.stats.instructionCounts['<'];
+        const operations = this.stats.instructionCounts['+'] + this.stats.instructionCounts['-'] + 
+                          this.stats.instructionCounts['.'] + this.stats.instructionCounts[','];
+        const efficiency = operations / Math.max(movements + operations, 1);
+
+        return {
+            performance: {
+                totalSteps: this.stats.totalSteps,
+                executionTimeMs: executionTime,
+                stepsPerSecond: executionTime > 0 ? (this.stats.totalSteps / executionTime * 1000) : 0,
+                efficiency: efficiency
+            },
+            
+            memory: {
+                cellsUsed: this.stats.cellsUsed.size,
+                memoryRange: this.stats.maxPtrReached - this.stats.minPtrReached + 1,
+                memoryEfficiency: this.stats.cellsUsed.size / Math.max(this.stats.maxPtrReached + 1, 1),
+                readWriteRatio: this.stats.memoryReads / Math.max(this.stats.memoryWrites, 1),
+                errorEvents: this.stats.overflowCount + this.stats.underflowCount
+            },
+            
+            loops: {
+                maxDepth: this.stats.maxLoopDepth,
+                totalIterations: this.stats.loopIterations,
+                averageIterationsPerLoop: this.stats.instructionCounts['['] > 0 ? 
+                    this.stats.loopIterations / this.stats.instructionCounts['['] : 0
+            },
+            
+            threading: {
+                forksCreated: this.stats.forksCreated,
+                maxConcurrentThreads: this.stats.maxConcurrentThreads
+            }
         };
     }
 
@@ -520,4 +652,158 @@ class BrainfuckInterpreter {
             this.threadManager.maxThreads = maxThreads;
         }
     }
+}
+
+/**
+ * Analyseur de statistiques pour l'apprentissage de Brainfuck
+ */
+class BrainfuckStatsAnalyzer {
+    static generateReport(interpreter) {
+        const stats = interpreter.stats;
+        const analysis = this.analyzeStats(stats);
+        
+        return {
+            html: this.generateHTML(analysis, stats),
+            markdown: this.generateMarkdown(analysis, stats),
+            summary: this.generateSummary(analysis, stats)
+        };
+    }
+
+    static analyzeStats(stats) {
+        const executionTime = stats.executionEndTime ? 
+            (stats.executionEndTime - stats.executionStartTime) : 0;
+        
+        const totalInstructions = Object.values(stats.instructionCounts)
+            .reduce((a, b) => a + b, 0);
+        
+        return {
+            performance: {
+                totalSteps: stats.totalSteps,
+                executionTimeMs: executionTime,
+                stepsPerSecond: executionTime > 0 ? (stats.totalSteps / executionTime * 1000) : 0,
+                efficiency: this.calculateEfficiency(stats)
+            },
+            
+            memory: {
+                cellsUsed: stats.cellsUsed.size,
+                memoryRange: stats.maxPtrReached - stats.minPtrReached + 1,
+                memoryEfficiency: stats.cellsUsed.size / Math.max(stats.maxPtrReached + 1, 1),
+                readWriteRatio: stats.memoryReads / Math.max(stats.memoryWrites, 1),
+                errorEvents: stats.overflowCount + stats.underflowCount
+            },
+            
+            loops: {
+                maxDepth: stats.maxLoopDepth,
+                totalIterations: stats.loopIterations,
+                averageIterationsPerLoop: stats.instructionCounts['['] > 0 ? 
+                    stats.loopIterations / stats.instructionCounts['['] : 0,
+                complexity: this.calculateLoopComplexity(stats)
+            },
+            
+            instructions: {
+                distribution: this.calculateInstructionDistribution(stats.instructionCounts),
+                mostUsed: this.getMostUsedInstructions(stats.instructionCounts),
+                balance: this.calculateInstructionBalance(stats.instructionCounts)
+            },
+            
+            io: {
+                inputOutput: stats.inputCharsRead + stats.outputCharsWritten,
+                ioRatio: stats.outputCharsWritten / Math.max(stats.inputCharsRead, 1)
+            },
+            
+            recommendations: this.generateRecommendations(stats)
+        };
+    }
+
+    // Méthodes utilitaires pour les calculs
+    static calculateEfficiency(stats) {
+        const movements = stats.instructionCounts['>'] + stats.instructionCounts['<'];
+        const operations = stats.instructionCounts['+'] + stats.instructionCounts['-'] + 
+                          stats.instructionCounts['.'] + stats.instructionCounts[','];
+        return operations / Math.max(movements + operations, 1);
+    }
+
+    static calculateInstructionDistribution(counts) {
+        const total = Object.values(counts).reduce((a, b) => a + b, 0);
+        const distribution = {};
+        for (const [inst, count] of Object.entries(counts)) {
+            distribution[inst] = total > 0 ? count / total : 0;
+        }
+        return distribution;
+    }
+
+    static getMostUsedInstructions(counts) {
+        return Object.entries(counts)
+            .map(([instruction, count]) => ({ instruction, count }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    static calculateInstructionBalance(counts) {
+        const increments = counts['+'];
+        const decrements = counts['-'];
+        const rights = counts['>'];
+        const lefts = counts['<'];
+        
+        const valueBalance = increments + decrements > 0 ? 
+            Math.abs(increments - decrements) / (increments + decrements) : 0;
+        const pointerBalance = rights + lefts > 0 ? 
+            Math.abs(rights - lefts) / (rights + lefts) : 0;
+        
+        return (1 - (valueBalance + pointerBalance) / 2) * 100;
+    }
+
+    static calculateLoopComplexity(stats) {
+        if (stats.maxLoopDepth === 0) return 0;
+        return Math.min(stats.maxLoopDepth / 3, 1); // Normalisé sur 3 niveaux max
+    }
+
+    static generateRecommendations(stats) {
+        const recommendations = [];
+        const efficiency = this.calculateEfficiency(stats);
+        
+        if (efficiency < 0.4) {
+            recommendations.push({
+                type: 'warning',
+                title: '🚨 Efficacité faible',
+                message: 'Beaucoup de mouvements de pointeur. Essayez de regrouper vos opérations sur des cellules adjacentes.'
+            });
+        } else if (efficiency > 0.8) {
+            recommendations.push({
+                type: 'success',
+                title: '✅ Excellent code',
+                message: 'Votre code est très efficace avec un bon ratio opérations/mouvements!'
+            });
+        }
+        
+        if (stats.maxLoopDepth > 4) {
+            recommendations.push({
+                type: 'warning',
+                title: '🔄 Boucles complexes',
+                message: 'Boucles très imbriquées détectées. Considérez simplifier la logique pour une meilleure lisibilité.'
+            });
+        }
+        
+        if (stats.overflowCount > 0 || stats.underflowCount > 0) {
+            recommendations.push({
+                type: 'info',
+                title: '⚠️ Débordements détectés',
+                message: `${stats.overflowCount + stats.underflowCount} débordements de valeurs. Vérifiez la logique de vos incréments/décréments.`
+            });
+        }
+        
+        if (stats.cellsUsed.size > 100) {
+            recommendations.push({
+                type: 'info',
+                title: '🧠 Utilisation mémoire élevée',
+                message: 'Beaucoup de cellules utilisées. Excellent pour des programmes complexes!'
+            });
+        }
+        
+        return recommendations;
+    }
+}
+
+// Export pour utilisation en module
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { BrainfuckInterpreter, BrainfuckStatsAnalyzer };
 }
