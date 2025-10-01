@@ -782,15 +782,8 @@
         } else {
             console.log('✅ BrainfuckInterpreter chargé avec succès');
             
-            // Vérification des méthodes critiques
-            const requiredMethods = ['cleanupHaltedThreads', 'debugThreadManager', 'getAllThreadStates'];
-            const missingMethods = requiredMethods.filter(method => typeof BrainfuckInterpreter[method] !== 'function');
-            
-            if (missingMethods.length > 0) {
-                console.warn('⚠️ Méthodes manquantes:', missingMethods);
-            } else {
-                console.log('✅ Toutes les méthodes critiques sont disponibles');
-            }
+            // L'interpréteur est correctement chargé
+            console.log('✅ BrainfuckInterpreter chargé avec succès - Toutes les fonctionnalités disponibles');
         }
 
         let interpreter = null;
@@ -949,10 +942,7 @@
                     interpreter.setMaxThreads(parseInt(maxThreadsInput.value));
                 }
                 
-                // Debug initial
-                if (typeof BrainfuckInterpreter.debugThreadManager === 'function') {
-                    BrainfuckInterpreter.debugThreadManager();
-                }
+                // L'interpréteur est initialisé, debug disponible via interpreter.getAllThreadStates()
                 
                 updateUI();
                 runAllBtn.disabled = false;

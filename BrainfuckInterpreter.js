@@ -457,14 +457,6 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Méthode statique pour compatibilité
-     */
-    static runAllThreads() {
-        console.warn('⚠️ Méthode statique runAllThreads dépréciée');
-        return [];
-    }
-
-    /**
      * Retourne l'état actuel de l'interpréteur pour l'affichage.
      */
     getState() {
@@ -521,15 +513,6 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Obtient tous les threads actifs (méthode statique pour compatibilité)
-     * @returns {Array} Liste des états de tous les threads
-     */
-    static getAllThreadStates() {
-        console.warn('⚠️ Méthode statique getAllThreadStates dépréciée');
-        return [];
-    }
-
-    /**
      * Configure la limite maximale de threads
      * @param {number} maxThreads - Nouvelle limite
      */
@@ -537,29 +520,5 @@ class BrainfuckInterpreter {
         if (this.threadManager) {
             this.threadManager.maxThreads = maxThreads;
         }
-    }
-
-    /**
-     * Méthode statique pour compatibilité
-     */
-    static setMaxThreads(maxThreads) {
-        console.warn('⚠️ Méthode statique setMaxThreads dépréciée');
-    }
-
-    /**
-     * Nettoie les threads terminés du gestionnaire (version statique pour compatibilité)
-     * @returns {number} Nombre de threads nettoyés
-     */
-    static cleanupHaltedThreads() {
-        console.warn('⚠️ Méthode statique cleanupHaltedThreads dépréciée');
-        return 0;
-    }
-
-    /**
-     * Debug: Affiche l'état complet du gestionnaire de threads
-     */
-    static debugThreadManager() {
-        console.log('⚠️ debugThreadManager est obsolète - utilisez getAllThreadStates() sur une instance');
-        console.log('💡 Exemple: interpreter.getAllThreadStates()');
     }
 }
