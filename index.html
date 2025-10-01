@@ -1842,9 +1842,10 @@
                     
                     // Vérifier le nombre réel de threads dans le gestionnaire
                     const allThreadStates = interpreter.getAllThreadStates();
-                    const hasMultipleThreads = allThreadStates.length > 1;
+                    const activeThreads = allThreadStates.filter(t => !t.halted);
+                    const hasMultipleThreads = interpreter.hasMultipleActiveThreads();
                     
-                    console.log(`🔍 Debug step: ${allThreadStates.length} threads, hasMultiple: ${hasMultipleThreads}`);
+                    console.log(`🔍 Debug step: ${allThreadStates.length} threads total, ${activeThreads.length} actifs, hasMultiple: ${hasMultipleThreads}`);
                     allThreadStates.forEach(t => {
                         console.log(`  T${t.threadId}: IP=${t.ip}/${t.code.length}, halted=${t.halted}, instruction='${t.currentInstruction || 'EOF'}'`);
                     });
@@ -1867,58 +1868,61 @@
                         
                         let anyProgress = false;
                         
-                        // Créer un snapshot des threads AVANT l'itération pour éviter les modifications concurrentes
-                        const threadsSnapshot = Array.from(manager.threads.entries());
-                        console.log(`🔄 Executing step for ${threadsSnapshot.length} threads`);
+                        // Créer un snapshot des threads actifs seulement
+                        const activeThreadsSnapshot = Array.from(manager.threads.entries())
+                            .filter(([_, thread]) => !thread.halted);
                         
-                        for (const [threadId, thread] of threadsSnapshot) {
-                            // Vérifier que le thread existe toujours dans le gestionnaire
-                            if (!manager.threads.has(threadId)) {
-                                console.log(`⚠️ Thread T${threadId} déjà supprimé, ignoré`);
+                        console.log(`🔄 Executing step for ${activeThreadsSnapshot.length} active threads`);
+                        
+                        for (const [threadId, thread] of activeThreadsSnapshot) {
+                            // Vérifier que le thread existe toujours et est actif
+                            if (!manager.threads.has(threadId) || thread.halted) {
+                                console.log(`⚠️ Thread T${threadId} déjà supprimé ou terminé, ignoré`);
                                 continue;
                             }
                             
-                            if (!thread.halted) {
-                                // Vérifier si le thread a atteint la fin AVANT d'appeler step()
-                                if (thread.ip >= thread.code.length) {
-                                    console.log(`🛑 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
-                                    thread.halted = true;
-                                    continue;
-                                }
-                                
-                                // Incrémenter l'historique du thread
-                                executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
-                                
+                            // Vérifier si le thread a atteint la fin AVANT d'appeler step()
+                            if (thread.ip >= thread.code.length) {
+                                console.log(`🛑 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
+                                thread.halted = true;
+                                continue;
+                            }
+                            
+                            // Incrémenter l'historique du thread
+                            executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                            
+                            try {
                                 const continued = thread.step();
                                 if (continued) {
                                     anyProgress = true;
-                                    
-                                    // Effet visuel d'exécution
-                                    console.log(`⚡ T${threadId}: ${thread.code[thread.ip - 1] || 'N/A'} (IP: ${thread.ip - 1} → ${thread.ip})`);
+                                    console.log(`⚡ T${threadId}: Instruction exécutée`);
                                 } else {
-                                    // Thread terminé - pas besoin de manipulation manuelle
                                     console.log(`🛑 Thread T${threadId} terminé`);
                                 }
-                                
-                                // Capturer les outputs après chaque step
-                                captureThreadOutputs();
+                            } catch (error) {
+                                console.error(`❌ Erreur dans thread T${threadId}:`, error.message);
+                                thread.halted = true;
                             }
+                            
+                            // Capturer les outputs après chaque step
+                            captureThreadOutputs();
                         }
-                        
-                        // Laisser le nettoyage automatique se faire
-                        // (suppression du nettoyage manuel conflictuel)
                         
                         // Vérifier si tous les threads sont terminés
-                        let activeCount = 0;
-                        for (const [threadId, thread] of manager.threads) {
-                            if (!thread.halted) activeCount++;
-                        }
+                        const remainingActiveThreads = Array.from(manager.threads.values())
+                            .filter(thread => !thread.halted);
                         
-                        if (activeCount === 0) {
+                        console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
+                        
+                        if (remainingActiveThreads.length === 0) {
                             console.log('🎯 Tous les threads sont terminés');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
                         }
+                        
+                        // Mettre à jour l'affichage des threads
+                        updateMultiThreadView();
+                        
                     } else {
                         // Mode single-thread classique
                         const threadId = interpreter.threadId;
@@ -1949,12 +1953,30 @@
             if (!interpreter) return;
             
             try {
-                // Exécuter une étape seulement pour le thread principal (ou actuel)
-                const continued = interpreter.step();
+                // Incrémenter le compteur global
+                globalStepCounter++;
+                const stepNumberEl = document.getElementById('step-number');
+                if (stepNumberEl) stepNumberEl.textContent = globalStepCounter;
+                
+                const stepCounterEl = document.getElementById('step-counter');
+                if (stepCounterEl) stepCounterEl.style.display = 'block';
+                
+                // Exécuter une étape seulement pour le thread principal
+                const threadId = interpreter.threadId;
+                executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                
+                const continued = interpreter.stepSingleThread();
                 if (!continued) {
                     console.log(`🛑 Thread T${interpreter.threadId} terminé`);
+                    const stepCounterEl = document.getElementById('step-counter');
+                    if (stepCounterEl) stepCounterEl.style.display = 'none';
                 }
+                
+                // Capturer les outputs et mettre à jour l'interface
+                captureThreadOutputs();
                 updateUI();
+                updateMultiThreadView();
+                
             } catch (error) {
                 alert(`❌ Erreur d'exécution step single: ${error.message}`);
                 console.error(error);

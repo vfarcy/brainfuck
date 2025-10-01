@@ -205,6 +205,38 @@ class BrainfuckInterpreter {
     }
 
     /**
+     * Exécute une seule étape pour ce thread spécifique
+     * @returns {boolean} true si le thread peut continuer, false s'il est terminé
+     */
+    stepSingleThread() {
+        if (this.halted) {
+            return false;
+        }
+        
+        return this.step();
+    }
+
+    /**
+     * Vérifie s'il y a des threads multiples actifs
+     * @returns {boolean} true s'il y a plus d'un thread actif
+     */
+    hasMultipleActiveThreads() {
+        if (!this.threadManager) {
+            return false;
+        }
+        
+        let activeCount = 0;
+        for (const [_, thread] of this.threadManager.threads) {
+            if (!thread.halted) {
+                activeCount++;
+                if (activeCount > 1) return true; // Optimisation: sortir dès qu'on en trouve 2
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Gère la commande de fork 'f'
      * Thread parent: cellule active = 0
      * Thread enfant: ptr++, cellule active = 1
