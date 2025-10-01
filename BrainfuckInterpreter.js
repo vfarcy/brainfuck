@@ -193,7 +193,7 @@ class BrainfuckInterpreter {
 
             case 'f':
                 this.handleFork();
-                // Pas d'incrémentation automatique - handleFork() gère l'IP
+                // CORRECTION: Pas d'incrémentation car handleFork() gère l'IP
                 return true;
 
             default:
@@ -276,6 +276,9 @@ class BrainfuckInterpreter {
             throw new Error(`🛡️ Protection fork bomb: Limite globale de threads atteinte (${activeThreadCount}/${manager.maxThreads}). Fork refusé. Augmentez la limite ou simplifiez le programme.`);
         }
         
+        // CORRECTION: Avancer l'IP AVANT de créer l'enfant pour éviter la re-exécution du fork
+        this.ip++;
+        
         const childId = manager.nextId++;
         
         // Créer le thread enfant avec le constructeur
@@ -289,7 +292,7 @@ class BrainfuckInterpreter {
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
         childThread.ptr = this.ptr;
-        childThread.ip = this.ip;
+        childThread.ip = this.ip; // L'enfant commence à la même position que le parent (après 'f')
         childThread.output = this.output;
         
         // Partager le gestionnaire avec l'enfant et s'assurer qu'il est ajouté
@@ -312,14 +315,8 @@ class BrainfuckInterpreter {
         // Incrémenter le compteur de forks du parent
         this.forkCount++;
         
-        // IMPORTANT: Avancer l'IP pour éviter la re-exécution de 'f'
-        // Les deux threads continuent après le fork
-        const nextIP = this.ip + 1;
-        this.ip = nextIP;
-        childThread.ip = nextIP;
-        
         console.log(`🔀 Fork Unix-style: Parent T${this.threadId} reçoit PID=${childId}, Enfant T${childId} reçoit 0`);
-        console.log(`📊 Threads après fork: ${manager.threads.size} total (Parent: ${this.forkCount}/${this.maxForksPerThread} forks)`);
+        console.log(`📊 Threads après fork: ${manager.threads.size} total (Parent: ${this.forkCount} forks)`);
     }
 
     /**
