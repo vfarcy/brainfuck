@@ -213,7 +213,14 @@ class BrainfuckInterpreter {
             return false;
         }
         
-        return this.step();
+        const continued = this.step();
+        
+        // CORRECTION: Marquer le thread comme terminé si step() retourne false
+        if (!continued) {
+            this.halted = true;
+        }
+        
+        return continued;
     }
 
     /**

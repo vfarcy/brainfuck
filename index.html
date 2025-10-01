@@ -1221,12 +1221,35 @@
             
             // NOUVEAU: Ajouter indicateur du thread actuel
             if (interpreter && interpreter.threadManager) {
-                const allStates = interpreter.getAllThreadStates();
-                const activeThreads = allStates.filter(t => !t.halted);
+                const manager = interpreter.threadManager;
+                const activeThreadsFromManager = [];
+                for (const [threadId, thread] of manager.threads) {
+                    if (!thread.halted) {
+                        activeThreadsFromManager.push(thread);
+                    }
+                }
                 
-                if (activeThreads.length > 1) {
-                    infoHTML += `<br><span style="color: #2196F3; font-weight: bold;">👑 Thread actuel pour "Step Single": T${state.threadId}</span>`;
-                    infoHTML += `<br><span style="font-size: 12px; color: #666;">💡 Utilisez "Step Single" pour exécuter ce thread ou "Changer Thread" pour alterner</span>`;
+                if (activeThreadsFromManager.length > 1) {
+                    // CORRECTION: Vérifier l'état réel du thread dans le gestionnaire
+                    const currentThreadInManager = manager.threads.get(state.threadId);
+                    const isCurrentThreadHalted = currentThreadInManager ? currentThreadInManager.halted : state.halted;
+                    
+                    if (isCurrentThreadHalted) {
+                        infoHTML += `<br><span style="color: #ff4444; font-weight: bold;">💀 Ce thread est TERMINÉ</span>`;
+                        infoHTML += `<br><span style="font-size: 12px; color: #666;">💡 Utilisez "Changer Thread" pour basculer vers un thread actif</span>`;
+                    } else {
+                        infoHTML += `<br><span style="color: #2196F3; font-weight: bold;">👑 Thread actuel pour "Step Single": T${state.threadId}</span>`;
+                        infoHTML += `<br><span style="font-size: 12px; color: #666;">💡 "Step Single" = Exécuter CE thread | "Changer Thread" = Basculer vers un autre</span>`;
+                    }
+                } else if (activeThreadsFromManager.length === 1) {
+                    const currentThreadInManager = manager.threads.get(state.threadId);
+                    const isCurrentThreadHalted = currentThreadInManager ? currentThreadInManager.halted : state.halted;
+                    
+                    if (isCurrentThreadHalted) {
+                        infoHTML += `<br><span style="color: #ff4444; font-weight: bold;">💀 Ce thread est TERMINÉ - Aucun thread actif</span>`;
+                    } else {
+                        infoHTML += `<br><span style="color: #4CAF50; font-weight: bold;">🏆 Dernier thread actif</span>`;
+                    }
                 }
             }
             
@@ -1245,7 +1268,7 @@
             container.innerHTML = '';
             
             allStates.forEach((state, index) => {
-                console.log(`🔍 Debug - Affichage thread T${state.threadId}, halted: ${state.halted}`);
+                console.log(`🔍 Debug - Affichage thread T${state.threadId}, halted: ${state.halted}, IP: ${state.ip}/${state.code.length}`);
                 const threadDiv = document.createElement('div');
                 const currentThreadId = interpreter ? interpreter.getState().threadId : 0;
                 const isCurrentThread = state.threadId === currentThreadId;
@@ -1268,7 +1291,7 @@
                 const headerHTML = `
                     <div class="thread-header">
                         <span>🔗 Thread T${state.threadId} ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'} ${isCurrentThread ? '👑 Actuel' : ''}</span>
-                        <span>${state.halted ? '🛑 Arrêté' : '▶️ Actif'}</span>
+                        <span>${state.halted ? '� TERMINÉ' : '▶️ Actif'}</span>
                     </div>
                     <div class="thread-progress-bar">
                         <div class="thread-progress-fill" style="width: ${Math.min(progress, 100)}%"></div>
@@ -1993,43 +2016,70 @@
                 const stepCounterEl = document.getElementById('step-counter');
                 if (stepCounterEl) stepCounterEl.style.display = 'block';
                 
-                // CORRECTION: Permettre de sélectionner le thread à exécuter
-                const allThreadStates = interpreter.getAllThreadStates();
-                const activeThreads = allThreadStates.filter(t => !t.halted);
+                // CORRECTION: Exécuter une étape SEULEMENT pour le thread actuel (pas de round-robin automatique)
+                const threadId = interpreter.threadId;
                 
-                if (activeThreads.length > 1) {
-                    // En mode multi-thread, faire un round-robin ou utiliser le thread actuel
-                    const currentIndex = activeThreads.findIndex(t => t.threadId === interpreter.threadId);
-                    const nextIndex = (currentIndex + 1) % activeThreads.length;
-                    const nextThreadId = activeThreads[nextIndex].threadId;
-                    
-                    // Changer le thread actuel pour le prochain step
-                    const manager = interpreter.threadManager;
-                    if (manager && manager.threads.has(nextThreadId)) {
-                        interpreter = manager.threads.get(nextThreadId);
-                        console.log(`🔄 Round-robin: Basculement vers thread T${nextThreadId}`);
-                    }
+                // Enregistrer l'accès à ce thread dans l'historique
+                if (!threadAccessHistory.includes(threadId)) {
+                    threadAccessHistory.push(threadId);
+                } else {
+                    // Déplacer ce thread à la fin de l'historique (plus récent)
+                    threadAccessHistory = threadAccessHistory.filter(id => id !== threadId);
+                    threadAccessHistory.push(threadId);
                 }
                 
-                // Exécuter une étape pour le thread actuel
-                const threadId = interpreter.threadId;
                 executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
                 
                 const continued = interpreter.stepSingleThread();
                 if (!continued) {
                     console.log(`🛑 Thread T${interpreter.threadId} terminé`);
                     
-                    // Passer au thread suivant s'il y en a
-                    const remainingActiveThreads = interpreter.getAllThreadStates().filter(t => !t.halted);
-                    if (remainingActiveThreads.length > 0) {
-                        const nextThread = remainingActiveThreads[0];
-                        const manager = interpreter.threadManager;
-                        if (manager && manager.threads.has(nextThread.threadId)) {
-                            interpreter = manager.threads.get(nextThread.threadId);
-                            console.log(`🔄 Basculement auto vers thread T${nextThread.threadId}`);
+                    // CORRECTION: Chercher TOUS les threads actifs (y compris ceux précédemment interrompus)
+                    const manager = interpreter.threadManager;
+                    if (manager) {
+                        const activeThreads = [];
+                        const terminatedThreadId = interpreter.threadId;
+                        
+                        // Chercher tous les threads non terminés (sans exclure par ID)
+                        for (const [threadId, thread] of manager.threads) {
+                            if (!thread.halted) {
+                                activeThreads.push(thread);
+                            }
+                        }
+                        
+                        console.log(`🔍 Debug: ${activeThreads.length} threads actifs trouvés:`, 
+                                  activeThreads.map(t => `T${t.threadId}`).join(', '));
+                        
+                        if (activeThreads.length > 0) {
+                            // AMÉLIORATION: Prioriser le retour aux threads précédemment utilisés
+                            let nextThread = null;
+                            
+                            // Chercher dans l'historique d'accès (du plus récent au plus ancien)
+                            for (let i = threadAccessHistory.length - 1; i >= 0; i--) {
+                                const historyThreadId = threadAccessHistory[i];
+                                const candidateThread = activeThreads.find(t => t.threadId === historyThreadId);
+                                if (candidateThread && candidateThread.threadId !== terminatedThreadId) {
+                                    nextThread = candidateThread;
+                                    console.log(`🔄 Retour prioritaire vers thread T${historyThreadId} (depuis historique)`);
+                                    break;
+                                }
+                            }
+                            
+                            // Si aucun thread trouvé dans l'historique, prendre le premier disponible
+                            if (!nextThread) {
+                                nextThread = activeThreads[0];
+                                console.log(`🔄 Basculement vers thread T${nextThread.threadId} (premier disponible)`);
+                            }
+                            
+                            interpreter = nextThread;
+                            console.log(`✅ Thread actuel maintenant: T${nextThread.threadId}`);
+                        } else {
+                            console.log('🎯 Tous les threads sont terminés');
+                            const stepCounterEl = document.getElementById('step-counter');
+                            if (stepCounterEl) stepCounterEl.style.display = 'none';
                         }
                     } else {
-                        console.log('🎯 Tous les threads sont terminés');
+                        console.log('🎯 Aucun gestionnaire de threads - Programme terminé');
                         const stepCounterEl = document.getElementById('step-counter');
                         if (stepCounterEl) stepCounterEl.style.display = 'none';
                     }
@@ -2049,21 +2099,49 @@
         switchThreadBtn.addEventListener('click', () => {
             if (!interpreter || !interpreter.threadManager) return;
             
-            const allThreadStates = interpreter.getAllThreadStates();
-            const activeThreads = allThreadStates.filter(t => !t.halted);
+            const manager = interpreter.threadManager;
+            const activeThreads = [];
+            
+            // CORRECTION: Utiliser directement le gestionnaire pour plus de fiabilité
+            for (const [threadId, thread] of manager.threads) {
+                if (!thread.halted) {
+                    activeThreads.push(thread);
+                }
+            }
             
             if (activeThreads.length > 1) {
                 const currentIndex = activeThreads.findIndex(t => t.threadId === interpreter.threadId);
                 const nextIndex = (currentIndex + 1) % activeThreads.length;
-                const nextThreadId = activeThreads[nextIndex].threadId;
+                const nextThread = activeThreads[nextIndex];
                 
-                const manager = interpreter.threadManager;
-                if (manager && manager.threads.has(nextThreadId)) {
-                    interpreter = manager.threads.get(nextThreadId);
-                    console.log(`🔄 Thread actuel changé vers T${nextThreadId}`);
-                    updateUI();
-                    updateMultiThreadView();
+                interpreter = nextThread;
+                console.log(`🔄 Thread actuel changé vers T${nextThread.threadId}`);
+                
+                // Enregistrer l'accès manuel dans l'historique
+                if (!threadAccessHistory.includes(nextThread.threadId)) {
+                    threadAccessHistory.push(nextThread.threadId);
+                } else {
+                    threadAccessHistory = threadAccessHistory.filter(id => id !== nextThread.threadId);
+                    threadAccessHistory.push(nextThread.threadId);
                 }
+                
+                updateUI();
+                updateMultiThreadView();
+            } else if (activeThreads.length === 1 && activeThreads[0].threadId !== interpreter.threadId) {
+                // Cas où le thread actuel est terminé mais il reste un thread actif
+                interpreter = activeThreads[0];
+                console.log(`🔄 Basculement vers le dernier thread actif T${activeThreads[0].threadId}`);
+                
+                // Enregistrer l'accès dans l'historique
+                if (!threadAccessHistory.includes(activeThreads[0].threadId)) {
+                    threadAccessHistory.push(activeThreads[0].threadId);
+                } else {
+                    threadAccessHistory = threadAccessHistory.filter(id => id !== activeThreads[0].threadId);
+                    threadAccessHistory.push(activeThreads[0].threadId);
+                }
+                
+                updateUI();
+                updateMultiThreadView();
             }
         });
 
@@ -2074,6 +2152,7 @@
             globalStepCounter = 0;
             executionHistory.clear();
             threadInputData.clear();
+            threadAccessHistory = []; // Reset de l'historique des threads
             
             // Reset sécurisé des éléments DOM
             const stepNumberEl = document.getElementById('step-number');
@@ -2121,6 +2200,7 @@
         let globalStepCounter = 0;
         let executionHistory = new Map(); // Historique d'exécution par thread
         let threadInputData = new Map(); // Données d'entrée par thread
+        let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Informations de version de l'application
         const APP_VERSION = '1.5.0';
