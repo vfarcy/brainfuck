@@ -39,7 +39,7 @@ f.
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.4.0
+## 🆕 Nouveautés v1.5.0
 
 ### 🔀 **Fork Unix-Style Implementation**
 - **🔄 Sémantique Unix Authentique** : Fork retourne PID enfant au parent, 0 à l'enfant
@@ -47,10 +47,11 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 - **🎯 Compatibilité POSIX** : Comportement familier aux développeurs systèmes
 - **🚀 Flexibilité Accrue** : Utilisation des boucles pour distinguer parent et enfant
 
-### 🧪 **Fichiers de Test Inclus**
-- **📄 test-unix-fork.html** : Tests démonstratifs de la nouvelle implémentation Unix-style
-- **🎮 Interface Interactive** : Tests visuels avec explications détaillées
-- **📊 Visualisation Temps Réel** : Observation du comportement parent/enfant en action
+### 📚 **Documentation Professionnelle**
+- **� docs/test-unix-fork.md** : Guide complet des tests Unix-style en format Markdown
+- **📖 Documentation Structurée** : Organisation professionnelle dans le répertoire docs/
+- **� Exemples Interactifs** : Tests détaillés avec explications techniques
+- **📊 Concepts Avancés** : Patterns de programmation et applications pratiques
 
 -----
 
@@ -491,10 +492,19 @@ Ce projet ne nécessite aucune dépendance externe ni configuration de serveur.
 brainfuck/
 ├── index.html                # Interface utilisateur avec support multi-thread
 ├── BrainfuckInterpreter.js   # Moteur d'interprétation avec multithreading
-├── package.json              # Configuration NPM et scripts de versioning  
-├── update-version.js         # Script de mise à jour automatique des versions
+├── package.json              # Configuration NPM et scripts de versioning
 ├── README.md                 # Documentation principale (ce fichier)
-└── GITHUB_PAGES_GUIDE.md    # Guide de déploiement et troubleshooting
+├── CHANGELOG.md              # Historique des versions et modifications
+├── LICENSE                   # Licence MIT du projet
+├── docs/                     # Documentation professionnelle
+│   ├── API.md               # Documentation de l'API
+│   ├── EXAMPLES.md          # Exemples et tutoriels
+│   └── test-unix-fork.md    # Guide des tests Unix-style
+├── scripts/                  # Scripts de déploiement et versioning
+│   ├── update-version.js    # Script de mise à jour des versions
+│   ├── deploy.sh            # Script de déploiement Unix
+│   └── deploy.bat           # Script de déploiement Windows
+└── templates/                # Templates GitHub (issues, PR)
 ```
 
 ### Lancement
@@ -807,9 +817,14 @@ brainfuck/
 ├── BrainfuckInterpreter.js    # Cœur de l'interpréteur multithreading
 ├── index.html                 # Interface utilisateur complète
 ├── package.json               # Configuration NPM et scripts
-├── update-version.js          # Script de versioning automatique
-├── README.md                  # Documentation principale
-└── GITHUB_PAGES_GUIDE.md     # Guide de déploiement
+├── CHANGELOG.md               # Historique des versions
+├── docs/                      # Documentation professionnelle
+│   ├── API.md                # Documentation de l'API
+│   ├── EXAMPLES.md           # Exemples et tutoriels
+│   └── test-unix-fork.md     # Guide des tests Unix-style
+├── scripts/                   # Scripts de déploiement et versioning
+│   └── update-version.js     # Script de versioning automatique
+└── templates/                 # Templates GitHub
 ```
 
 ### 🧪 Tests et Exemples
@@ -838,31 +853,30 @@ brainfuck/
 
 ## 🔧 **Développement et Architecture**
 
-### 🎯 **Changelog v1.3.1 (Octobre 2025)**
+### 🎯 **Changelog v1.5.0 (Octobre 2025)**
 
-#### ✅ **Corrections Majeures**
-- **Exécution pas à pas corrigée** : Fonctionne parfaitement avec threads multiples
-- **Architecture optimisée** : Suppression définitive des méthodes statiques obsolètes
-- **Détection threads améliorée** : Nouvelle méthode `hasMultipleActiveThreads()` plus efficace
-- **Gestion d'erreurs renforcée** : Isolation des crashs par thread avec try-catch
+#### 📚 **Documentation Professionnelle**
+- **Structure docs/ créée** : Organisation professionnelle de la documentation
+- **test-unix-fork.md** : Conversion du fichier HTML en documentation Markdown
+- **API.md & EXAMPLES.md** : Documentation technique complète
+- **Templates GitHub** : Issues et PR templates pour contributions
 
-#### 🚀 **Améliorations Techniques**
-- **Code plus propre** : -80 lignes de code obsolète supprimées
-- **Performance optimisée** : Réduction de 14% de la taille du fichier
-- **Zero warnings** : Élimination de tous les messages de dépréciation
-- **Debugging avancé** : Messages de log structurés avec émojis distinctifs
+#### 🧹 **Nettoyage Repository**
+- **Suppression fichiers obsolètes** : Nettoyage des anciens fichiers de test HTML
+- **Organisation scripts/** : Regroupement des scripts de déploiement et versioning
+- **Structure cohérente** : Alignement avec les standards de projets open-source
+- **Documentation croisée** : Liens entre les différents documents
 
-#### 🏗️ **Refactoring Architectural**
-- **100% Instance-based** : Fini les méthodes statiques problématiques
-- **Thread management** : Gestion par instance plus robuste et prévisible
-- **Memory isolation** : Chaque thread possède sa propre mémoire (30K cellules)
-- **Error resilience** : Un thread qui plante n'affecte plus les autres
+#### 🔧 **Améliorations UI**
+- **Espacement amélioré** : Meilleure séparation visuelle dans l'interface
+- **Message final optimisé** : Affichage plus clair de "Programme terminé"
+- **Cohérence terminologique** : Alignement complet avec la sémantique Unix-style
 
-### 📈 **Métriques de Qualité**
-- **Lignes de code** : 486 lignes (optimisé)
-- **Zéro erreur syntaxe** : Code vérifié et validé
-- **Documentation** : README, guides et exemples complets
-- **Tests** : 4 programmes de validation avec cases limites
+### 📈 **Métriques de Qualité v1.5.0**
+- **Documentation complète** : README, API, exemples, et guides de test
+- **Structure professionnelle** : Organisation optimale pour contributions
+- **Zéro fichier obsolète** : Repository propre et maintenu
+- **Cohérence parfaite** : Documentation alignée avec l'implémentation
 
 -----
 
