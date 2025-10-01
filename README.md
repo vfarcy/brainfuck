@@ -1,6 +1,6 @@
 # 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.6.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
 
@@ -11,7 +11,7 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 ## 🏗️ Architecture Technique
 
 ### 📦 **Structure Modulaire**
-- **`BrainfuckInterpreter.js`** : Moteur d'interprétation avec gestion des threads (809 lignes)
+- **`BrainfuckInterpreter.js`** : Moteur d'interprétation avec gestion des threads (486 lignes)
 - **`index.html`** : Interface utilisateur interactive avec visualisation temps réel
 - **`package.json`** : Configuration du projet et scripts de build
 - **Documentation complète** : README, guides de test, et documentation API

@@ -1,5 +1,5 @@
-// Version 1.6.0 - Mise à jour automatique du 2025-10-01
-// Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés
+// Version 1.6.1 - Mise à jour automatique du 2025-10-01
+// Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -800,6 +800,164 @@ class BrainfuckStatsAnalyzer {
         }
         
         return recommendations;
+    }
+
+    static generateHTML(analysis, stats) {
+        return `
+        <div class="brainfuck-stats-report">
+            <div class="stats-header">
+                <h2>📊 Rapport d'Analyse Brainfuck</h2>
+                <p>Synthèse complète de l'exécution de votre programme</p>
+            </div>
+
+            <div class="stats-grid">
+                ${this.generatePerformanceCard(analysis.performance)}
+                ${this.generateMemoryCard(analysis.memory)}
+                ${this.generateLoopsCard(analysis.loops)}
+                ${this.generateInstructionsCard(analysis.instructions, stats)}
+            </div>
+
+            <div class="recommendations">
+                <h3>💡 Recommandations Pédagogiques</h3>
+                ${analysis.recommendations.map(rec => 
+                    `<div class="recommendation ${rec.type}">
+                        <strong>${rec.title}</strong><br>
+                        ${rec.message}
+                    </div>`
+                ).join('')}
+            </div>
+        </div>`;
+    }
+
+    static generateMarkdown(analysis, stats) {
+        let markdown = `# 📊 Rapport d'Analyse Brainfuck\\n\\n`;
+        
+        markdown += `## ⚡ Performance\\n`;
+        markdown += `- **Étapes totales :** ${analysis.performance.totalSteps.toLocaleString()}\\n`;
+        markdown += `- **Temps d'exécution :** ${analysis.performance.executionTimeMs.toFixed(2)}ms\\n`;
+        markdown += `- **Vitesse :** ${Math.round(analysis.performance.stepsPerSecond).toLocaleString()} étapes/sec\\n`;
+        markdown += `- **Efficacité :** ${(analysis.performance.efficiency * 100).toFixed(1)}%\\n\\n`;
+        
+        markdown += `## 🧠 Mémoire\\n`;
+        markdown += `- **Cellules utilisées :** ${analysis.memory.cellsUsed}\\n`;
+        markdown += `- **Portée mémoire :** ${analysis.memory.memoryRange}\\n`;
+        markdown += `- **Efficacité mémoire :** ${(analysis.memory.memoryEfficiency * 100).toFixed(1)}%\\n`;
+        markdown += `- **Événements d'erreur :** ${analysis.memory.errorEvents}\\n\\n`;
+        
+        markdown += `## 🔄 Boucles\\n`;
+        markdown += `- **Profondeur max :** ${analysis.loops.maxDepth}\\n`;
+        markdown += `- **Itérations totales :** ${analysis.loops.totalIterations.toLocaleString()}\\n`;
+        markdown += `- **Moyenne par boucle :** ${analysis.loops.averageIterationsPerLoop.toFixed(1)}\\n\\n`;
+        
+        markdown += `## 📝 Instructions\\n`;
+        const mostUsed = analysis.instructions.mostUsed[0];
+        markdown += `- **Plus utilisée :** '${mostUsed.instruction}' (${mostUsed.count}×)\\n`;
+        markdown += `- **Équilibre :** ${analysis.instructions.balance.toFixed(1)}%\\n\\n`;
+        
+        if (analysis.recommendations.length > 0) {
+            markdown += `## 💡 Recommandations\\n`;
+            analysis.recommendations.forEach(rec => {
+                markdown += `- **${rec.title}** : ${rec.message}\\n`;
+            });
+        }
+        
+        return markdown;
+    }
+
+    static generateSummary(analysis, stats) {
+        return {
+            performance: analysis.performance,
+            memory: analysis.memory,
+            loops: analysis.loops,
+            instructions: analysis.instructions,
+            io: analysis.io,
+            recommendations: analysis.recommendations,
+            
+            // Résumé textuel
+            overview: {
+                efficiency: analysis.performance.efficiency > 0.8 ? 'Excellent' : 
+                           analysis.performance.efficiency > 0.6 ? 'Bon' : 
+                           analysis.performance.efficiency > 0.4 ? 'Moyen' : 'À améliorer',
+                
+                complexity: analysis.loops.maxDepth > 4 ? 'Complexe' : 
+                           analysis.loops.maxDepth > 2 ? 'Modéré' : 'Simple',
+                
+                memoryUsage: analysis.memory.cellsUsed > 100 ? 'Élevée' : 
+                            analysis.memory.cellsUsed > 10 ? 'Modérée' : 'Faible',
+                
+                hasErrors: analysis.memory.errorEvents > 0,
+                hasThreading: stats.forksCreated > 0
+            }
+        };
+    }
+
+    // Méthodes helper pour generateHTML()
+    static generatePerformanceCard(perf) {
+        const efficiency = Math.round(perf.efficiency * 100);
+        return `
+            <div class="stat-card">
+                <div class="stat-title">⚡ Performance</div>
+                <div class="stat-value">${perf.totalSteps.toLocaleString()}</div>
+                <div class="stat-detail">étapes exécutées</div>
+                
+                <div class="stat-detail">
+                    ⏱️ Temps: ${perf.executionTimeMs.toFixed(2)}ms
+                </div>
+                <div class="stat-detail">
+                    🚀 Vitesse: ${Math.round(perf.stepsPerSecond).toLocaleString()} étapes/sec
+                </div>
+                <div class="stat-detail">Efficacité: ${efficiency}%</div>
+            </div>`;
+    }
+
+    static generateMemoryCard(memory) {
+        const efficiency = Math.round(memory.memoryEfficiency * 100);
+        return `
+            <div class="stat-card">
+                <div class="stat-title">🧠 Utilisation Mémoire</div>
+                <div class="stat-value">${memory.cellsUsed}</div>
+                <div class="stat-detail">cellules utilisées</div>
+                
+                <div class="stat-detail">
+                    📏 Portée: ${memory.memoryRange} cellules
+                </div>
+                <div class="stat-detail">
+                    ⚖️ Ratio Lecture/Écriture: ${memory.readWriteRatio.toFixed(2)}
+                </div>
+                ${memory.errorEvents > 0 ? 
+                    `<div class="stat-detail">⚠️ Événements d'erreur: ${memory.errorEvents}</div>` : ''}
+                <div class="stat-detail">Efficacité: ${efficiency}%</div>
+            </div>`;
+    }
+
+    static generateLoopsCard(loops) {
+        return `
+            <div class="stat-card">
+                <div class="stat-title">🔄 Analyse des Boucles</div>
+                <div class="stat-value">${loops.maxDepth}</div>
+                <div class="stat-detail">profondeur maximale</div>
+                
+                <div class="stat-detail">
+                    🔁 Itérations totales: ${loops.totalIterations.toLocaleString()}
+                </div>
+                <div class="stat-detail">
+                    📊 Moyenne par boucle: ${loops.averageIterationsPerLoop.toFixed(1)}
+                </div>
+            </div>`;
+    }
+
+    static generateInstructionsCard(instructions, stats) {
+        const mostUsed = instructions.mostUsed[0];
+        return `
+            <div class="stat-card">
+                <div class="stat-title">📝 Instructions</div>
+                <div class="stat-value">${mostUsed.instruction}</div>
+                <div class="stat-detail">instruction la plus utilisée (${mostUsed.count}×)</div>
+                
+                <div class="stat-detail">
+                    ⚖️ Équilibre: ${instructions.balance.toFixed(1)}%
+                </div>
+            </div>`;
     }
 }
 
