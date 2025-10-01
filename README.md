@@ -899,35 +899,6 @@ brainfuck/
 
 -----
 
-## 🔧 **Développement et Architecture**
-
-### 🎯 **Changelog v1.5.0 (Octobre 2025)**
-
-#### 📚 **Documentation Professionnelle**
-- **Structure docs/ créée** : Organisation professionnelle de la documentation
-- **test-unix-fork.md** : Conversion du fichier HTML en documentation Markdown
-- **API.md & EXAMPLES.md** : Documentation technique complète
-- **Templates GitHub** : Issues et PR templates pour contributions
-
-#### 🧹 **Nettoyage Repository**
-- **Suppression fichiers obsolètes** : Nettoyage des anciens fichiers de test HTML
-- **Organisation scripts/** : Regroupement des scripts de déploiement et versioning
-- **Structure cohérente** : Alignement avec les standards de projets open-source
-- **Documentation croisée** : Liens entre les différents documents
-
-#### 🔧 **Améliorations UI**
-- **Espacement amélioré** : Meilleure séparation visuelle dans l'interface
-- **Message final optimisé** : Affichage plus clair de "Programme terminé"
-- **Cohérence terminologique** : Alignement complet avec la sémantique Unix-style
-
-### 📈 **Métriques de Qualité v1.5.0**
-- **Documentation complète** : README, API, exemples, et guides de test
-- **Structure professionnelle** : Organisation optimale pour contributions
-- **Zéro fichier obsolète** : Repository propre et maintenu
-- **Cohérence parfaite** : Documentation alignée avec l'implémentation
-
------
-
 ## 🤝 Contribution
 
 Les contributions sont les bienvenues \! Si vous trouvez un bug ou avez une suggestion d'amélioration :
