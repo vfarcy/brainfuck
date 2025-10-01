@@ -1,229 +1,454 @@
-# 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
+# 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading# 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
 
-Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.5.0
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 
-### 🔀 **Fork Unix-Style Implementation**
-- **🔄 Sémantique Unix Authentique** : Fork retourne PID enfant au parent, 0 à l'enfant
-- **⚡ Exécution Conditionnelle** : Permet aux threads parent/enfant d'exécuter du code différent
-- **🎯 Compatibilité POSIX** : Comportement familier aux développeurs systèmes
-- **🚀 Flexibilité Accrue** : Utilisation des boucles pour distinguer parent et enfant
+![License](https://img.shields.io/badge/license-MIT-green.svg)![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-### 📚 **Documentation Professionnelle**
+![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
+
+
+
+Un interpréteur **Brainfuck** complet en **JavaScript pur**, avec interface interactive et **support du multithreading Unix-style**. Inclut l'exécution pas à pas, la visualisation de la mémoire et un éditeur avec coloration syntaxique.Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
+
+
+
+## 🚀 Démarrage Rapide## 🆕 Nouveautés v1.5.0
+
+
+
+1. **Cloner le projet** :### 🔀 **Fork Unix-Style Implementation**
+
+   ```bash- **🔄 Sémantique Unix Authentique** : Fork retourne PID enfant au parent, 0 à l'enfant
+
+   git clone https://github.com/vfarcy/brainfuck.git- **⚡ Exécution Conditionnelle** : Permet aux threads parent/enfant d'exécuter du code différent
+
+   cd brainfuck- **🎯 Compatibilité POSIX** : Comportement familier aux développeurs systèmes
+
+   ```- **🚀 Flexibilité Accrue** : Utilisation des boucles pour distinguer parent et enfant
+
+
+
+2. **Lancer l'application** : Ouvrir `index.html` dans votre navigateur### 📚 **Documentation Professionnelle**
+
 - **📁 docs/test-unix-fork.md** : Guide complet des tests Unix-style en format Markdown
-- **📖 Documentation Structurée** : Organisation professionnelle dans le répertoire docs/
+
+3. **Tester** : Essayez `+++.` ou `f.` pour voir le multithreading en action- **📖 Documentation Structurée** : Organisation professionnelle dans le répertoire docs/
+
 - **🎯 Exemples Interactifs** : Tests détaillés avec explications techniques
-- **📊 Concepts Avancés** : Patterns de programmation et applications pratiques
 
------
+4. **Version en ligne** : [GitHub Pages](https://vfarcy.github.io/brainfuck/)- **📊 Concepts Avancés** : Patterns de programmation et applications pratiques
 
-## 🔧 Historique v1.3.1
 
-### 🚀 **Architecture Optimisée**
-- **🗑️ Méthodes Statiques Supprimées** : Élimination définitive de toutes les méthodes statiques obsolètes
+
+## 🆕 Nouveautés v1.5.0-----
+
+
+
+### 🔀 Fork Unix-Style## 🔧 Historique v1.3.1
+
+- **Sémantique POSIX authentique** : Parent reçoit PID enfant, enfant reçoit 0
+
+- **Exécution conditionnelle** : Threads parent/enfant suivent des chemins différents### 🚀 **Architecture Optimisée**
+
+- **Compatibilité Unix** : Comportement familier aux développeurs systèmes- **🗑️ Méthodes Statiques Supprimées** : Élimination définitive de toutes les méthodes statiques obsolètes
+
 - **🏗️ 100% Instance-Based** : Architecture entièrement basée sur les instances pour une meilleure encapsulation
-- **⚡ Performance Améliorée** : Réduction de 14% de la taille du code (486 vs 566 lignes)
-- **🧹 Code Plus Propre** : Suppression de 80 lignes de code obsolète
 
-### 🔧 **Améliorations Techniques**
+### 📚 Documentation Professionnelle- **⚡ Performance Améliorée** : Réduction de 14% de la taille du code (486 vs 566 lignes)
+
+- **Structure organisée** : Répertoire `docs/` avec guides complets- **🧹 Code Plus Propre** : Suppression de 80 lignes de code obsolète
+
+- **Templates GitHub** : Issues et PR templates
+
+- **Exemples interactifs** : Tests détaillés avec explications### 🔧 **Améliorations Techniques**
+
 - **✅ Exécution Pas à Pas Corrigée** : Fonctionnement parfait avec les threads multiples
-- **🎯 Détection Threads Optimisée** : Nouvelle méthode `hasMultipleActiveThreads()` plus efficace
-- **🛡️ Gestion d'Erreurs Renforcée** : Try-catch autour de chaque exécution de thread
-- **📊 Debugging Amélioré** : Messages de log structurés et informatifs
 
-### 🎨 **Interface Utilisateur**
-- **🎨 Coloration des Threads** : Sortie multi-thread avec identification visuelle par couleur pour chaque thread
-- **📝 Légende Interactive** : Affichage d'une légende colorée pour identifier les threads en mode multi-thread
-- **⚡ Capture Temps Réel** : Système de capture des sorties en temps réel pendant l'exécution
+## 🔀 Commande Fork (`f`) - Style Unix- **🎯 Détection Threads Optimisée** : Nouvelle méthode `hasMultipleActiveThreads()` plus efficace
+
+- **🛡️ Gestion d'Erreurs Renforcée** : Try-catch autour de chaque exécution de thread
+
+Quand `f` est exécuté, le thread **fork** selon la sémantique Unix :- **📊 Debugging Amélioré** : Messages de log structurés et informatifs
+
+
+
+| Thread | Valeur Retournée | Comportement |### 🎨 **Interface Utilisateur**
+
+|--------|------------------|--------------|- **🎨 Coloration des Threads** : Sortie multi-thread avec identification visuelle par couleur pour chaque thread
+
+| **Parent** | PID enfant (> 0) | Continue avec l'ID du nouvel enfant |- **📝 Légende Interactive** : Affichage d'une légende colorée pour identifier les threads en mode multi-thread
+
+| **Enfant** | 0 | Nouveau thread avec valeur zéro |- **⚡ Capture Temps Réel** : Système de capture des sorties en temps réel pendant l'exécution
+
 - **📊 Cache Persistant** : Système de cache pour préserver les sorties des threads même après nettoyage
-- **📊 Cache Persistant** : Système de cache pour préserver les sorties des threads même après nettoyage
+
+### Exemples- **📊 Cache Persistant** : Système de cache pour préserver les sorties des threads même après nettoyage
+
 - **🎁 Interface Unifiée** : Sortie globale unifiée fonctionnant à la fois en mode pas-à-pas et exécution complète
 
------
+#### Fork Simple
 
-## 🏗️ Architecture Technique
+```brainfuck-----
 
-### 📦 **Structure Modulaire**
-- **`BrainfuckInterpreter.js`** : Moteur d'interprétation avec gestion des threads (486 lignes)
-- **`index.html`** : Interface utilisateur interactive avec visualisation temps réel
-- **`package.json`** : Configuration du projet et scripts de build
+f.    # Parent affiche PID, enfant affiche 0
+
+```## 🏗️ Architecture Technique
+
+
+
+#### Exécution Conditionnelle### 📦 **Structure Modulaire**
+
+```brainfuck- **`BrainfuckInterpreter.js`** : Moteur d'interprétation avec gestion des threads (486 lignes)
+
+f[+++.]   # Seul le parent (PID>0) exécute +++.- **`index.html`** : Interface utilisateur interactive avec visualisation temps réel
+
+```- **`package.json`** : Configuration du projet et scripts de build
+
 - **Documentation complète** : README, guides de test, et documentation API
 
-### ⚙️ **Système de Threading**
-- **Instance-Based Management** : Chaque interpréteur gère ses propres threads
-- **Thread Isolation** : Mémoire indépendante pour chaque thread (30 000 cellules × 8 threads max)
-- **Round-Robin Scheduling** : Exécution équitable en ordre de création (T0, T1, T2...)
+#### ⚠️ Fork Bomb (Éviter !)
+
+```brainfuck### ⚙️ **Système de Threading**
+
+f[f]      # Création récursive de threads- **Instance-Based Management** : Chaque interpréteur gère ses propres threads
+
+```- **Thread Isolation** : Mémoire indépendante pour chaque thread (30 000 cellules × 8 threads max)
+
+**Protection** : Limite de 8 threads simultanés par défaut.- **Round-Robin Scheduling** : Exécution équitable en ordre de création (T0, T1, T2...)
+
 - **Automatic Cleanup** : Suppression automatique des threads terminés
-- **Fork Bomb Protection** : Limite configurable (défaut: 8 threads simultanés)
 
-### 🔧 **Optimisations v1.3.1**
-- **Zero Static Methods** : Architecture 100% orientée instance
-- **Efficient Thread Detection** : `hasMultipleActiveThreads()` avec early-exit
-- **Error Resilience** : Isolation des erreurs par thread
-- **Memory Optimization** : Réduction de 14% de la taille du code
-- **Performance Gains** : Suppression des appels de méthodes obsolètes
+## ✨ Fonctionnalités- **Fork Bomb Protection** : Limite configurable (défaut: 8 threads simultanés)
 
------
 
-## ✨ Fonctionnalités Clés
 
-*   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-*   **� Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
-*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `f`).
-*   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
+- **🔀 Multithreading** : Commande `f` pour créer des threads parallèles### 🔧 **Optimisations v1.3.1**
+
+- **👁️ Visualisation** : Interface dédiée multi-thread avec identification par couleur- **Zero Static Methods** : Architecture 100% orientée instance
+
+- **⚡ Exécution** : Mode pas à pas ou exécution complète- **Efficient Thread Detection** : `hasMultipleActiveThreads()` avec early-exit
+
+- **🎨 Éditeur** : Coloration syntaxique avec support de `f`- **Error Resilience** : Isolation des erreurs par thread
+
+- **🛡️ Sécurité** : Protection contre les fork bombs- **Memory Optimization** : Réduction de 14% de la taille du code
+
+- **📊 Debug** : Messages console détaillés- **Performance Gains** : Suppression des appels de méthodes obsolètes
+
+
+
+### Identification Visuelle des Threads-----
+
+
+
+| Thread | Couleur | Code |## ✨ Fonctionnalités Clés
+
+|--------|---------|------|
+
+| T0 | 🔵 Bleu | `#2196F3` |*   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
+
+| T1 | 🟢 Vert | `#4CAF50` |*   **� Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
+
+| T2 | 🟠 Orange | `#FF9800` |*   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `f`).
+
+| T3+ | ... | Jusqu'à 8 couleurs |*   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
+
 *   **🛡️ Protection Fork Bomb** : Limite globale configurable du nombre de threads pour éviter les explosions.
-*   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
+
+## 📋 Commandes Brainfuck*   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
+
 *   **Exécution Complète Multi-Thread** : Exécute tous les threads jusqu'à completion.
-*   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée et visualiser la sortie.
-*   **Visualisation de l'État en Temps Réel** avec support multi-thread.
 
------
+| Cmd | Action | Multithreading |*   **Gestion des Entrées/Sorties** : Zones de texte dédiées pour fournir des données d'entrée et visualiser la sortie.
 
-## 🎨 Identification Visuelle des Threads
+|-----|--------|----------------|*   **Visualisation de l'État en Temps Réel** avec support multi-thread.
 
-### Coloration Automatique
-Chaque thread possède sa propre couleur pour faciliter l'identification visuelle :
+| `>` | Avancer pointeur | ✅ Par thread |
 
-| Thread | Couleur | Code Hex |
+| `<` | Reculer pointeur | ✅ Par thread |-----
+
+| `+` | Incrémenter | ✅ Par thread |
+
+| `-` | Décrémenter | ✅ Par thread |## 🎨 Identification Visuelle des Threads
+
+| `.` | Sortie | ✅ Par thread |
+
+| `,` | Entrée | ✅ Par thread |### Coloration Automatique
+
+| `[` | Début boucle | ✅ Par thread |Chaque thread possède sa propre couleur pour faciliter l'identification visuelle :
+
+| `]` | Fin boucle | ✅ Par thread |
+
+| **`f`** | **Fork** | ✅ **Nouveau !** || Thread | Couleur | Code Hex |
+
 |--------|---------|----------|
-| **T0** | 🔵 Bleu | `#2196F3` |
+
+## 🏗️ Architecture| **T0** | 🔵 Bleu | `#2196F3` |
+
 | **T1** | 🟢 Vert | `#4CAF50` |
-| **T2** | 🟠 Orange | `#FF9800` |
-| **T3** | 🟣 Violet | `#9C27B0` |
-| **T4** | 🔴 Rouge | `#F44336` |
-| **T5** | 🟤 Marron | `#795548` |
-| **T6** | 🔘 Bleu-gris | `#607D8B` |
-| **T7** | 🩷 Rose | `#E91E63` |
 
-### Affichage dans l'Interface
-- **Sortie Globale** : Chaque caractère affiché porte la couleur de son thread d'origine
-- **Caractères Hexadécimaux** : Les caractères non-imprimables (ex: `0x01`) héritent de la couleur de leur thread
-- **Légende Interactive** : Une légende colorée s'affiche automatiquement en mode multi-thread
-- **Séparateurs Visuels** : Un séparateur `|` gris sépare les sorties de différents threads
+### Structure du Projet| **T2** | 🟠 Orange | `#FF9800` |
+
+```| **T3** | 🟣 Violet | `#9C27B0` |
+
+brainfuck/| **T4** | 🔴 Rouge | `#F44336` |
+
+├── index.html                 # Interface utilisateur principale| **T5** | 🟤 Marron | `#795548` |
+
+├── BrainfuckInterpreter.js    # Moteur d'interprétation (486 lignes)| **T6** | 🔘 Bleu-gris | `#607D8B` |
+
+├── package.json               # Configuration NPM| **T7** | 🩷 Rose | `#E91E63` |
+
+├── docs/                      # Documentation
+
+│   ├── API.md                # Documentation API### Affichage dans l'Interface
+
+│   ├── EXAMPLES.md           # Exemples et tutoriels- **Sortie Globale** : Chaque caractère affiché porte la couleur de son thread d'origine
+
+│   └── test-unix-fork.md     # Guide tests Unix-style- **Caractères Hexadécimaux** : Les caractères non-imprimables (ex: `0x01`) héritent de la couleur de leur thread
+
+├── scripts/                   # Scripts de déploiement- **Légende Interactive** : Une légende colorée s'affiche automatiquement en mode multi-thread
+
+└── .github/                   # Templates GitHub- **Séparateurs Visuels** : Un séparateur `|` gris sépare les sorties de différents threads
+
+```
 
 -----
 
-## 🔀 Nouvelle Commande: Fork (`f`) - Style Unix
+### Système de Threading
 
-### Comportement de `f` (Unix-Style Fork) 🆕 v1.5.0
-Quand la commande `f` est rencontrée, le thread actuel **fork** selon la sémantique Unix authentique :
+- **Instance-Based** : Chaque interpréteur gère ses threads## 🔀 Nouvelle Commande: Fork (`f`) - Style Unix
 
-| Thread | Valeur Retournée | Description |
+- **Round-Robin** : Exécution équitable (T0 → T1 → T2...)
+
+- **Isolation** : 30k cellules par thread, mémoire indépendante### Comportement de `f` (Unix-Style Fork) 🆕 v1.5.0
+
+- **Auto-cleanup** : Suppression automatique des threads terminésQuand la commande `f` est rencontrée, le thread actuel **fork** selon la sémantique Unix authentique :
+
+
+
+## 🎓 Guide Pédagogique| Thread | Valeur Retournée | Description |
+
 |--------|------------------|-------------|
-| **Parent** | **PID de l'enfant** (valeur > 0) | Reçoit l'identifiant du thread enfant créé |
+
+### Comprendre le Fork Unix-Style| **Parent** | **PID de l'enfant** (valeur > 0) | Reçoit l'identifiant du thread enfant créé |
+
 | **Enfant** | **0** | Reçoit zéro pour indiquer qu'il est le processus enfant |
-| **Erreur** | **-1** | En cas d'échec (non implémenté dans cette version) |
 
-### Avantages du Fork Unix-Style
+Le fork **duplique** le thread actuel. Contrairement à d'autres implémentations, notre version suit la sémantique Unix :| **Erreur** | **-1** | En cas d'échec (non implémenté dans cette version) |
 
-✅ **Exécution Conditionnelle** : Permet aux threads parent et enfant d'exécuter du code différent  
-✅ **Compatibilité Unix** : Sémantique familière aux développeurs systèmes  
-✅ **Flexibilité** : Utilisation de boucles `[...]` pour distinguer parent (`PID > 0`) et enfant (`0`)  
-✅ **Authentique** : Respecte les conventions POSIX  
 
-### Exemples
 
-#### Exemple Simple : Identification Parent/Enfant
-```brainfuck
-f         # Fork: Parent reçoit PID enfant, Enfant reçoit 0
-[         # Si valeur > 0 (parent)
+```### Avantages du Fork Unix-Style
+
+Thread Parent (T0)
+
+       ↓✅ **Exécution Conditionnelle** : Permet aux threads parent et enfant d'exécuter du code différent  
+
+   [Fork f]✅ **Compatibilité Unix** : Sémantique familière aux développeurs systèmes  
+
+      ↙ ↘✅ **Flexibilité** : Utilisation de boucles `[...]` pour distinguer parent (`PID > 0`) et enfant (`0`)  
+
+  T0 (PID=1)  T1 (0)✅ **Authentique** : Respecte les conventions POSIX  
+
+    Parent     Enfant
+
+```### Exemples
+
+
+
+### Métaphore : Le Superviseur#### Exemple Simple : Identification Parent/Enfant
+
+- **Superviseur (parent)** : Reçoit l'ID de l'ouvrier qu'il délègue```brainfuck
+
+- **Ouvrier (enfant)** : Reçoit 0, sait qu'il est l'exécutantf         # Fork: Parent reçoit PID enfant, Enfant reçoit 0
+
+- **Division du travail** : Chacun peut faire des tâches différentes[         # Si valeur > 0 (parent)
+
   +++.    # Afficher caractère pour parent
-]
+
+### Exemple Détaillé : `f[+++.]`]
+
 # Code commun aux deux processus
-```
 
-#### Exemple Avancé : Exécution Conditionnelle
-```brainfuck
-f[>+<-]   # Fork et copier PID dans cellule suivante
->         # Aller à la copie du PID
+1. **Fork** : T0 crée T1```
+
+   - T0 reçoit PID=1, T1 reçoit 0
+
+2. **Test boucle** : `[...]`#### Exemple Avancé : Exécution Conditionnelle
+
+   - T0 : 1≠0 → entre dans la boucle```brainfuck
+
+   - T1 : 0=0 → saute la bouclef[>+<-]   # Fork et copier PID dans cellule suivante
+
+3. **Résultat** : Seul T0 affiche quelque chose>         # Aller à la copie du PID
+
 [         # Si PID > 0 (processus parent)
-  <       # Retour à la cellule originale
+
+## 🔧 Interface Utilisateur  <       # Retour à la cellule originale
+
   +++.    # Code spécifique au parent
-  >[-]    # Nettoyer et sortir de la boucle
-]
-<         # Retour à la cellule originale
-[         # Si valeur = 0 (processus enfant)
+
+### Modes d'Affichage  >[-]    # Nettoyer et sortir de la boucle
+
+- **Single-thread** : Vue classique avec état détaillé]
+
+- **Multi-thread** : Bascule automatique dès le premier fork<         # Retour à la cellule originale
+
+- **Sortie unifiée** : Tous les threads dans une zone commune avec couleurs[         # Si valeur = 0 (processus enfant)
+
   ++.     # Code spécifique à l'enfant
-  [-]     # Nettoyer pour sortir
-]
-```
 
-#### ⚠️ Exemple Dangereux (Fork Bomb)
+### Contrôles  [-]     # Nettoyer pour sortir
+
+- **▶️ Exécuter** : Lance le programme complet]
+
+- **👣 Step** : Exécution pas à pas (un ou tous threads)```
+
+- **🔄 Reset** : Remet à zéro
+
+- **👁️ Vue détaillée** : Basculer entre modes d'affichage#### ⚠️ Exemple Dangereux (Fork Bomb)
+
 ```brainfuck
-f[f]      # Fork récursif
+
+## 📊 Métriques v1.5.0f[f]      # Fork récursif
+
 ```
-**Attention !** Chaque parent crée continuellement de nouveaux enfants.
 
-**Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
+- **Architecture** : 100% instance-based, 0 méthode statique**Attention !** Chaque parent crée continuellement de nouveaux enfants.
 
------
+- **Performance** : 486 lignes optimisées (-14% vs v1.3.0)
 
-## 📊 **Métriques de Performance & Qualité**
+- **Compatibilité** : Chrome, Firefox, Safari, Edge**Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
 
-### 🎯 **Optimisations v1.3.1**
-| Métrique | Avant (v1.3.0) | Après (v1.3.1) | Amélioration |
-|----------|------------------|-----------------|--------------|
-| **Lignes de code** | 566 lignes | 486 lignes | **-14%** |
-| **Méthodes statiques** | 5 obsolètes | 0 | **-100%** |
-| **Architecture** | Hybride | 100% Instance | **✅ Cohérent** |
+- **Documentation** : README, API, exemples, tests
+
+- **Qualité** : 0 warning, tests complets-----
+
+
+
+## 🧪 Exemples de Test## 📊 **Métriques de Performance & Qualité**
+
+
+
+### Tests Basiques### 🎯 **Optimisations v1.3.1**
+
+```brainfuck| Métrique | Avant (v1.3.0) | Après (v1.3.1) | Amélioration |
+
++++.           # Sortie simple|----------|------------------|-----------------|--------------|
+
++++f.          # Fork simple : parent et enfant affichent| **Lignes de code** | 566 lignes | 486 lignes | **-14%** |
+
+f[+++.]        # Fork conditionnel : seul parent affiche| **Méthodes statiques** | 5 obsolètes | 0 | **-100%** |
+
+```| **Architecture** | Hybride | 100% Instance | **✅ Cohérent** |
+
 | **Warnings** | 5 deprecation | 0 | **✅ Clean** |
-| **Memory leaks** | 0 | 0 | **✅ Stable** |
 
-### ⚡ **Fonctionnalités Avancées**
-- **🔍 Step Debugging** : Exécution pas à pas avec support multi-thread
-- **🎨 Visual Threading** : 8 couleurs distinctes pour identifier les threads
+### Tests Avancés| **Memory leaks** | 0 | 0 | **✅ Stable** |
+
+```brainfuck
+
+++f>++f.       # Multiple forks avec déplacement### ⚡ **Fonctionnalités Avancées**
+
++++[f+]        # Attention : fork bomb potentiel !- **🔍 Step Debugging** : Exécution pas à pas avec support multi-thread
+
+```- **🎨 Visual Threading** : 8 couleurs distinctes pour identifier les threads
+
 - **📈 Real-time Metrics** : Compteurs d'étapes et statistiques d'exécution
-- **🛡️ Error Isolation** : Crash d'un thread n'affecte pas les autres
+
+## 🛠️ Développement- **🛡️ Error Isolation** : Crash d'un thread n'affecte pas les autres
+
 - **🧹 Smart Cleanup** : Garbage collection automatique des threads terminés
 
-### 🏆 **Compatibilité & Standards**
-- **ES6+ Modern JavaScript** : Classes, const/let, template literals
-- **Cross-browser Support** : Chrome, Firefox, Safari, Edge
-- **Mobile Responsive** : Interface adaptative pour tablettes/mobiles
-- **Accessibility** : Labels ARIA, contraste respecté, navigation clavier
+### Versioning
 
------
+```bash### 🏆 **Compatibilité & Standards**
 
-# 🎓 **Comprendre le Fork en Brainfuck - Guide Pédagogique**
+npm run version:patch   # 1.5.0 → 1.5.1- **ES6+ Modern JavaScript** : Classes, const/let, template literals
+
+npm run version:minor   # 1.5.0 → 1.6.0- **Cross-browser Support** : Chrome, Firefox, Safari, Edge
+
+npm run version:major   # 1.5.0 → 2.0.0- **Mobile Responsive** : Interface adaptative pour tablettes/mobiles
+
+```- **Accessibility** : Labels ARIA, contraste respecté, navigation clavier
+
+
+
+### Déploiement-----
+
+```bash
+
+# Unix/Linux/Mac# 🎓 **Comprendre le Fork en Brainfuck - Guide Pédagogique**
+
+./scripts/deploy.sh
 
 ## 📚 **Qu'est-ce qu'un Fork ?**
 
-Le **fork** est une instruction spéciale (représentée par `f`) qui permet de **dupliquer** un thread en cours d'exécution. C'est comme si le programme se "clonait" à un moment précis.
+# Windows
+
+scripts\deploy.batLe **fork** est une instruction spéciale (représentée par `f`) qui permet de **dupliquer** un thread en cours d'exécution. C'est comme si le programme se "clonait" à un moment précis.
+
+```
 
 ## 🧬 **Métaphore : La Photocopieuse**
 
-Imaginez que votre programme soit une **recette de cuisine** et chaque thread soit un **cuisinier** :
+### Debug
 
-```
+Ouvrir la console développeur (F12) pour voir les messages détaillés d'exécution des threads.Imaginez que votre programme soit une **recette de cuisine** et chaque thread soit un **cuisinier** :
+
+
+
+## 📚 Documentation```
+
 📋 Recette : "f,f."
-🧑‍🍳 Cuisinier T0 commence à lire la recette...
-```
+
+- **[API.md](docs/API.md)** : Documentation complète de l'API🧑‍🍳 Cuisinier T0 commence à lire la recette...
+
+- **[EXAMPLES.md](docs/EXAMPLES.md)** : Exemples et tutoriels```
+
+- **[test-unix-fork.md](docs/test-unix-fork.md)** : Guide des tests Unix-style
 
 ### **Étape 1 : Le Premier 'f' (Position 0)**
-```
+
+## 🤝 Contribution```
+
 📋 Recette : [f] , f .
-🧑‍🍳 T0 lit : "Dupliquez-vous !"
+
+1. Fork le projet🧑‍🍳 T0 lit : "Dupliquez-vous !"
+
+2. Créer une branche feature (`git checkout -b feature/nom`)```
+
+3. Committer les changements (`git commit -m "feat: description"`)
+
+4. Pousser la branche (`git push origin feature/nom`)**Résultat :** T0 se duplique → Un deuxième cuisinier T1 apparaît !
+
+5. Ouvrir une Pull Request
+
 ```
 
-**Résultat :** T0 se duplique → Un deuxième cuisinier T1 apparaît !
+Consultez les [templates GitHub](.github/) pour les issues et PR.🧑‍🍳 T0 : f [,] f .  ← Continue à la position suivante
 
-```
-🧑‍🍳 T0 : f [,] f .  ← Continue à la position suivante
 👨‍🍳 T1 : [f] , f .  ← Commence au début de la recette !
-```
 
-## 🔄 **Principe Fondamental : "Unix-Style Fork"**
+## 📜 Licence```
 
-### **⚠️ Point Crucial :**
+
+
+MIT License - voir [LICENSE](LICENSE)## 🔄 **Principe Fondamental : "Unix-Style Fork"**
+
+
+
+**Auteur :** [Valéry Farcy](https://github.com/vfarcy)### **⚠️ Point Crucial :**
+
 Quand un thread est créé par fork Unix-style, le **parent reçoit le PID de l'enfant** dans la cellule courante, l'**enfant reçoit 0**. Les deux threads continuent après le fork avec des valeurs différentes permettant l'exécution conditionnelle.
+
+---
 
 ## 📖 **Exemple Détaillé : Code Unix-Style `f[+++.]`**
 
+*BrainJS v1.5.0 - Interpréteur Brainfuck avec Multithreading Unix-Style authentique* 🚀
 ### **Positions du Code :**
 ```
 Position:  0   1   2   3   4   5   6
@@ -409,62 +634,7 @@ Chaque thread possède sa propre couleur pour faciliter l'identification visuell
 
 -----
 
-## 🔀 Nouvelle Commande: Fork (`f`) - Style Unix
-
-### Comportement de `f` (Unix-Style Fork) 🆕 v1.4.0
-Quand la commande `f` est rencontrée, le thread actuel **fork** selon la sémantique Unix authentique :
-
-| Thread | Valeur Retournée | Description |
-|--------|------------------|-------------|
-| **Parent** | **PID de l'enfant** (valeur > 0) | Reçoit l'identifiant du thread enfant créé |
-| **Enfant** | **0** | Reçoit zéro pour indiquer qu'il est le processus enfant |
-| **Erreur** | **-1** | En cas d'échec (non implémenté dans cette version) |
-
-### Avantages du Fork Unix-Style
-
-✅ **Exécution Conditionnelle** : Permet aux threads parent et enfant d'exécuter du code différent  
-✅ **Compatibilité Unix** : Sémantique familière aux développeurs systèmes  
-✅ **Flexibilité** : Utilisation de boucles `[...]` pour distinguer parent (`PID > 0`) et enfant (`0`)  
-✅ **Authentique** : Respecte les conventions POSIX  
-
-### Exemples
-
-#### Exemple Simple : Identification Parent/Enfant
-```brainfuck
-f         # Fork: Parent reçoit PID enfant, Enfant reçoit 0
-[         # Si valeur > 0 (parent)
-  +++.    # Afficher caractère pour parent
-]
-# Code commun aux deux processus
-```
-
-#### Exemple Avancé : Exécution Conditionnelle
-```brainfuck
-f[>+<-]   # Fork et copier PID dans cellule suivante
->         # Aller à la copie du PID
-[         # Si PID > 0 (processus parent)
-  <       # Retour à la cellule originale
-  +++.    # Code spécifique au parent
-  >[-]    # Nettoyer et sortir de la boucle
-]
-<         # Retour à la cellule originale
-[         # Si valeur = 0 (processus enfant)
-  ++.     # Code spécifique à l'enfant
-  [-]     # Nettoyer pour sortir
-]
-```
-
-#### ⚠️ Exemple Dangereux (Fork Bomb)
-```brainfuck
-f[f]      # Fork récursif
-```
-**Attention !** Chaque parent crée continuellement de nouveaux enfants.
-
-**Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
-
------
-
-## 📊 **Métriques de Performance & Qualité**
+##  **Métriques de Performance & Qualité**
 
 ### 🎯 **Optimisations v1.3.1**
 | Métrique | Avant (v1.3.0) | Après (v1.3.1) | Amélioration |
