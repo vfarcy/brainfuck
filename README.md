@@ -1,12 +1,27 @@
 # 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--01-lightgrey.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés v1.3.1
+## 🆕 Nouveautés v1.4.0
+
+### 🔀 **Fork Unix-Style Implementation**
+- **🔄 Sémantique Unix Authentique** : Fork retourne PID enfant au parent, 0 à l'enfant
+- **⚡ Exécution Conditionnelle** : Permet aux threads parent/enfant d'exécuter du code différent
+- **🎯 Compatibilité POSIX** : Comportement familier aux développeurs systèmes
+- **🚀 Flexibilité Accrue** : Utilisation des boucles pour distinguer parent et enfant
+
+### 🧪 **Fichiers de Test Inclus**
+- **📄 test-unix-fork.html** : Tests démonstratifs de la nouvelle implémentation Unix-style
+- **🎮 Interface Interactive** : Tests visuels avec explications détaillées
+- **📊 Visualisation Temps Réel** : Observation du comportement parent/enfant en action
+
+-----
+
+## 🔧 Historique v1.3.1
 
 ### 🚀 **Architecture Optimisée**
 - **🗑️ Méthodes Statiques Supprimées** : Élimination définitive de toutes les méthodes statiques obsolètes
@@ -17,7 +32,7 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 ### 🔧 **Améliorations Techniques**
 - **✅ Exécution Pas à Pas Corrigée** : Fonctionnement parfait avec les threads multiples
 - **🎯 Détection Threads Optimisée** : Nouvelle méthode `hasMultipleActiveThreads()` plus efficace
-- **�️ Gestion d'Erreurs Renforcée** : Try-catch autour de chaque exécution de thread
+- **🛡️ Gestion d'Erreurs Renforcée** : Try-catch autour de chaque exécution de thread
 - **📊 Debugging Amélioré** : Messages de log structurés et informatifs
 
 ### 🎨 **Interface Utilisateur**
@@ -92,36 +107,56 @@ Chaque thread possède sa propre couleur pour faciliter l'identification visuell
 
 -----
 
-## 🔀 Nouvelle Commande: Fork (`f`)
+## 🔀 Nouvelle Commande: Fork (`f`) - Style Unix
 
-### Comportement de `f` (Skip Fork)
-Quand la commande `f` est rencontrée, le thread actuel **fork** :
+### Comportement de `f` (Unix-Style Fork) 🆕 v1.4.0
+Quand la commande `f` est rencontrée, le thread actuel **fork** selon la sémantique Unix authentique :
 
-| Thread | Action |
-|--------|---------|
-| **Parent** | **Garde sa valeur actuelle** (pas d'écrasement) |
-| **Enfant** | Le pointeur avance d'une position (`ptr++`) et la nouvelle cellule est mise à `1` |
+| Thread | Valeur Retournée | Description |
+|--------|------------------|-------------|
+| **Parent** | **PID de l'enfant** (valeur > 0) | Reçoit l'identifiant du thread enfant créé |
+| **Enfant** | **0** | Reçoit zéro pour indiquer qu'il est le processus enfant |
+| **Erreur** | **-1** | En cas d'échec (non implémenté dans cette version) |
+
+### Avantages du Fork Unix-Style
+
+✅ **Exécution Conditionnelle** : Permet aux threads parent et enfant d'exécuter du code différent  
+✅ **Compatibilité Unix** : Sémantique familière aux développeurs systèmes  
+✅ **Flexibilité** : Utilisation de boucles `[...]` pour distinguer parent (`PID > 0`) et enfant (`0`)  
+✅ **Authentique** : Respecte les conventions POSIX  
 
 ### Exemples
 
-#### Exemple Simple
+#### Exemple Simple : Identification Parent/Enfant
 ```brainfuck
-++f
+f         # Fork: Parent reçoit PID enfant, Enfant reçoit 0
+[         # Si valeur > 0 (parent)
+  +++.    # Afficher caractère pour parent
+]
+# Code commun aux deux processus
 ```
-**Résultat :**
-- Thread T0 (parent) : `cell[0] = 2` (valeur préservée)
-- Thread T1 (enfant) : `cell[1] = 1`
+
+#### Exemple Avancé : Exécution Conditionnelle
+```brainfuck
+f[>+<-]   # Fork et copier PID dans cellule suivante
+>         # Aller à la copie du PID
+[         # Si PID > 0 (processus parent)
+  <       # Retour à la cellule originale
+  +++.    # Code spécifique au parent
+  >[-]    # Nettoyer et sortir de la boucle
+]
+<         # Retour à la cellule originale
+[         # Si valeur = 0 (processus enfant)
+  ++.     # Code spécifique à l'enfant
+  [-]     # Nettoyer pour sortir
+]
+```
 
 #### ⚠️ Exemple Dangereux (Fork Bomb)
 ```brainfuck
-+[f+]
+f[f]      # Fork récursif
 ```
-**Attention !** Ce code créerait une explosion exponentielle de threads :
-1. `cell[0] = 1` → Entre dans la boucle
-2. `f` → Fork (Thread T0: garde `cell[0] = 1`, Thread T1: `cell[1] = 1`)
-3. `+` → Les deux threads incrémentent leur cellule (toutes deviennent `2`)
-4. `]` → Retour au `[` car les cellules ne sont pas nulles
-5. Répétition infinie avec doublement des threads à chaque tour !
+**Attention !** Chaque parent crée continuellement de nouveaux enfants.
 
 **Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
 

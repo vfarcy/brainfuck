@@ -1,4 +1,4 @@
-// Version 1.3.1 - Mise à jour automatique du 2025-10-01
+// Version 1.4.0 - Mise à jour automatique du 2025-10-01
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -237,9 +237,11 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Gère la commande de fork 'f'
-     * Thread parent: cellule active = 0
-     * Thread enfant: ptr++, cellule active = 1
+     * Gère la commande fork 'f' - Style Unix
+     * Crée un thread enfant avec copie de la mémoire
+     * Thread parent: reçoit le PID de l'enfant dans la cellule courante
+     * Thread enfant: reçoit 0 dans la cellule courante
+     * Erreur: reçoit -1 (non implémenté dans cette version)
      */
     handleFork() {
         const manager = this.threadManager;
@@ -252,7 +254,7 @@ class BrainfuckInterpreter {
         this.cleanupHaltedThreads();
         
         // Vérifier la limite de forks par thread
-        console.log(`🔍 Thread T${this.threadId} tente un fork (forks créés: ${this.forkCount})`);
+        console.log(`🔍 Thread T${this.threadId} tente un fork Unix-style (forks créés: ${this.forkCount})`);
         
         // Compter seulement les threads actifs (non halted)
         let activeThreadCount = 0;
@@ -296,15 +298,12 @@ class BrainfuckInterpreter {
         // Ajouter au gestionnaire (même si le constructeur n'a pas pu le faire)
         manager.threads.set(childId, childThread);
         
-        // Appliquer les règles du fork
-        // Thread parent: garde sa valeur actuelle (correction v1.3.0)
-        // Thread enfant: ptr++, cellule active = 1
-        childThread.ptr++;
-        if (childThread.ptr >= childThread.memory.length) {
-            // Extension automatique de la mémoire si nécessaire
-            childThread.memory = childThread.memory.concat(new Array(MEMORY_SIZE).fill(0));
-        }
-        childThread.memory[childThread.ptr] = 1;
+        // Appliquer les règles du fork Unix-style
+        // Thread parent: reçoit le PID de l'enfant (childId) dans la cellule courante
+        this.memory[this.ptr] = childId;
+        
+        // Thread enfant: reçoit 0 dans la cellule courante (indique qu'il est l'enfant)
+        childThread.memory[childThread.ptr] = 0;
         
         // Enregistrer la relation parent-enfant
         this.children.push(childId);
@@ -314,13 +313,13 @@ class BrainfuckInterpreter {
         this.forkCount++;
         
         // IMPORTANT: Avancer l'IP pour éviter la re-exécution de 'f'
-        // Une seule fois pour tous les threads (ils continueront après le fork)
+        // Les deux threads continuent après le fork
         const nextIP = this.ip + 1;
         this.ip = nextIP;
         childThread.ip = nextIP;
         
-        console.log(`🔀 Fork créé: Parent T${this.threadId} (forks: ${this.forkCount}/${this.maxForksPerThread}) → Enfant T${childId} | PTR: ${this.ptr} → ${childThread.ptr}`);
-        console.log(`📊 Threads après fork: ${manager.threads.size} total`);
+        console.log(`🔀 Fork Unix-style: Parent T${this.threadId} reçoit PID=${childId}, Enfant T${childId} reçoit 0`);
+        console.log(`📊 Threads après fork: ${manager.threads.size} total (Parent: ${this.forkCount}/${this.maxForksPerThread} forks)`);
     }
 
     /**
