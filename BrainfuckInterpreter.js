@@ -1,4 +1,4 @@
-// Version 1.4.0 - Mise à jour automatique du 2025-10-01
+// Version 1.5.0 - Mise à jour automatique du 2025-10-01
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
