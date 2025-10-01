@@ -2,7 +2,40 @@
 
 ![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Build](https://img.shields.io/badge/build-2025--10--01-lightgrey.svg)
+![Build](https://img.shields.io/badge/build-2025--10--01-lightgr#### **🕒 Temps 3 : Résultat Unix-Style**
+```
+T0: Cellule[0]=4, affiche 0x04
+T1: Terminé, aucune sortie
+```
+
+**Résultat Unix-Style : Un seul thread produit une sortie conditionnelle !**
+
+## 🎯 **Pourquoi le Comportement Unix-Style ?**
+
+### **Avantages du Fork Unix-Style :**
+
+1. **🔍 Authentique POSIX**
+   - Comportement identique aux systèmes Unix réels
+   - Standard **industrie** reconnu
+
+2. **👀 Exécution Conditionnelle**
+   - Parent et enfant peuvent suivre des **chemins différents**
+   - Permet la **division du travail** authentique
+
+3. **🛡️ Contrôle Granulaire**
+   - Utilisation des boucles `[...]` pour différencier parent/enfant
+   - **Flexibilité maximale** dans la programmation
+
+4. **📊 Réalisme Systémique**
+   - Modèle fidèle aux **vrais processus Unix**
+   - Apprentissage des **concepts système** authentiques
+
+## 🧪 **Exemples Pratiques Unix-Style**
+
+### **Exemple 1 : Fork Simple**
+```brainfuck
+f.
+```y.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
@@ -216,47 +249,51 @@ Imaginez que votre programme soit une **recette de cuisine** et chaque thread so
 👨‍🍳 T1 : [f] , f .  ← Commence au début de la recette !
 ```
 
-## 🔄 **Principe Fondamental : "Skip Fork - Continue Après"**
+## 🔄 **Principe Fondamental : "Unix-Style Fork"**
 
 ### **⚠️ Point Crucial :**
-Quand un thread est créé par fork, il **continue APRÈS** le fork qui l'a créé, sans exécuter cette instruction fork. Les deux threads (parent et enfant) reprennent **à la même position suivante**.
+Quand un thread est créé par fork Unix-style, le **parent reçoit le PID de l'enfant** dans la cellule courante, l'**enfant reçoit 0**. Les deux threads continuent après le fork avec des valeurs différentes permettant l'exécution conditionnelle.
 
-## 📖 **Exemple Détaillé : Code `f,f.`**
+## 📖 **Exemple Détaillé : Code Unix-Style `f[+++.]`**
 
 ### **Positions du Code :**
 ```
-Position:  0   1   2   3
-Code:      f   ,   f   .
-           ↑   ↑   ↑   ↑
-        Fork Lire Fork Afficher
+Position:  0   1   2   3   4   5   6
+Code:      f   [   +   +   +   .   ]
+           ↑   ↑   ↑   ↑   ↑   ↑   ↑
+        Fork Boucle Inc Inc Inc Sortie Fin
 ```
 
-### **Exécution Chronologique :**
+### **Exécution Chronologique Unix-Style :**
 
 #### **🕐 Temps 1 : Début**
 ```
-T0: [f] , f .  ← Position 0
+T0: [f] [ + + + . ]  ← Position 0
 ```
 - T0 exécute le fork → Crée T1
-- **Les deux** avancent à la position 1
+- **T0 (parent)** : reçoit PID=1 dans cellule[0], avance position 1
+- **T1 (enfant)** : reçoit 0 dans cellule[0], avance position 1
 
-#### **🕑 Temps 2 : Après le premier fork**
+#### **🕑 Temps 2 : Évaluation de la boucle**
 ```
-T0: f [,] f .  ← Position 1  
-T1: f [,] f .  ← Position 1 (continue après le fork !)
+T0: f [[] + + + . ]  ← Position 1, cellule[0]=1 (PID)
+T1: f [[] + + + . ]  ← Position 1, cellule[0]=0 (enfant)
 ```
-- T0 exécute `,` (lit entrée "a")
-- T1 exécute `,` (lit entrée "b")
-- **Les deux** avancent à la position 2
+- **T0** : cellule[0]=1 ≠ 0 → **entre dans la boucle** (position 2)
+- **T1** : cellule[0]=0 = 0 → **saute après `]`** (position 7, fin de programme)
 
-#### **🕒 Temps 3 : Deuxième fork**
+#### **🕒 Temps 3 : Exécution divergente**
 ```
-T0: f , [f] .  ← Position 2
-T1: f , [f] .  ← Position 2
+T0: f [ [+] + + . ]  ← Position 2, exécute +++.
+T1: TERMINÉ         ← Position 7, thread halted
 ```
-- T0 exécute `f` (fork) → Crée T2 **qui commence en position 3**
-- T1 exécute `f` (fork) → Crée T3 **qui commence en position 3**
-- T0 et T1 avancent à la position 3
+- **T0** : exécute `+++.` → cellule[0] devient 4 → affiche 0x04
+- **T1** : terminé, aucune sortie
+
+**Résultat Unix-Style :**
+- **Sortie :** `0x04` (uniquement le parent)
+- **Threads :** T0 actif, T1 terminé
+- **Comportement :** Exécution conditionnelle réussie
 
 #### **🕓 Temps 4 : Affichage final**
 ```
@@ -294,60 +331,60 @@ T3:       [.]  ← Position 3 (affiche valeur par défaut)
 ```brainfuck
 f.
 ```
-**Résultat :**
-- T0 : fork → affiche
-- T1 : affiche
-- **Sortie :** `0x00|0x00` (2 zéros)
+**Résultat Unix-Style :**
+- **Parent (T0)** : Reçoit PID=1 → affiche 0x01
+- **Enfant (T1)** : Reçoit 0 → affiche 0x00  
+- **Sortie :** `0x01|0x00` (PID parent|zéro enfant)
 
-### **Exemple 2 : Fork avec Données**
+### **Exemple 2 : Fork Unix-Style Simple**
 ```brainfuck
-+f.
++++f.
 ```
 **Résultat :**
-- T0 : incrémente → fork (garde valeur) → affiche
-- T1 : affiche (cellule à 1 car enfant)
-- **Sortie :** `0x01|0x01`
+- T0 (parent) : cellule=3 → fork → reçoit PID=1 → affiche 0x01
+- T1 (enfant) : cellule=3 → fork → reçoit 0 → affiche 0x00
+- **Sortie :** `0x01|0x00` (PID parent|zéro enfant)
 
-### **Exemple 3 : Skip Fork avec Données**
+### **Exemple 3 : Fork avec Exécution Conditionnelle**
 ```brainfuck
-+f,.
+f[+++.]
 ```
 **Résultat :**
-- T0 : incrémente → fork → lit "a" → affiche "a"
-- T1 : continue après fork → lit "b" → affiche "b"
-- **Sortie :** `0x61|0x62` ("a"|"b")
+- T0 (parent) : fork → reçoit PID=1 → entre dans boucle [1≠0] → affiche 0x04
+- T1 (enfant) : fork → reçoit 0 → saute la boucle [0=0] → aucune sortie
+- **Sortie :** `0x04` (seul le parent exécute)
 
 ## 🚨 **Pièges Courants**
 
 ### **❌ Erreur de Compréhension**
 ```brainfuck
-f,f.
+f[+++.]
 ```
 **On pourrait penser (incorrectement) :**
-- Que les threads recommencent depuis le début du programme
+- Que les deux threads exécutent la même chose
 
-**En réalité (skip fork) :**
-- T0 et T1 continuent après chaque fork
-- T0 : fork → `,` → fork → `.`
-- T1 : `,` → fork → `.` (skip le premier fork)
-- T2 et T3 : `.` seulement (créés au deuxième fork)
+**En réalité (Unix-style fork) :**
+- T0 (parent) : fork → reçoit PID=1 → exécute [+++.] car 1≠0
+- T1 (enfant) : fork → reçoit 0 → saute [+++.] car 0=0
+- **Seul le parent produit une sortie**
 
 ### **✅ Bonne Compréhension**
-Chaque thread **continue** là où le fork l'a placé, créant un parallélisme **logique** et **prévisible**.
+Le fork Unix-style permet l'**exécution conditionnelle** : parent et enfant peuvent suivre des chemins différents selon la valeur de retour du fork.
 
-## 🎓 **Métaphore : La Ligne de Production**
+## 🎓 **Métaphore : Le Superviseur et l'Ouvrier**
 
 ```
-        T0 (Ouvrier principal)
+        T0 (Superviseur)
          ↓
-    [Fork] ← Duplication
+    [Fork] ← Délégation
        ↙ ↘
-     T1   T0 (continuent ensemble)
-      ↓    ↓
-   [Tâche] [Tâche] (même étape suivante)
+   T1 (0)   T0 (PID=1)
+   Ouvrier  Superviseur
+      ↓        ↓
+   [Tâche A] [Tâche B]
 ```
 
-Chaque **duplication** crée un nouvel ouvrier qui commence **à la même étape suivante**, pas au début de la ligne !
+Le **fork Unix-style** assigne des **rôles différents** : le superviseur (parent) reçoit l'ID de l'ouvrier, l'ouvrier (enfant) reçoit 0, permettant une **division du travail** !
 
 ## 🔬 **Valeur Éducative**
 
@@ -360,7 +397,7 @@ Ce comportement enseigne :
 
 ## 💡 **En Résumé**
 
-Le fork en Brainfuck est un **"Skip Fork"** : chaque nouveau thread **continue après** l'instruction fork qui l'a créé, permettant un parallélisme **logique** et **contrôlé**, plus proche des vrais systèmes multi-threadés ! 🚀
+Le fork en Brainfuck est un **"Unix-Style Fork"** : le parent reçoit le PID de l'enfant, l'enfant reçoit 0, permettant une **exécution conditionnelle** et une **division du travail** authentique, conforme aux standards POSIX ! 🚀
 
 -----
 
