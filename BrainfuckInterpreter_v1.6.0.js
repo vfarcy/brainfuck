@@ -128,6 +128,15 @@ class BrainfuckInterpreter {
     }
 
     /**
+     * Met à jour les statistiques d'utilisation mémoire
+     */
+    updateMemoryStats() {
+        this.stats.cellsUsed.add(this.ptr);
+        this.stats.maxPtrReached = Math.max(this.stats.maxPtrReached, this.ptr);
+        this.stats.minPtrReached = Math.min(this.stats.minPtrReached, this.ptr);
+    }
+
+    /**
      * Prépare une carte (Map) pour lier les crochets d'ouverture '[' à
      * leurs crochets de fermeture ']' correspondants, et vice-versa.
      * @param {string} code Le programme Brainfuck nettoyé.
@@ -165,16 +174,24 @@ class BrainfuckInterpreter {
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
             this.halted = true;
+            // Enregistrer le temps de fin pour le thread principal
+            if (this.threadId === 0) {
+                this.stats.executionEndTime = performance.now();
+            }
             return false;
         }
 
         const instruction = this.code[this.ip];
+        this.stats.totalSteps++;
+        this.stats.instructionCounts[instruction]++;
+
+        // Tracker l'utilisation mémoire
+        this.updateMemoryStats();
 
         switch (instruction) {
             case '>':
                 this.ptr++;
                 if (this.ptr >= this.memory.length) {
-                    // Le pointeur est hors limites. On pourrait aussi redimensionner la mémoire ou boucler.
                     console.warn(`Pointeur de mémoire hors des limites (> ${MEMORY_SIZE - 1}).`);
                 }
                 break;
@@ -186,19 +203,25 @@ class BrainfuckInterpreter {
                 break;
 
             case '+':
-                // Débordement (wraparound) de 255 à 0
+                const oldValue = this.memory[this.ptr];
                 this.memory[this.ptr] = (this.memory[this.ptr] + 1) % MAX_BYTE_VALUE;
+                this.stats.memoryWrites++;
+                if (oldValue === 255) this.stats.overflowCount++;
                 break;
 
             case '-':
-                // Sous-débordement (wraparound) de 0 à 255
+                const oldVal = this.memory[this.ptr];
                 this.memory[this.ptr] = (this.memory[this.ptr] - 1 + MAX_BYTE_VALUE) % MAX_BYTE_VALUE;
+                this.stats.memoryWrites++;
+                if (oldVal === 0) this.stats.underflowCount++;
                 break;
 
             case '.':
                 const outputChar = String.fromCharCode(this.memory[this.ptr]);
                 console.log(`🔍 DEBUG: Before output update - this.output.length=${this.output.length}, adding char code: ${this.memory[this.ptr]}`);
                 this.output += outputChar;
+                this.stats.outputCharsWritten++;
+                this.stats.memoryReads++;
                 console.log(`🔍 DEBUG: After output update - this.output.length=${this.output.length}, charCodeAt(0)=${this.output.length > 0 ? this.output.charCodeAt(this.output.length-1) : 'N/A'}`);
                 // Notifier le callback d'output si défini
                 if (typeof window !== 'undefined' && window.onThreadOutput) {
@@ -208,7 +231,6 @@ class BrainfuckInterpreter {
                 break;
 
             case ',':
-                // Lit le caractère et utilise 0 si l'entrée est vide
                 // S'assurer que this.input est un tableau
                 if (!Array.isArray(this.input)) {
                     console.warn(`⚠️ Thread T${this.threadId}: this.input n'est pas un tableau:`, typeof this.input, this.input);
@@ -218,20 +240,28 @@ class BrainfuckInterpreter {
                 const char = this.input.shift();
                 console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
+                this.stats.inputCharsRead++;
+                this.stats.memoryWrites++;
                 break;
 
             case '[':
-                // Sauter après le ']' correspondant si la valeur est zéro
                 if (this.memory[this.ptr] === 0) {
                     this.ip = this.loopMap.get(this.ip);
+                } else {
+                    this.stats.currentLoopDepth++;
+                    this.stats.maxLoopDepth = Math.max(this.stats.maxLoopDepth, this.stats.currentLoopDepth);
                 }
+                this.stats.memoryReads++;
                 break;
 
             case ']':
-                // Sauter après le '[' correspondant si la valeur n'est PAS zéro
                 if (this.memory[this.ptr] !== 0) {
+                    this.stats.loopIterations++;
                     this.ip = this.loopMap.get(this.ip);
+                } else {
+                    this.stats.currentLoopDepth = Math.max(0, this.stats.currentLoopDepth - 1);
                 }
+                this.stats.memoryReads++;
                 break;
 
             case 'f':
@@ -291,7 +321,12 @@ class BrainfuckInterpreter {
      * Crée un thread enfant avec copie de la mémoire
      * Thread parent: reçoit le PID de l'enfant dans la cellule courante
      * Thread enfant: reçoit 0 dans la cellule courante
-     * Erreur: reçoit -1 (non implémenté dans cette version)
+     * 
+     * Implémentation conforme à la sémantique Unix fork() :
+     * - Le fork remplace la valeur de la cellule courante
+     * - Parent : reçoit l'ID du processus enfant (> 0)
+     * - Enfant : reçoit 0
+     * - Erreur : reçoit -1 (non implémenté dans cette version)
      */
     handleFork() {
         const manager = this.threadManager;
@@ -535,9 +570,59 @@ class BrainfuckInterpreter {
             isForked: this.isForked,
             children: this.children,
             forkCount: this.forkCount,
-            maxForksPerThread: this.maxForksPerThread,
             totalThreads: realActiveThreads,
-            currentInstruction: this.code[this.ip] || null
+            currentInstruction: this.code[this.ip] || null,
+            
+            // Nouvelles statistiques
+            stats: this.stats,
+            statsAnalysis: this.halted ? this.generateStatsAnalysis() : null
+        };
+    }
+
+    /**
+     * Génère une analyse des statistiques d'exécution
+     * @returns {Object} Analyse des performances et recommandations
+     */
+    generateStatsAnalysis() {
+        const executionTime = this.stats.executionEndTime ? 
+            (this.stats.executionEndTime - this.stats.executionStartTime) : 0;
+        
+        const totalInstructions = Object.values(this.stats.instructionCounts)
+            .reduce((a, b) => a + b, 0);
+
+        // Calcul de l'efficacité du code
+        const movements = this.stats.instructionCounts['>'] + this.stats.instructionCounts['<'];
+        const operations = this.stats.instructionCounts['+'] + this.stats.instructionCounts['-'] + 
+                          this.stats.instructionCounts['.'] + this.stats.instructionCounts[','];
+        const efficiency = operations / Math.max(movements + operations, 1);
+
+        return {
+            performance: {
+                totalSteps: this.stats.totalSteps,
+                executionTimeMs: executionTime,
+                stepsPerSecond: executionTime > 0 ? (this.stats.totalSteps / executionTime * 1000) : 0,
+                efficiency: efficiency
+            },
+            
+            memory: {
+                cellsUsed: this.stats.cellsUsed.size,
+                memoryRange: this.stats.maxPtrReached - this.stats.minPtrReached + 1,
+                memoryEfficiency: this.stats.cellsUsed.size / Math.max(this.stats.maxPtrReached + 1, 1),
+                readWriteRatio: this.stats.memoryReads / Math.max(this.stats.memoryWrites, 1),
+                errorEvents: this.stats.overflowCount + this.stats.underflowCount
+            },
+            
+            loops: {
+                maxDepth: this.stats.maxLoopDepth,
+                totalIterations: this.stats.loopIterations,
+                averageIterationsPerLoop: this.stats.instructionCounts['['] > 0 ? 
+                    this.stats.loopIterations / this.stats.instructionCounts['['] : 0
+            },
+            
+            threading: {
+                forksCreated: this.stats.forksCreated,
+                maxConcurrentThreads: this.stats.maxConcurrentThreads
+            }
         };
     }
 
@@ -567,4 +652,158 @@ class BrainfuckInterpreter {
             this.threadManager.maxThreads = maxThreads;
         }
     }
+}
+
+/**
+ * Analyseur de statistiques pour l'apprentissage de Brainfuck
+ */
+class BrainfuckStatsAnalyzer {
+    static generateReport(interpreter) {
+        const stats = interpreter.stats;
+        const analysis = this.analyzeStats(stats);
+        
+        return {
+            html: this.generateHTML(analysis, stats),
+            markdown: this.generateMarkdown(analysis, stats),
+            summary: this.generateSummary(analysis, stats)
+        };
+    }
+
+    static analyzeStats(stats) {
+        const executionTime = stats.executionEndTime ? 
+            (stats.executionEndTime - stats.executionStartTime) : 0;
+        
+        const totalInstructions = Object.values(stats.instructionCounts)
+            .reduce((a, b) => a + b, 0);
+        
+        return {
+            performance: {
+                totalSteps: stats.totalSteps,
+                executionTimeMs: executionTime,
+                stepsPerSecond: executionTime > 0 ? (stats.totalSteps / executionTime * 1000) : 0,
+                efficiency: this.calculateEfficiency(stats)
+            },
+            
+            memory: {
+                cellsUsed: stats.cellsUsed.size,
+                memoryRange: stats.maxPtrReached - stats.minPtrReached + 1,
+                memoryEfficiency: stats.cellsUsed.size / Math.max(stats.maxPtrReached + 1, 1),
+                readWriteRatio: stats.memoryReads / Math.max(stats.memoryWrites, 1),
+                errorEvents: stats.overflowCount + stats.underflowCount
+            },
+            
+            loops: {
+                maxDepth: stats.maxLoopDepth,
+                totalIterations: stats.loopIterations,
+                averageIterationsPerLoop: stats.instructionCounts['['] > 0 ? 
+                    stats.loopIterations / stats.instructionCounts['['] : 0,
+                complexity: this.calculateLoopComplexity(stats)
+            },
+            
+            instructions: {
+                distribution: this.calculateInstructionDistribution(stats.instructionCounts),
+                mostUsed: this.getMostUsedInstructions(stats.instructionCounts),
+                balance: this.calculateInstructionBalance(stats.instructionCounts)
+            },
+            
+            io: {
+                inputOutput: stats.inputCharsRead + stats.outputCharsWritten,
+                ioRatio: stats.outputCharsWritten / Math.max(stats.inputCharsRead, 1)
+            },
+            
+            recommendations: this.generateRecommendations(stats)
+        };
+    }
+
+    // Méthodes utilitaires pour les calculs
+    static calculateEfficiency(stats) {
+        const movements = stats.instructionCounts['>'] + stats.instructionCounts['<'];
+        const operations = stats.instructionCounts['+'] + stats.instructionCounts['-'] + 
+                          stats.instructionCounts['.'] + stats.instructionCounts[','];
+        return operations / Math.max(movements + operations, 1);
+    }
+
+    static calculateInstructionDistribution(counts) {
+        const total = Object.values(counts).reduce((a, b) => a + b, 0);
+        const distribution = {};
+        for (const [inst, count] of Object.entries(counts)) {
+            distribution[inst] = total > 0 ? count / total : 0;
+        }
+        return distribution;
+    }
+
+    static getMostUsedInstructions(counts) {
+        return Object.entries(counts)
+            .map(([instruction, count]) => ({ instruction, count }))
+            .sort((a, b) => b.count - a.count);
+    }
+
+    static calculateInstructionBalance(counts) {
+        const increments = counts['+'];
+        const decrements = counts['-'];
+        const rights = counts['>'];
+        const lefts = counts['<'];
+        
+        const valueBalance = increments + decrements > 0 ? 
+            Math.abs(increments - decrements) / (increments + decrements) : 0;
+        const pointerBalance = rights + lefts > 0 ? 
+            Math.abs(rights - lefts) / (rights + lefts) : 0;
+        
+        return (1 - (valueBalance + pointerBalance) / 2) * 100;
+    }
+
+    static calculateLoopComplexity(stats) {
+        if (stats.maxLoopDepth === 0) return 0;
+        return Math.min(stats.maxLoopDepth / 3, 1); // Normalisé sur 3 niveaux max
+    }
+
+    static generateRecommendations(stats) {
+        const recommendations = [];
+        const efficiency = this.calculateEfficiency(stats);
+        
+        if (efficiency < 0.4) {
+            recommendations.push({
+                type: 'warning',
+                title: '🚨 Efficacité faible',
+                message: 'Beaucoup de mouvements de pointeur. Essayez de regrouper vos opérations sur des cellules adjacentes.'
+            });
+        } else if (efficiency > 0.8) {
+            recommendations.push({
+                type: 'success',
+                title: '✅ Excellent code',
+                message: 'Votre code est très efficace avec un bon ratio opérations/mouvements!'
+            });
+        }
+        
+        if (stats.maxLoopDepth > 4) {
+            recommendations.push({
+                type: 'warning',
+                title: '🔄 Boucles complexes',
+                message: 'Boucles très imbriquées détectées. Considérez simplifier la logique pour une meilleure lisibilité.'
+            });
+        }
+        
+        if (stats.overflowCount > 0 || stats.underflowCount > 0) {
+            recommendations.push({
+                type: 'info',
+                title: '⚠️ Débordements détectés',
+                message: `${stats.overflowCount + stats.underflowCount} débordements de valeurs. Vérifiez la logique de vos incréments/décréments.`
+            });
+        }
+        
+        if (stats.cellsUsed.size > 100) {
+            recommendations.push({
+                type: 'info',
+                title: '🧠 Utilisation mémoire élevée',
+                message: 'Beaucoup de cellules utilisées. Excellent pour des programmes complexes!'
+            });
+        }
+        
+        return recommendations;
+    }
+}
+
+// Export pour utilisation en module
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { BrainfuckInterpreter, BrainfuckStatsAnalyzer };
 }
