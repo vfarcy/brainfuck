@@ -289,17 +289,31 @@ T1: Terminé, aucune sortie
 ### **Exemple 1 : Fork Simple**
 ```brainfuck
 f.
-```y.svg)
+```
+**Résultat Unix-Style :**
+- **Parent (T0)** : Reçoit PID=1 → affiche 0x01
+- **Enfant (T1)** : Reçoit 0 → affiche 0x00  
+- **Sortie :** `0x01|0x00` (PID parent|zéro enfant)
 
-Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
+### **Exemple 2 : Fork Unix-Style Simple**
+```brainfuck
++++f.
+```
+**Résultat :**
+- T0 (parent) : cellule=3 → fork → reçoit PID=1 → affiche 0x01
+- T1 (enfant) : cellule=3 → fork → reçoit 0 → affiche 0x00
+- **Sortie :** `0x01|0x00` (PID parent|zéro enfant)
 
-## 🆕 Nouveautés v1.5.0
+### **Exemple 3 : Fork avec Exécution Conditionnelle**
+```brainfuck
+f[+++.]
+```
+**Résultat :**
+- T0 (parent) : fork → reçoit PID=1 → entre dans boucle [1≠0] → affiche 0x04
+- T1 (enfant) : fork → reçoit 0 → saute la boucle [0=0] → aucune sortie
+- **Sortie :** `0x04` (seul le parent exécute)
 
-### 🔀 **Fork Unix-Style Implementation**
-- **🔄 Sémantique Unix Authentique** : Fork retourne PID enfant au parent, 0 à l'enfant
-- **⚡ Exécution Conditionnelle** : Permet aux threads parent/enfant d'exécuter du code différent
-- **🎯 Compatibilité POSIX** : Comportement familier aux développeurs systèmes
-- **🚀 Flexibilité Accrue** : Utilisation des boucles pour distinguer parent et enfant
+-----
 
 ### 📚 **Documentation Professionnelle**
 - **� docs/test-unix-fork.md** : Guide complet des tests Unix-style en format Markdown
