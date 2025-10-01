@@ -1,4 +1,4 @@
-// Version 1.3.0 - Mise à jour automatique du 2025-09-30
+// Version 1.3.0 - Mise à jour automatique du 2025-10-01
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -45,6 +45,7 @@ class BrainfuckInterpreter {
         // Informations de threading
         this.threadId = threadId;
         this.parentId = parentId;
+        this.parentThread = null; // Référence directe au thread parent (sera définie lors de la création)
         this.isForked = false;
         this.children = [];
         this.forkCount = 0; // Nombre de forks créés par ce thread (pour statistiques)
@@ -79,12 +80,8 @@ class BrainfuckInterpreter {
         if (!this.parentId) {
             return null;
         }
-        // Pour les threads enfants, on doit trouver le parent via le gestionnaire temporaire
-        // Cette méthode est appelée seulement à la construction, donc on utilise le gestionnaire global temporaire
-        if (typeof BrainfuckInterpreter.tempThreadManager !== 'undefined' && BrainfuckInterpreter.tempThreadManager) {
-            return BrainfuckInterpreter.tempThreadManager.get(this.parentId) || null;
-        }
-        return null;
+        // Pour les threads enfants, utiliser la référence directe stockée
+        return this.parentThread || null;
     }
 
     /**
@@ -247,17 +244,13 @@ class BrainfuckInterpreter {
         
         const childId = manager.nextId++;
         
-        // Créer un gestionnaire temporaire pour permettre au thread enfant de trouver son parent
-        BrainfuckInterpreter.tempThreadManager = new Map();
-        BrainfuckInterpreter.tempThreadManager.set(this.threadId, this);
-        
         // Créer le thread enfant avec le constructeur
         // S'assurer que l'input est une chaîne pour le constructeur
         const inputString = Array.isArray(this.input) ? this.input.join('') : (typeof this.input === 'string' ? this.input : '');
         const childThread = new BrainfuckInterpreter(this.code, inputString, childId, this.threadId);
         
-        // Nettoyer le gestionnaire temporaire
-        delete BrainfuckInterpreter.tempThreadManager;
+        // Établir la référence directe parent-enfant
+        childThread.parentThread = this;
         
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
@@ -479,19 +472,6 @@ class BrainfuckInterpreter {
     }
 
     /**
-     * Remet à zéro le gestionnaire de threads
-     */
-    static resetThreadManager() {
-        console.log('🔄 Reset complet du gestionnaire de threads');
-        BrainfuckInterpreter.threadManager = {
-            threads: new Map(),
-            nextId: 1,
-            activeThreads: 0,
-            maxThreads: 8
-        };
-    }
-
-    /**
      * Obtient tous les threads actifs depuis le gestionnaire d'instance
      * @returns {Array} Liste des états de tous les threads
      */
@@ -547,24 +527,7 @@ class BrainfuckInterpreter {
      * Debug: Affiche l'état complet du gestionnaire de threads
      */
     static debugThreadManager() {
-        const manager = BrainfuckInterpreter.threadManager;
-        if (!manager) {
-            console.log('❌ Aucun gestionnaire de threads');
-            return;
-        }
-
-        console.log('🔍 État du gestionnaire de threads:');
-        console.log(`  - Total threads: ${manager.threads.size}`);
-        console.log(`  - ActiveThreads compteur: ${manager.activeThreads}`);
-        console.log(`  - NextId: ${manager.nextId}`);
-        console.log(`  - MaxThreads: ${manager.maxThreads}`);
-        
-        let realActive = 0;
-        for (const [threadId, thread] of manager.threads) {
-            const status = thread.halted ? 'HALTED' : 'ACTIVE';
-            console.log(`  - Thread T${threadId}: ${status} (parent: T${thread.parentId || 'none'})`);
-            if (!thread.halted) realActive++;
-        }
-        console.log(`  - Threads réellement actifs: ${realActive}`);
+        console.log('⚠️ debugThreadManager est obsolète - utilisez getAllThreadStates() sur une instance');
+        console.log('💡 Exemple: interpreter.getAllThreadStates()');
     }
 }
