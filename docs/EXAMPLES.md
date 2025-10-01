@@ -19,11 +19,11 @@ Cette page présente des exemples avancés d'utilisation de BrainJS avec le supp
 ### 2. Exécution Conditionnelle Parent/Enfant
 
 ```brainfuck
-f[>+++++++++.>+.+++++++.+++.>>-.<<-.<.+++.------.--------.>>+.<]
+f[>+++++++++.>+.+++++++.+++.>>-.<<-.<.+++.------.--------.>>+.<[-]]
 ```
 
 **Comportement :**
-- **Parent** : Exécute le code entre `[...]` (affiche "Hello")
+- **Parent** : Exécute le code entre `[...]` (affiche "Hello") puis vide la cellule
 - **Enfant** : Saute complètement le bloc
 
 ---
@@ -90,8 +90,8 @@ f[>+++++++++.>+.+++++++.+++.>>-.<<-.<.+++.------.--------.>>+.<]
 ### 1. Hello World avec Fork
 
 ```brainfuck
-# Version parent-enfant
-f[>++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.++++++..+++.>>-.<<-.+++.------.--------.>>+.<]
+# Version parent-enfant (version corrigée)
+f[>++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.++++++..+++.>>-.<<-.+++.------.--------.>>+.<<<<<[-]]
 ```
 
 ---
@@ -99,8 +99,8 @@ f[>++++++++++[>+++++++>++++++++++>+++>+<<<<-]>++.>+.++++++..+++.>>-.<<-.+++.----
 ### 2. Calcul Parallèle Simple
 
 ```brainfuck
-# Chaque thread calcule sa propre valeur
-+++f[+++.]>f[++.]
+# Chaque thread calcule sa propre valeur (version corrigée)
++++f[+++.[-]]>f[++.[-]]
 ```
 
 ---
@@ -185,6 +185,47 @@ Tentez de faire communiquer parent et enfant via des patterns de mémoire.
 
 ---
 
+## ⚠️ Avertissements Importants - Patterns à Éviter
+
+### 🚫 Boucles Infinies avec Fork
+
+Avec la sémantique Unix-style fork, certains patterns peuvent causer des boucles infinies :
+
+```brainfuck
+# ❌ INCORRECT - Boucle infinie
++++f[+++.]
+# Problème: Le parent reçoit PID=1, entre dans la boucle avec cellule[0]=1
+# et ne sort jamais car la boucle incrémente sans vider
+
+# ✅ CORRECT - Version sécurisée
++++f[+++.[-]]
+# Solution: [-] vide la cellule pour sortir de la boucle
+```
+
+### 🔄 Règles de Sécurité Fork
+
+1. **Toujours nettoyer les cellules** après usage dans les boucles
+2. **Prévoir une sortie** pour toute boucle suivant un fork
+3. **Tester avec la limite de threads** pour éviter les fork bombs
+4. **Utiliser des patterns conditionnels** pour séparer parent/enfant
+
+```brainfuck
+# Pattern sécurisé recommandé:
+f[>+<-]    # Copier PID
+>          # Aller à la copie
+[          # Si parent
+  # Code parent
+  >[-]     # Nettoyer et sortir
+]
+<          # Retour
+[          # Si enfant (cellule=0 après le fork)
+  # Code enfant
+  [-]      # Nettoyer
+]
+```
+
+---
+
 ## 🔗 Ressources Complémentaires
 
 - **Documentation Complète** : Voir `README.md`
@@ -194,4 +235,4 @@ Tentez de faire communiquer parent et enfant via des patterns de mémoire.
 
 ---
 
-*Mis à jour pour BrainJS v1.4.0 - Fork Unix-Style Implementation*
+*Mis à jour pour BrainJS v1.6.1 - Corrections des exemples fork pour éviter les boucles infinies*

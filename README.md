@@ -117,6 +117,18 @@ f[f]      # Fork récursif
 
 **Protection :** Une limite globale de 8 threads actifs par défaut empêche les fork bombs. Plus simple et efficace qu'une double protection.
 
+#### ⚠️ Patterns à Éviter - Boucles Infinies
+
+```brainfuck
+# ❌ INCORRECT - Boucle infinie après fork
++++f[+++.]   # Parent reçoit PID=1, boucle infiniment
+
+# ✅ CORRECT - Nettoyage de cellule
++++f[+++.[-]]   # [-] vide la cellule pour sortir
+```
+
+**Règle importante :** Toujours nettoyer les cellules après usage dans les boucles qui suivent un fork.
+
 -----
 
 ## 📊 **Métriques de Performance & Qualité**
