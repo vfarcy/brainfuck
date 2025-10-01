@@ -122,7 +122,7 @@
         
         /* --- Styles de Sortie et Mémoire --- */
         #output-view, #code-view {
-            white-space: normal;
+            white-space: pre-wrap;
             border: 1px solid #ddd;
             padding: 10px;
             background-color: #fff;
@@ -1155,8 +1155,23 @@
             if (state.halted) {
                 runAllBtn.disabled = true;
                 stepBtn.disabled = true;
-                if (!outputView.innerHTML.includes("terminé")) {
+                const outputView = document.getElementById('output-view');
+                if (outputView && !outputView.innerHTML.includes("terminé")) {
                     outputView.innerHTML += "\n\n\n--- Programme terminé ---";
+                }
+            } else if (interpreter && interpreter.threadManager) {
+                // Vérifier si tous les threads multi-thread sont terminés
+                const allThreadStates = interpreter.getAllThreadStates();
+                const activeThreads = allThreadStates.filter(t => !t.halted);
+                
+                if (allThreadStates.length > 1 && activeThreads.length === 0) {
+                    console.log('🎯 Tous les threads multi-thread sont terminés (depuis updateUI)');
+                    runAllBtn.disabled = true;
+                    stepBtn.disabled = true;
+                    const outputView = document.getElementById('output-view');
+                    if (outputView && !outputView.innerHTML.includes("terminé")) {
+                        outputView.innerHTML += "\n\n\n--- Programme terminé ---";
+                    }
                 }
             }
         }
@@ -1908,6 +1923,18 @@
                             console.log('🎯 Tous les threads sont terminés');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
+                            
+                            // Ajouter le message de fin dans la sortie globale
+                            const outputView = document.getElementById('output-view');
+                            if (outputView && !outputView.innerHTML.includes("terminé")) {
+                                outputView.innerHTML += "\n\n\n--- Programme terminé ---";
+                            }
+                            
+                            // Désactiver les boutons d'exécution
+                            const runAllBtn = document.getElementById('run-all');
+                            const stepBtn = document.getElementById('step');
+                            if (runAllBtn) runAllBtn.disabled = true;
+                            if (stepBtn) stepBtn.disabled = true;
                         }
                         
                         // Mettre à jour l'affichage des threads
