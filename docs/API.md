@@ -1,16 +1,19 @@
-# 🔧 API Reference - BrainJS
+# 🔧 API Reference - ForkBrain
 
-Documentation complète de l'API BrainfuckInterpreter v1.4.0 avec support Unix-style fork.
+Documentation complète de l'API ForkBrain v1.7.4 - *Where Brainfuck meets Unix threading!*
 
 ## 📋 Table des Matières
 
 - [Classe BrainfuckInterpreter](#classe-brainfuckinterpreter)
+- [Classe BrainfuckStatsAnalyzer](#classe-brainfuckstatsanalyzer) 🆕
 - [Constructeur](#constructeur)
 - [Méthodes Publiques](#méthodes-publiques)
+- [Système de Statistiques](#système-de-statistiques) 🆕
 - [Propriétés](#propriétés)
 - [Thread Manager](#thread-manager)
 - [Événements et Callbacks](#événements-et-callbacks)
 - [Constantes](#constantes)
+- [Exemples d'Usage](#exemples-dusage)
 
 ---
 
@@ -31,6 +34,133 @@ new BrainfuckInterpreter(code, input, threadId = 0, parentId = null)
 #### Exemple
 ```javascript
 const interpreter = new BrainfuckInterpreter("+++.", "");
+```
+
+---
+
+## 📊 Classe BrainfuckStatsAnalyzer 🆕
+
+Classe utilitaire pour l'analyse avancée des statistiques d'exécution. Toutes les méthodes sont statiques.
+
+### Méthodes Statiques
+
+#### `generateReport(interpreter)`
+Génère un rapport complet d'analyse des performances.
+
+```javascript
+const report = BrainfuckStatsAnalyzer.generateReport(interpreter);
+console.log(report);
+```
+
+**Paramètres :**
+- **`interpreter`** *(BrainfuckInterpreter)* : L'instance à analyser
+
+**Retourne :** *(string)* Rapport formaté en texte
+
+#### `analyzeStats(stats)`
+Analyse en détail l'objet statistiques et génère des métriques.
+
+```javascript
+const analysis = BrainfuckStatsAnalyzer.analyzeStats(interpreter.stats);
+```
+
+**Paramètres :**
+- **`stats`** *(Object)* : L'objet `interpreter.stats`
+
+**Retourne :** *(Object)* Objet d'analyse avec métriques calculées
+
+#### `generateHTML(analysis, stats)`
+Génère un rapport HTML formaté avec graphiques et métriques.
+
+```javascript
+const htmlReport = BrainfuckStatsAnalyzer.generateHTML(analysis, interpreter.stats);
+document.body.innerHTML = htmlReport;
+```
+
+#### `generateMarkdown(analysis, stats)`
+Génère un rapport Markdown formaté pour documentation.
+
+```javascript
+const mdReport = BrainfuckStatsAnalyzer.generateMarkdown(analysis, interpreter.stats);
+```
+
+#### `generateSummary(analysis)`
+Génère un résumé concis des métriques principales.
+
+```javascript
+const summary = BrainfuckStatsAnalyzer.generateSummary(analysis);
+```
+
+### Méthodes Helper
+
+#### `calculateEfficiency(stats)` 🔒 *Private*
+Calcule l'efficience d'exécution (instructions utiles vs totales).
+
+#### `analyzeMemoryUsage(stats)` 🔒 *Private*
+Analyse les patterns d'utilisation mémoire.
+
+#### `categorizeInstructions(stats)` 🔒 *Private*
+Catégorise les instructions par type (mouvement, calcul, IO, contrôle).
+
+---
+
+## 📈 Système de Statistiques 🆕
+
+L'objet `interpreter.stats` contient des métriques détaillées d'exécution :
+
+### Structure des Statistiques
+
+```javascript
+interpreter.stats = {
+  // 🕐 Performance
+  totalSteps: 0,                    // Nombre total d'instructions exécutées
+  executionStartTime: null,         // Timestamp de début (performance.now())
+  executionEndTime: null,           // Timestamp de fin
+  
+  // 📝 Instructions
+  instructionCounts: {              // Compteur par type d'instruction
+    '>': 0, '<': 0, '+': 0, '-': 0,
+    '.': 0, ',': 0, '[': 0, ']': 0, 'f': 0
+  },
+  
+  // 🔄 Boucles
+  loopIterations: 0,                // Nombre total d'itérations de boucles
+  maxLoopDepth: 0,                  // Profondeur maximale de boucles imbriquées
+  currentLoopDepth: 0,              // Profondeur actuelle
+  
+  // 💾 Mémoire
+  maxPtrReached: 0,                 // Position mémoire maximale atteinte
+  minPtrReached: 0,                 // Position mémoire minimale atteinte
+  memoryWrites: 0,                  // Nombre d'écritures en mémoire
+  memoryReads: 0,                   // Nombre de lectures mémoire
+  cellsUsed: new Set(),             // Set des cellules utilisées
+  overflowCount: 0,                 // Nombre de dépassements (255→0)
+  underflowCount: 0,                // Nombre de soupassements (0→255)
+  
+  // 🧵 Threading
+  forksCreated: 0,                  // Nombre de forks créés par ce thread
+  maxConcurrentThreads: 1,          // Maximum de threads simultanés
+  
+  // 📤 Input/Output
+  inputCharsRead: 0,                // Caractères lus depuis l'entrée
+  outputCharsWritten: 0             // Caractères écrits en sortie
+};
+```
+
+### Méthodes de Statistiques
+
+#### `generateStatsAnalysis()`
+Génère une analyse complète des statistiques actuelles.
+
+```javascript
+const analysis = interpreter.generateStatsAnalysis();
+```
+
+#### `updateMemoryStats()`
+Met à jour les statistiques mémoire (appelée automatiquement).
+
+```javascript
+interpreter.updateMemoryStats(); // Usage interne
 ```
 
 ---
@@ -68,6 +198,22 @@ Exécute une instruction sur le thread actuel uniquement.
 
 ```javascript
 const continued = interpreter.stepSingleThread();
+```
+
+#### `generateStatsAnalysis()` 🆕
+Génère une analyse complète des statistiques du thread.
+
+```javascript
+const analysis = interpreter.generateStatsAnalysis();
+```
+
+**Retourne :** *(Object)* Analyse détaillée avec métriques calculées
+
+#### `updateMemoryStats()` 🆕
+Met à jour les statistiques d'utilisation mémoire.
+
+```javascript
+interpreter.updateMemoryStats(); // Appelée automatiquement
 ```
 
 ---
@@ -213,13 +359,41 @@ const result = interpreter.run();
 console.log(result.output); // Caractère ASCII 3
 ```
 
-### Fork Unix-Style
+### Fork Unix-Style Sécurisé ✅
 ```javascript
-const interpreter = new BrainfuckInterpreter("+++f.", "");
-const result = interpreter.runAllThreads();
+const interpreter = new BrainfuckInterpreter("f[>+<-]>[++++++++++++++++++++++++++++++++++++++++++++++++.[-]<]<+[+++++++++++++++++++++++++++++++++++++++++++++++.[-]]", "");
+const results = interpreter.runAllThreads();
 
-// Parent: output contient ASCII 1 (PID enfant)
-// Enfant: output contient ASCII 0 (valeur enfant)
+// Père affiche '0', Fils affiche '1'
+results.forEach(r => {
+    console.log(`Thread ${r.threadId}: ${r.output}`);
+});
+```
+
+### Analyse de Performance 🆕
+```javascript
+const interpreter = new BrainfuckInterpreter("+++f[+++.[-]]", "");
+const results = interpreter.runAllThreads();
+
+// Générer un rapport d'analyse
+const report = BrainfuckStatsAnalyzer.generateReport(interpreter);
+console.log(report);
+
+// Analyser les statistiques
+const analysis = BrainfuckStatsAnalyzer.analyzeStats(interpreter.stats);
+console.log("Efficience:", analysis.efficiency);
+```
+
+### Rapport HTML 🆕
+```javascript
+const interpreter = new BrainfuckInterpreter("complexProgram", "");
+interpreter.runAllThreads();
+
+const analysis = BrainfuckStatsAnalyzer.analyzeStats(interpreter.stats);
+const htmlReport = BrainfuckStatsAnalyzer.generateHTML(analysis, interpreter.stats);
+
+// Afficher dans une page web
+document.body.innerHTML = htmlReport;
 ```
 
 ### Execution Pas à Pas
@@ -287,13 +461,31 @@ try {
 - Éviter les boucles infinies avec fork
 - Utiliser `stepSingleThread()` pour le débogage
 
-### Métriques Disponibles
-- Nombre d'instructions exécutées
-- Nombre de threads créés/actifs
-- Utilisation mémoire par thread
-- Temps d'exécution global
+### Métriques Disponibles 🆕
+- **Performance :** Instructions/seconde, temps d'exécution, efficience
+- **Mémoire :** Cellules utilisées, overflows/underflows, portée mémoire
+- **Threading :** Forks créés, threads actifs, concurrence maximale
+- **Instructions :** Répartition par type, itérations de boucles, profondeur
+- **I/O :** Caractères lus/écrits, ratio input/output
+
+### Patterns à Éviter ⚠️
+```javascript
+// ❌ INCORRECT - Boucle infinie après fork
+"+++f[+++.]"   // Parent entre en boucle infinie
+
+// ✅ CORRECT - Nettoyage de cellule
+"+++f[+++.[-]]"   // [-] vide la cellule pour sortir
+```
 
 ---
 
-*Documentation mise à jour pour BrainJS v1.4.0*  
-*Dernière modification : 1er octobre 2025*
+## 🔗 Voir Aussi
+
+- **[README.md](../README.md)** - Documentation générale ForkBrain
+- **[EXAMPLES.md](EXAMPLES.md)** - Exemples avancés et tutoriels
+- **[GitHub Repository](https://github.com/vfarcy/brainfuck)** - Code source complet
+
+---
+
+*Documentation mise à jour pour **ForkBrain v1.7.4** - Where Brainfuck meets Unix threading!*  
+*Dernière modification : 2 octobre 2025*
