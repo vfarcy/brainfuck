@@ -235,4 +235,4 @@ f[>+<-]    # Copier PID
 
 ---
 
-*Mis à jour pour ForkBrain v1.8.0 - Corrections des exemples fork pour éviter les boucles infinies*
+*Mis à jour pour ForkBrain v1.9.0 - Corrections des exemples fork pour éviter les boucles infinies*

@@ -1,8 +1,8 @@
 # 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.9.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
+![Build](https://img.shields.io/badge/build-2025--10--02-lightgreen.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
@@ -275,13 +275,14 @@ brainfuck/
 ├── CHANGELOG.md              # Historique des versions et modifications
 ├── LICENSE                   # Licence MIT du projet
 ├── docs/                     # Documentation professionnelle
-│   ├── API.md               # Documentation de l'API
-│   ├── EXAMPLES.md          # Exemples et tutoriels
-│   └── test-unix-fork.md    # Guide des tests Unix-style
+│   ├── API.md                # Documentation de l'API
+│   ├── EXAMPLES.md           # Exemples et tutoriels
+│   ├── GITHUB_PAGES_GUIDE.md # Exemples et tutoriels
+│   └── test-unix-fork.md     # Guide des tests Unix-style
 ├── scripts/                  # Scripts de déploiement et versioning
-│   ├── update-version.js    # Script de mise à jour des versions
-│   ├── deploy.sh            # Script de déploiement Unix
-│   └── deploy.bat           # Script de déploiement Windows
+│   ├── update-version.js     # Script de mise à jour des versions
+│   ├── deploy.sh             # Script de déploiement Unix
+│   └── deploy.bat            # Script de déploiement Windows
 └── templates/                # Templates GitHub (issues, PR)
 ```
 

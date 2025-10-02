@@ -1,6 +1,6 @@
 # 🔧 API Reference - ForkBrain
 
-Documentation complète de l'API ForkBrain v1.8.0 - *Where Brainfuck meets Unix threading!*
+Documentation complète de l'API ForkBrain v1.9.0 - *Where Brainfuck meets Unix threading!*
 
 ## 📋 Table des Matières
 
@@ -10,7 +10,7 @@ Documentation complète de l'API ForkBrain v1.8.0 - *Where Brainfuck meets Unix 
 - [Méthodes Publiques](#méthodes-publiques)
 - [Système de Statistiques](#système-de-statistiques) 🆕
 - [Propriétés](#propriétés)
-- [Thread Manager](#thread-manager)*Documentation mise à jour pour **ForkBrain v1.8.0** - Where Brainfuck meets Unix threading!*
+- [Thread Manager](#thread-manager)
 - [Événements et Callbacks](#événements-et-callbacks)
 - [Constantes](#constantes)
 - [Exemples d'Usage](#exemples-dusage)
@@ -487,5 +487,5 @@ try {
 
 ---
 
-*Documentation mise à jour pour **ForkBrain v1.8.0** - Where Brainfuck meets Unix threading!*  
+*Documentation mise à jour pour **ForkBrain v1.9.0** - Where Brainfuck meets Unix threading!*  
 *Dernière modification : 2 octobre 2025*
