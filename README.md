@@ -1,6 +1,6 @@
 # 🧠 BrainJS: Interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.6.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.7.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
 
@@ -29,9 +29,10 @@ Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanill
 ## ✨ Fonctionnalités Clés
 
 *   **Séparation des responsabilités** : Le moteur Brainfuck est isolé dans **`BrainfuckInterpreter.js`**.
-*   **� Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
+*   **🧵 Multithreading avec Fork** : Nouvelle commande `f` qui permet la création de threads parallèles.
 *   **Éditeur avec Coloration Syntaxique** : Un éditeur de code personnalisé qui colore les commandes Brainfuck (y compris `f`).
 *   **Visualisation Multi-Thread** : Interface dédiée pour suivre l'état de tous les threads actifs.
+*   **📊 Système de Statistiques Complet** : Suivi en temps réel des performances, threads, et métriques d'exécution.
 *   **🛡️ Protection Fork Bomb** : Limite globale configurable du nombre de threads pour éviter les explosions.
 *   **Exécution Pas à Pas (Step-by-Step)** : Exécute une seule instruction à la fois, idéale pour le débogage et la pédagogie.
 *   **Exécution Complète Multi-Thread** : Exécute tous les threads jusqu'à completion.
@@ -64,7 +65,45 @@ Chaque thread possède sa propre couleur pour faciliter l'identification visuell
 
 -----
 
-## 🔀 Commande additionnel au Brainfuck : Fork (`f`) - Style Unix
+## � Système de Statistiques Avancé
+
+### Métriques en Temps Réel
+L'interpréteur fournit un système complet de statistiques qui s'affiche automatiquement pendant et après l'exécution :
+
+#### **📈 Performance & Exécution**
+- **Total d'étapes** : Nombre total d'instructions exécutées
+- **Temps d'exécution** : Durée précise en millisecondes
+- **Répartition par thread** : Distribution des étapes entre threads
+- **Progression en temps réel** : Mise à jour continue en mode pas à pas
+
+#### **🧵 Métriques Multi-Threading**
+- **Threads actifs** : Nombre de threads en cours d'exécution
+- **Barres de progression** : Visualisation proportionnelle du travail par thread
+- **Indicateurs d'état** : 🟢 Actif / 🔴 Terminé pour chaque thread
+- **Pourcentages** : Répartition du travail en pourcentages
+
+#### **🎯 Modes d'Affichage**
+- **Mode "Exécuter Tout"** : Statistiques complètes après exécution
+- **Mode "Pas à Pas"** : Mise à jour en temps réel à chaque instruction
+- **Mode Single-Thread** : Focus sur progression IP et état d'avancement
+- **Mode Multi-Thread** : Vue d'ensemble avec détail par thread
+
+#### **💻 Interface Visuelle**
+- **Design responsive** : Adaptation automatique au contenu
+- **Couleurs thématiques** : Vert pour succès, orange pour en cours
+- **Animations fluides** : Transitions CSS pour les barres de progression
+- **Reset intelligent** : Restauration propre entre exécutions
+
+### Utilisation
+Les statistiques apparaissent automatiquement dans la section **"📊 Historique d'exécution"** sans configuration nécessaire. Elles se mettent à jour :
+- ✅ **Automatiquement** lors de l'exécution
+- ✅ **En temps réel** en mode pas à pas  
+- ✅ **Après reset** avec message d'aide
+- ✅ **Pour tous les modes** (single/multi-thread)
+
+-----
+
+## �🔀 Commande additionnel au Brainfuck : Fork (`f`) - Style Unix
 
 ### Comportement de `f` (Unix-Style Fork) 
 Quand la commande `f` est rencontrée, le thread actuel **fork** selon la sémantique Unix authentique :
