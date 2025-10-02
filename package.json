@@ -1,6 +1,6 @@
 {
   "name": "brainfuck-multithreading-interpreter",
-  "version": "1.6.2",
+  "version": "1.6.4",
   "description": "Interpréteur Brainfuck avec support multithreading et interface interactive",
   "main": "BrainfuckInterpreter.js",
   "scripts": {
