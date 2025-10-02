@@ -1,6 +1,6 @@
 # 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.7.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.7.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--01-lightgreen.svg)
 
@@ -559,23 +559,6 @@ npm run build
 - **`BrainfuckInterpreter.js`** : Commentaire de version avec date
 - **`index.html`** : Cache-busting, pied de page, constantes JavaScript
 - **`README.md`** : Badges de version et licence
-
-### 🛠️ Structure du Projet
-
-```
-brainfuck/
-├── BrainfuckInterpreter.js    # Cœur de l'interpréteur multithreading
-├── index.html                 # Interface utilisateur complète
-├── package.json               # Configuration NPM et scripts
-├── CHANGELOG.md               # Historique des versions
-├── docs/                      # Documentation professionnelle
-│   ├── API.md                # Documentation de l'API
-│   ├── EXAMPLES.md           # Exemples et tutoriels
-│   └── test-unix-fork.md     # Guide des tests Unix-style
-├── scripts/                   # Scripts de déploiement et versioning
-│   └── update-version.js     # Script de versioning automatique
-└── templates/                 # Templates GitHub
-```
 
 ### 🧪 Tests et Exemples
 
