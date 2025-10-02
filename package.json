@@ -1,7 +1,7 @@
 {
-  "name": "brainfuck-multithreading-interpreter",
-  "version": "1.7.1",
-  "description": "Interpréteur Brainfuck avec support multithreading et interface interactive",
+  "name": "forkbrain-multithreading-interpreter",
+  "version": "1.7.3",
+  "description": "ForkBrain - Interpréteur Brainfuck avec support multithreading et interface interactive",
   "main": "BrainfuckInterpreter.js",
   "scripts": {
     "version:patch": "npm version patch --no-git-tag-version && node scripts/update-version.js",
