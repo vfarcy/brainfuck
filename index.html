@@ -774,7 +774,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.7.0"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.7.1"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2187,12 +2187,16 @@
                         interpreter.step();
                         console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
                         
+                        // Récupérer l'état APRÈS l'exécution
+                        const currentState = interpreter.getState();
+                        console.log(`📊 IP après step: ${currentState.ip}/${currentState.code.length}`);
+                        
                         // Mettre à jour l'affichage des statistiques - INJECTION DIRECTE
                         const logElement = document.getElementById('execution-log');
                         if (logElement && interpreter.stats) {
                             const stats = interpreter.stats;
                             const totalSteps = executionHistory.get(threadId) || 0;
-                            const isTerminated = interpreter.getState().halted || interpreter.getState().ip >= interpreter.getState().code.length;
+                            const isTerminated = currentState.halted || currentState.ip >= currentState.code.length;
                             
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
@@ -2204,7 +2208,7 @@
                                         </div>
                                         <div style="text-align: center;">
                                             <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">IP</div>
-                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${interpreter.getState().ip}/${interpreter.getState().code.length}</div>
+                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${currentState.ip}/${currentState.code.length}</div>
                                         </div>
                                         <div style="text-align: center;">
                                             <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Mode</div>
@@ -2217,7 +2221,7 @@
                                             <span>${totalSteps} étapes</span>
                                         </div>
                                         <div style="background: #ddd; height: 15px; border-radius: 8px; overflow: hidden;">
-                                            <div style="background: linear-gradient(90deg, #2196F3, #1976D2); height: 100%; width: ${Math.min(100, (totalSteps / Math.max(1, interpreter.getState().code.length)) * 100)}%; border-radius: 8px; transition: width 0.3s ease;"></div>
+                                            <div style="background: linear-gradient(90deg, #2196F3, #1976D2); height: 100%; width: ${Math.min(100, (currentState.ip / Math.max(1, currentState.code.length)) * 100)}%; border-radius: 8px; transition: width 0.3s ease;"></div>
                                         </div>
                                     </div>
                                     <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
@@ -2487,7 +2491,7 @@
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Informations de version de l'application
-        const APP_VERSION = '1.7.0';
+        const APP_VERSION = '1.7.1';
         const BUILD_DATE = '2025-10-02';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2534,7 +2538,7 @@
         <div id="version-info">
             🧠 BrainJS - Interpréteur Brainfuck Multithreading
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.7.0</span> • Build <span id="build-date">2025-10-02</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.7.1</span> • Build <span id="build-date">2025-10-02</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
