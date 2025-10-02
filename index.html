@@ -1924,23 +1924,23 @@
                                 continue;
                             }
                             
-                            // Vérifier si le thread a atteint la fin AVANT d'appeler step()
-                            if (thread.ip >= thread.code.length) {
-                                console.log(`🛑 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
-                                thread.halted = true;
-                                continue;
-                            }
-                            
                             // Incrémenter l'historique du thread
                             executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
                             
                             try {
-                                const continued = thread.step();
+                                const continued = thread.stepSingleThread();
+                                
+                                // Correction: Si IP >= code.length, s'assurer que halted = true
+                                if (thread.ip >= thread.code.length && !thread.halted) {
+                                    console.log(`🔧 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
+                                    thread.halted = true;
+                                }
+                                
                                 if (continued) {
                                     anyProgress = true;
-                                    console.log(`⚡ T${threadId}: Instruction exécutée`);
+                                    console.log(`⚡ T${threadId}: Instruction exécutée (IP: ${thread.ip})`);
                                 } else {
-                                    console.log(`🛑 Thread T${threadId} terminé`);
+                                    console.log(`🛑 Thread T${threadId} terminé (IP: ${thread.ip}/${thread.code.length})`);
                                 }
                             } catch (error) {
                                 console.error(`❌ Erreur dans thread T${threadId}:`, error.message);
@@ -1957,8 +1957,13 @@
                         
                         console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
                         
-                        if (remainingActiveThreads.length === 0) {
-                            console.log('🎯 Tous les threads sont terminés');
+                        // Afficher l'état de chaque thread pour debug
+                        Array.from(manager.threads.values()).forEach(thread => {
+                            console.log(`� État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
+                        });
+                        
+                        if (remainingActiveThreads.length === 0 && manager.threads.size > 0) {
+                            console.log('🎯 Tous les threads sont terminés via stepAllThreads');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
                             
@@ -1966,13 +1971,20 @@
                             const outputView = document.getElementById('output-view');
                             if (outputView && !outputView.innerHTML.includes("terminé")) {
                                 outputView.innerHTML += "\n\n\n--- Programme terminé ---";
+                                console.log("✅ Message 'Programme terminé' ajouté");
                             }
                             
                             // Désactiver les boutons d'exécution
                             const runAllBtn = document.getElementById('run-all');
                             const stepBtn = document.getElementById('step');
-                            if (runAllBtn) runAllBtn.disabled = true;
-                            if (stepBtn) stepBtn.disabled = true;
+                            if (runAllBtn) {
+                                runAllBtn.disabled = true;
+                                console.log("🚫 Bouton 'Exécuter' désactivé");
+                            }
+                            if (stepBtn) {
+                                stepBtn.disabled = true;
+                                console.log("🚫 Bouton 'Step' désactivé");
+                            }
                         }
                         
                         // Mettre à jour l'affichage des threads
@@ -1985,6 +1997,32 @@
                         
                         interpreter.step();
                         console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
+                        
+                        // Vérifier si le thread unique est terminé
+                        const state = interpreter.getState();
+                        if (state.halted) {
+                            console.log(`🛑 Thread T${threadId} terminé (IP: ${state.ip}/${state.code.length})`);
+                            console.log('🎯 Programme terminé via step single-thread');
+                            
+                            // Ajouter le message de fin
+                            const outputView = document.getElementById('output-view');
+                            if (outputView && !outputView.innerHTML.includes("terminé")) {
+                                outputView.innerHTML += "\n\n\n--- Programme terminé ---";
+                                console.log("✅ Message 'Programme terminé' ajouté");
+                            }
+                            
+                            // Désactiver les boutons
+                            const runAllBtn = document.getElementById('run-all');
+                            const stepBtn = document.getElementById('step');
+                            if (runAllBtn) {
+                                runAllBtn.disabled = true;
+                                console.log("🚫 Bouton 'Exécuter' désactivé");
+                            }
+                            if (stepBtn) {
+                                stepBtn.disabled = true;
+                                console.log("🚫 Bouton 'Step' désactivé");
+                            }
+                        }
                     }
                     
                     // Forcer le nettoyage des threads terminés après chaque step
