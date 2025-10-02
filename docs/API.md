@@ -1,6 +1,6 @@
 # 🔧 API Reference - ForkBrain
 
-Documentation complète de l'API ForkBrain v1.9.0 - *Where Brainfuck meets Unix threading!*
+Documentation complète de l'API ForkBrain v1.10.0 - *Where Brainfuck meets Unix threading!*
 
 ## 📋 Table des Matières
 
@@ -487,5 +487,5 @@ try {
 
 ---
 
-*Documentation mise à jour pour **ForkBrain v1.9.0** - Where Brainfuck meets Unix threading!*  
+*Documentation mise à jour pour **ForkBrain v1.10.0** - Where Brainfuck meets Unix threading!*  
 *Dernière modification : 2 octobre 2025*

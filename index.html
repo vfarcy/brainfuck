@@ -774,7 +774,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.9.0"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.10.0"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2288,7 +2288,46 @@
             if (!interpreter) return;
             
             try {
-                // Incrémenter le compteur global
+                const threadId = interpreter.threadId;
+                const manager = interpreter.threadManager;
+                
+                console.log(`🔍 AVANT step: Thread T${threadId}, IP=${interpreter.ip}/${interpreter.code.length}, halted=${interpreter.halted}`);
+                
+                // APPROCHE RADICALE: Vérifier si on est à la dernière instruction AVANT l'exécution
+                const isAtLastInstruction = interpreter.ip >= interpreter.code.length - 1;
+                const isAlreadyTerminated = interpreter.halted || interpreter.ip >= interpreter.code.length;
+                
+                if (isAlreadyTerminated) {
+                    console.log(`🚫 Thread T${threadId} déjà terminé - basculement immédiat`);
+                    
+                    // Marquer comme terminé
+                    interpreter.halted = true;
+                    if (manager && manager.threads.has(threadId)) {
+                        manager.threads.get(threadId).halted = true;
+                    }
+                    
+                    // Basculer immédiatement
+                    if (manager) {
+                        const activeThreads = Array.from(manager.threads.values())
+                            .filter(thread => !thread.halted && thread.threadId !== threadId);
+                        
+                        if (activeThreads.length > 0) {
+                            interpreter = activeThreads[0];
+                            console.log(`✅ Basculement immédiat vers T${interpreter.threadId}`);
+                            updateUI();
+                            updateMultiThreadView();
+                            return;
+                        }
+                    }
+                    
+                    console.log('🎯 Programme terminé');
+                    updateUI();
+                    return;
+                }
+                
+                // Le thread est actif, procéder à l'exécution
+                console.log(`✅ Thread T${threadId} actif, exécution...`);
+                
                 globalStepCounter++;
                 const stepNumberEl = document.getElementById('step-number');
                 if (stepNumberEl) stepNumberEl.textContent = globalStepCounter;
@@ -2296,76 +2335,70 @@
                 const stepCounterEl = document.getElementById('step-counter');
                 if (stepCounterEl) stepCounterEl.style.display = 'block';
                 
-                // CORRECTION: Exécuter une étape SEULEMENT pour le thread actuel (pas de round-robin automatique)
-                const threadId = interpreter.threadId;
-                
-                // Enregistrer l'accès à ce thread dans l'historique
                 if (!threadAccessHistory.includes(threadId)) {
                     threadAccessHistory.push(threadId);
                 } else {
-                    // Déplacer ce thread à la fin de l'historique (plus récent)
                     threadAccessHistory = threadAccessHistory.filter(id => id !== threadId);
                     threadAccessHistory.push(threadId);
                 }
                 
                 executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
                 
+                // Exécuter l'étape
                 const continued = interpreter.stepSingleThread();
-                if (!continued) {
-                    console.log(`🛑 Thread T${interpreter.threadId} terminé`);
+                
+                console.log(`� APRÈS step: Thread T${threadId}, IP=${interpreter.ip}/${interpreter.code.length}, halted=${interpreter.halted}, continued=${continued}`);
+                
+                // Si le thread vient de se terminer, basculer IMMÉDIATEMENT
+                if (!continued || interpreter.halted || interpreter.ip >= interpreter.code.length) {
+                    console.log(`🛑 Thread T${threadId} terminé - basculement immédiat post-step`);
                     
-                    // CORRECTION: Chercher TOUS les threads actifs (y compris ceux précédemment interrompus)
-                    const manager = interpreter.threadManager;
+                    // Forcer le marquage
+                    interpreter.halted = true;
+                    if (manager && manager.threads.has(threadId)) {
+                        manager.threads.get(threadId).halted = true;
+                    }
+                    
+                    // Basculer vers un thread actif
                     if (manager) {
-                        const activeThreads = [];
-                        const terminatedThreadId = interpreter.threadId;
+                        const activeThreads = Array.from(manager.threads.values())
+                            .filter(thread => !thread.halted && thread.threadId !== threadId);
                         
-                        // Chercher tous les threads non terminés (sans exclure par ID)
-                        for (const [threadId, thread] of manager.threads) {
-                            if (!thread.halted) {
-                                activeThreads.push(thread);
-                            }
-                        }
-                        
-                        console.log(`🔍 Debug: ${activeThreads.length} threads actifs trouvés:`, 
-                                  activeThreads.map(t => `T${t.threadId}`).join(', '));
+                        console.log(`🔍 Threads actifs disponibles: ${activeThreads.length}`);
                         
                         if (activeThreads.length > 0) {
-                            // AMÉLIORATION: Prioriser le retour aux threads précédemment utilisés
+                            // Prioriser l'historique
                             let nextThread = null;
-                            
-                            // Chercher dans l'historique d'accès (du plus récent au plus ancien)
                             for (let i = threadAccessHistory.length - 1; i >= 0; i--) {
                                 const historyThreadId = threadAccessHistory[i];
                                 const candidateThread = activeThreads.find(t => t.threadId === historyThreadId);
-                                if (candidateThread && candidateThread.threadId !== terminatedThreadId) {
+                                if (candidateThread) {
                                     nextThread = candidateThread;
-                                    console.log(`🔄 Retour prioritaire vers thread T${historyThreadId} (depuis historique)`);
                                     break;
                                 }
                             }
                             
-                            // Si aucun thread trouvé dans l'historique, prendre le premier disponible
                             if (!nextThread) {
                                 nextThread = activeThreads[0];
-                                console.log(`🔄 Basculement vers thread T${nextThread.threadId} (premier disponible)`);
                             }
                             
                             interpreter = nextThread;
-                            console.log(`✅ Thread actuel maintenant: T${nextThread.threadId}`);
+                            console.log(`✅ Basculement post-step vers T${nextThread.threadId}`);
+                            
+                            captureThreadOutputs();
+                            updateUI();
+                            updateMultiThreadView();
+                            return;
                         } else {
-                            console.log('🎯 Tous les threads sont terminés');
+                            console.log('🎯 Aucun thread actif - programme terminé');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
                         }
-                    } else {
-                        console.log('🎯 Aucun gestionnaire de threads - Programme terminé');
-                        const stepCounterEl = document.getElementById('step-counter');
-                        if (stepCounterEl) stepCounterEl.style.display = 'none';
                     }
                 }
                 
-                // Capturer les outputs et mettre à jour l'interface
+                // Thread continue normalement - mise à jour standard
+                console.log(`✅ Thread T${threadId} continue normalement`);
                 captureThreadOutputs();
                 updateUI();
                 updateMultiThreadView();
@@ -2491,7 +2524,7 @@
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Informations de version de l'application
-        const APP_VERSION = '1.9.0';
+        const APP_VERSION = '1.10.0';
         const BUILD_DATE = '2025-10-02';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2538,7 +2571,7 @@
         <div id="version-info">
             🧠 ForkBrain - Where Brainfuck meets Unix threading !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.9.0</span> • Build <span id="build-date">2025-10-02</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.10.0</span> • Build <span id="build-date">2025-10-02</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
