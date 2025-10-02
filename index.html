@@ -1998,10 +1998,19 @@
                         interpreter.step();
                         console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
                         
-                        // Vérifier si le thread unique est terminé
+                        // Vérifier si le thread unique est terminé APRÈS l'exécution
                         const state = interpreter.getState();
-                        if (state.halted) {
-                            console.log(`🛑 Thread T${threadId} terminé (IP: ${state.ip}/${state.code.length})`);
+                        
+                        // CORRECTION: Vérifier aussi si IP >= code.length même si halted pas encore marqué
+                        if (state.halted || state.ip >= state.code.length) {
+                            console.log(`🛑 Thread T${threadId} terminé (IP: ${state.ip}/${state.code.length}, halted: ${state.halted})`);
+                            
+                            // Forcer halted = true si nécessaire
+                            if (!state.halted && state.ip >= state.code.length) {
+                                interpreter.halted = true;
+                                console.log(`🔧 Marquage forcé halted=true pour T${threadId}`);
+                            }
+                            
                             console.log('🎯 Programme terminé via step single-thread');
                             
                             // Ajouter le message de fin
