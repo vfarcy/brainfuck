@@ -2118,6 +2118,12 @@
                                 `;
                             }
                             
+                            // Déterminer le message de statut selon l'état des threads (même logique que sortie globale)
+                            const statusMessage = allThreadsHalted && manager.threads.size > 0 
+                                ? "✅ Tous les threads terminés - Exécution complète !" 
+                                : "⏳ Exécution pas à pas en cours...";
+                            const statusColor = allThreadsHalted ? "#4caf50" : "#666";
+
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
                                 <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd;">
@@ -2136,8 +2142,8 @@
                                         </div>
                                     </div>
                                     ${threadsHtml}
-                                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                                        ⏳ Exécution pas à pas en cours...
+                                    <div style="font-size: 0.85em; color: ${statusColor}; margin-top: 10px; font-weight: ${allThreadsHalted ? 'bold' : 'normal'};">
+                                        ${statusMessage}
                                     </div>
                                 </div>
                             `;
@@ -2147,8 +2153,12 @@
                         const remainingActiveThreads = Array.from(manager.threads.values())
                             .filter(thread => !thread.halted);
                         
+                        // UNIFICATION: Une seule vérification pour tous les threads terminés
+                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                        
                         console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
                         console.log(`🔍 Total threads dans manager: ${manager.threads.size}`);
+                        console.log(`🎯 État unifié: allThreadsHalted=${allThreadsHalted}, anyProgress=${anyProgress}`);
                         
                         // Afficher l'état de chaque thread pour debug
                         Array.from(manager.threads.values()).forEach(thread => {
@@ -2157,19 +2167,16 @@
                         
                         // CORRECTION: En mode Step, ne JAMAIS désactiver automatiquement les boutons
                         // L'utilisateur doit pouvoir continuer à cliquer même si les threads semblent terminés
-                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
-                        
-                        console.log(`🎯 État threads: allThreadsHalted=${allThreadsHalted}, remainingActive=${remainingActiveThreads.length}, anyProgress=${anyProgress}`);
                         
                         // Afficher un message informatif si tous les threads sont terminés, mais ne pas désactiver les boutons
                         if (allThreadsHalted && manager.threads.size > 0) {
-                            console.log('ℹ️ Tous les threads semblent terminés, mais boutons restent actifs en mode Step');
+                            console.log('ℹ️ Tous les threads terminés - Synchronisation des messages');
                             
                             // Ajouter le message de fin dans la sortie globale (une seule fois)
                             const outputView = document.getElementById('output-view');
                             if (outputView && !outputView.innerHTML.includes("terminé")) {
                                 outputView.innerHTML += "\n\n--- ✅ Tous les threads terminés ---";
-                                console.log("✅ Message 'Threads terminés' ajouté");
+                                console.log("✅ Message 'Threads terminés' ajouté dans sortie globale");
                             }
                             
                             // NE PAS désactiver les boutons en mode Step - l'utilisateur garde le contrôle
