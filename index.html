@@ -2118,6 +2118,13 @@
                                 `;
                             }
                             
+                            // Déterminer le message de statut selon l'état des threads
+                            const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                            const statusMessage = allThreadsHalted && manager.threads.size > 0 
+                                ? "✅ Tous les threads terminés - Exécution complète !" 
+                                : "⏳ Exécution pas à pas en cours...";
+                            const statusColor = allThreadsHalted ? "#4caf50" : "#666";
+
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
                                 <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd;">
@@ -2136,8 +2143,8 @@
                                         </div>
                                     </div>
                                     ${threadsHtml}
-                                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                                        ⏳ Exécution pas à pas en cours...
+                                    <div style="font-size: 0.85em; color: ${statusColor}; margin-top: 10px; font-weight: ${allThreadsHalted ? 'bold' : 'normal'};">
+                                        ${statusMessage}
                                     </div>
                                 </div>
                             `;
