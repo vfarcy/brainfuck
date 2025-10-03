@@ -2148,14 +2148,22 @@
                             .filter(thread => !thread.halted);
                         
                         console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
+                        console.log(`🔍 Total threads dans manager: ${manager.threads.size}`);
                         
                         // Afficher l'état de chaque thread pour debug
                         Array.from(manager.threads.values()).forEach(thread => {
-                            console.log(`� État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
+                            console.log(`🔍 État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
                         });
                         
-                        if (remainingActiveThreads.length === 0 && manager.threads.size > 0) {
-                            console.log('🎯 Tous les threads sont terminés via stepAllThreads');
+                        // CORRECTION: Forcer une vérification stricte de la terminaison
+                        const allThreadsFinished = Array.from(manager.threads.values()).every(thread => 
+                            thread.halted || thread.ip >= thread.code.length
+                        );
+                        
+                        console.log(`🎯 Vérification terminaison: allThreadsFinished=${allThreadsFinished}, remainingActive=${remainingActiveThreads.length}`);
+                        
+                        if (allThreadsFinished && manager.threads.size > 0) {
+                            console.log('🎯 Tous les threads sont terminés via stepAllThreads (vérification stricte)');
                             const stepCounterEl = document.getElementById('step-counter');
                             if (stepCounterEl) stepCounterEl.style.display = 'none';
                             
