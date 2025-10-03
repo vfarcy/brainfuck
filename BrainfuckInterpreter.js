@@ -1,5 +1,5 @@
-// Version 1.10.0 - Mise à jour automatique du 2025-10-02
-// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète
+// Version 1.11.0 - Solution 1 : Input Séparé implémentée - 2025-10-03
+// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, Input séparé lors des forks
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -231,12 +231,7 @@ class BrainfuckInterpreter {
                 break;
 
             case ',':
-                // S'assurer que this.input est un tableau
-                if (!Array.isArray(this.input)) {
-                    console.warn(`⚠️ Thread T${this.threadId}: this.input n'est pas un tableau:`, typeof this.input, this.input);
-                    this.input = (typeof this.input === 'string' ? this.input : '').split('');
-                    console.log(`🔧 Thread T${this.threadId}: this.input converti en tableau:`, this.input);
-                }
+                // Lecture d'un caractère depuis l'input (maintenant toujours un Array grâce à la Solution 1)
                 const char = this.input.shift();
                 console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
@@ -366,13 +361,39 @@ class BrainfuckInterpreter {
         
         const childId = manager.nextId++;
         
-        // Créer le thread enfant avec le constructeur
-        // S'assurer que l'input est une chaîne pour le constructeur
-        const inputString = Array.isArray(this.input) ? this.input.join('') : (typeof this.input === 'string' ? this.input : '');
-        const childThread = new BrainfuckInterpreter(this.code, inputString, childId, this.threadId);
+        // SOLUTION 1 : INPUT SÉPARÉ - Division intelligente de l'input
+        let parentInput, childInput;
+        
+        const inputLength = this.input.length;
+        console.log(`📊 Division input: ${inputLength} caractères à partager entre parent et enfant`);
+        
+        if (inputLength === 0) {
+            // Cas input vide : les deux gardent un input vide
+            parentInput = [];
+            childInput = '';
+            console.log(`   Cas input vide: Parent=[], Enfant=""`);
+        } else if (inputLength === 1) {
+            // Cas 1 caractère : enfant hérite, parent vide
+            parentInput = [];
+            childInput = this.input[0];
+            console.log(`   Cas 1 caractère: Parent=[], Enfant="${childInput}"`);
+        } else {
+            // Division intelligente : parent garde première moitié (ceil), enfant seconde moitié
+            const splitPoint = Math.ceil(inputLength / 2);
+            parentInput = this.input.slice(0, splitPoint);
+            childInput = this.input.slice(splitPoint).join('');
+            console.log(`   Division ${inputLength} chars: Parent=[${parentInput.join(', ')}], Enfant="${childInput}"`);
+        }
+        
+        // Créer le thread enfant avec son input exclusif
+        const childThread = new BrainfuckInterpreter(this.code, childInput, childId, this.threadId);
         
         // Établir la référence directe parent-enfant
         childThread.parentThread = this;
+        
+        // Appliquer l'input divisé au parent (APRÈS création enfant)
+        this.input = parentInput;
+        console.log(`✅ Input séparé appliqué - Parent T${this.threadId}: [${this.input.join(', ')}], Enfant T${childId}: "${childThread.input.join('')}"`);
         
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
