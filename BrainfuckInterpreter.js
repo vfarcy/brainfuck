@@ -266,7 +266,7 @@ class BrainfuckInterpreter {
 
             case 'f':
                 this.handleFork();
-                // CORRECTION: Pas d'incrémentation car handleFork() gère l'IP
+                // CORRECTION: Return direct car handleFork() gère déjà l'IP
                 return true;
 
             default:
