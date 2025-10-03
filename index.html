@@ -774,7 +774,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.10.0"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.13.0"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2060,12 +2060,14 @@
                                 continue;
                             }
                             
-                            // Incrémenter l'historique du thread
-                            executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
-                            console.log(`📊 Stats update: Thread T${threadId} now has ${executionHistory.get(threadId)} steps`);
-                            
                             try {
                                 const continued = thread.stepSingleThread();
+                                
+                                // CORRECTION: Toujours incrémenter l'historique, même pour la dernière étape qui termine le thread
+                                executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                                console.log(`📊 Stats update: Thread T${threadId} now has ${executionHistory.get(threadId)} steps`);
+                                
+                                console.log(`🔍 DEBUG Step result for T${threadId}: continued=${continued}, IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
                                 
                                 // Correction: Si IP >= code.length, s'assurer que halted = true
                                 if (thread.ip >= thread.code.length && !thread.halted) {
@@ -2078,6 +2080,8 @@
                                     console.log(`⚡ T${threadId}: Instruction exécutée (IP: ${thread.ip})`);
                                 } else {
                                     console.log(`🛑 Thread T${threadId} terminé (IP: ${thread.ip}/${thread.code.length})`);
+                                    // CORRECTION: Force halted si continued = false
+                                    thread.halted = true;
                                 }
                             } catch (error) {
                                 console.error(`❌ Erreur dans thread T${threadId}:`, error.message);
@@ -2099,8 +2103,23 @@
                             
                             let threadsHtml = '';
                             for (const [threadId, steps] of executionHistory) {
-                                const percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
-                                const isActive = manager.threads.has(threadId) && !manager.threads.get(threadId).halted;
+                                const thread = manager.threads.get(threadId);
+                                const isActive = manager.threads.has(threadId) && !thread.halted;
+                                
+                                // CORRECTION: Calcul de progression individuelle par thread
+                                let percentage;
+                                if (!isActive && thread && thread.halted) {
+                                    // Thread terminé = 100%
+                                    percentage = "100.0";
+                                } else if (thread && thread.code) {
+                                    // Thread actif = progression basée sur IP/code.length
+                                    const progress = thread.code.length > 0 ? (thread.ip / thread.code.length) * 100 : 0;
+                                    percentage = progress.toFixed(1);
+                                } else {
+                                    // Fallback: proportion par rapport au total (ancien calcul)
+                                    percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                                }
+
                                 threadsHtml += `
                                     <div style="margin-bottom: 8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
@@ -2114,6 +2133,13 @@
                                 `;
                             }
                             
+                            // Déterminer le message de statut selon l'état des threads
+                            const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                            const statusMessage = allThreadsHalted && manager.threads.size > 0 
+                                ? "✅ Tous les threads terminés - Exécution complète !" 
+                                : "⏳ Exécution pas à pas en cours...";
+                            const statusColor = allThreadsHalted ? "#4caf50" : "#666";
+
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
                                 <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd;">
@@ -2132,8 +2158,8 @@
                                         </div>
                                     </div>
                                     ${threadsHtml}
-                                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                                        ⏳ Exécution pas à pas en cours...
+                                    <div style="font-size: 0.85em; color: ${statusColor}; margin-top: 10px; font-weight: ${allThreadsHalted ? 'bold' : 'normal'};">
+                                        ${statusMessage}
                                     </div>
                                 </div>
                             `;
@@ -2144,35 +2170,31 @@
                             .filter(thread => !thread.halted);
                         
                         console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
+                        console.log(`🔍 Total threads dans manager: ${manager.threads.size}`);
                         
                         // Afficher l'état de chaque thread pour debug
                         Array.from(manager.threads.values()).forEach(thread => {
-                            console.log(`� État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
+                            console.log(`🔍 État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
                         });
                         
-                        if (remainingActiveThreads.length === 0 && manager.threads.size > 0) {
-                            console.log('🎯 Tous les threads sont terminés via stepAllThreads');
-                            const stepCounterEl = document.getElementById('step-counter');
-                            if (stepCounterEl) stepCounterEl.style.display = 'none';
+                        // CORRECTION: En mode Step, ne JAMAIS désactiver automatiquement les boutons
+                        // L'utilisateur doit pouvoir continuer à cliquer même si les threads semblent terminés
+                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                        
+                        console.log(`🎯 État threads: allThreadsHalted=${allThreadsHalted}, remainingActive=${remainingActiveThreads.length}, anyProgress=${anyProgress}`);
+                        
+                        // Afficher un message informatif si tous les threads sont terminés, mais ne pas désactiver les boutons
+                        if (allThreadsHalted && manager.threads.size > 0) {
+                            console.log('ℹ️ Tous les threads semblent terminés, mais boutons restent actifs en mode Step');
                             
-                            // Ajouter le message de fin dans la sortie globale
+                            // Ajouter le message de fin dans la sortie globale (une seule fois)
                             const outputView = document.getElementById('output-view');
                             if (outputView && !outputView.innerHTML.includes("terminé")) {
-                                outputView.innerHTML += "\n\n\n--- Programme terminé ---";
-                                console.log("✅ Message 'Programme terminé' ajouté");
+                                outputView.innerHTML += "\n\n--- ✅ Tous les threads terminés ---";
+                                console.log("✅ Message 'Threads terminés' ajouté");
                             }
                             
-                            // Désactiver les boutons d'exécution
-                            const runAllBtn = document.getElementById('run-all');
-                            const stepBtn = document.getElementById('step');
-                            if (runAllBtn) {
-                                runAllBtn.disabled = true;
-                                console.log("🚫 Bouton 'Exécuter' désactivé");
-                            }
-                            if (stepBtn) {
-                                stepBtn.disabled = true;
-                                console.log("🚫 Bouton 'Step' désactivé");
-                            }
+                            // NE PAS désactiver les boutons en mode Step - l'utilisateur garde le contrôle
                         }
                         
                         // Mettre à jour l'affichage des threads
@@ -2524,8 +2546,8 @@
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Informations de version de l'application
-        const APP_VERSION = '1.10.0';
-        const BUILD_DATE = '2025-10-02';
+        const APP_VERSION = '1.13.0';
+        const BUILD_DATE = '2025-10-03';
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {
@@ -2571,7 +2593,7 @@
         <div id="version-info">
             🧠 ForkBrain - Where Brainfuck meets Unix threading !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.10.0</span> • Build <span id="build-date">2025-10-02</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.13.0</span> • Build <span id="build-date">2025-10-03</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub

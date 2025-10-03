@@ -1,5 +1,5 @@
-// Version 1.10.0 - Mise à jour automatique du 2025-10-02
-// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète
+// Version 1.13.0 - Mise à jour automatique du 2025-10-03
+// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, FIFO Séquentiel pour input unifié
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -42,7 +42,7 @@ class BrainfuckInterpreter {
         }
         this.code = filteredChars.join('');
         
-        this.input = (typeof input === 'string' ? input : '').split('');
+        this.input = []; // Plus utilisé - remplacé par globalInputQueue
         this.memory = new Array(MEMORY_SIZE).fill(0);
         this.ptr = 0; 
         this.ip = 0; 
@@ -57,6 +57,7 @@ class BrainfuckInterpreter {
         this.isForked = false;
         this.children = [];
         this.forkCount = 0; // Nombre de forks créés par ce thread (pour statistiques)
+        this.hasIndividualInput = false; // Flag pour détecter mode input individuel
         
         // Statistiques d'exécution
         this.stats = {
@@ -97,7 +98,8 @@ class BrainfuckInterpreter {
             this.threadManager = {
                 threads: new Map(),
                 nextId: 1,
-                maxThreads: 8 // Protection contre les fork bombs
+                maxThreads: 8, // Protection contre les fork bombs
+                globalInputQueue: (typeof input === 'string' ? input : '').split('') // FIFO global
             };
             this.threadManager.threads.set(this.threadId, this);
             // Démarrer le timer pour le thread principal
@@ -169,7 +171,10 @@ class BrainfuckInterpreter {
      * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
      */
     step() {
-        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}'`);
+        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}', code='${this.code}', halted=${this.halted}`);
+        
+        // VÉRIFICATION CRITIQUE: Vérifier la longueur du code
+        console.log(`🔍 DEBUGGING: this.code = "${this.code}", this.code.length = ${this.code.length}, typeof = ${typeof this.code}`);
         
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
@@ -231,14 +236,12 @@ class BrainfuckInterpreter {
                 break;
 
             case ',':
-                // S'assurer que this.input est un tableau
-                if (!Array.isArray(this.input)) {
-                    console.warn(`⚠️ Thread T${this.threadId}: this.input n'est pas un tableau:`, typeof this.input, this.input);
-                    this.input = (typeof this.input === 'string' ? this.input : '').split('');
-                    console.log(`🔧 Thread T${this.threadId}: this.input converti en tableau:`, this.input);
+                // FIFO Séquentiel : lecture atomique depuis la queue globale partagée
+                let char = undefined;
+                if (this.threadManager && this.threadManager.globalInputQueue.length > 0) {
+                    char = this.threadManager.globalInputQueue.shift();
                 }
-                const char = this.input.shift();
-                console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
+                console.log(`📥 Thread T${this.threadId}: Lecture FIFO "${char}" (queue restante: ${this.threadManager ? this.threadManager.globalInputQueue.length : 0} chars)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
                 this.stats.inputCharsRead++;
                 this.stats.memoryWrites++;
@@ -266,7 +269,7 @@ class BrainfuckInterpreter {
 
             case 'f':
                 this.handleFork();
-                // CORRECTION: Pas d'incrémentation car handleFork() gère l'IP
+                // CORRECTION: Return direct car handleFork() gère déjà l'IP
                 return true;
 
             default:
@@ -366,19 +369,29 @@ class BrainfuckInterpreter {
         
         const childId = manager.nextId++;
         
-        // Créer le thread enfant avec le constructeur
-        // S'assurer que l'input est une chaîne pour le constructeur
-        const inputString = Array.isArray(this.input) ? this.input.join('') : (typeof this.input === 'string' ? this.input : '');
-        const childThread = new BrainfuckInterpreter(this.code, inputString, childId, this.threadId);
+        // FIFO Séquentiel : pas de division d'input, tous partagent la même queue
+        console.log(`📊 FIFO Séquentiel: Queue globale partagée (${manager.globalInputQueue.length} chars restants)`);
+        
+        // Créer le thread enfant sans input spécifique (utilise la queue globale)
+        const childThread = new BrainfuckInterpreter(this.code, '', childId, this.threadId);
+        
+        // VÉRIFICATION CRITIQUE: Vérifier que le code est bien transmis
+        console.log(`🔍 FORK DEBUG: Parent code="${this.code}" (length=${this.code.length}), Child code="${childThread.code}" (length=${childThread.code.length})`);
         
         // Établir la référence directe parent-enfant
         childThread.parentThread = this;
+        
+        console.log(`✅ FIFO Séquentiel: Parent T${this.threadId} et Enfant T${childId} partagent la queue globale`);
         
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
         childThread.ptr = this.ptr;
         childThread.ip = this.ip; // L'enfant commence à la même position que le parent (après 'f')
         childThread.output = this.output;
+        
+        console.log(`🔧 DEBUG Fork: Parent T${this.threadId} → Enfant T${childId}`);
+        console.log(`   Parent: IP=${this.ip}/${this.code.length}, code='${this.code}'`);
+        console.log(`   Enfant: IP=${childThread.ip}/${childThread.code.length}, code='${childThread.code}'`);
         
         // Partager le gestionnaire avec l'enfant et s'assurer qu'il est ajouté
         childThread.threadManager = this.threadManager;
@@ -651,6 +664,13 @@ class BrainfuckInterpreter {
         if (this.threadManager) {
             this.threadManager.maxThreads = maxThreads;
         }
+    }
+
+    /**
+     * Marque ce thread comme ayant un input individuel (pas de division lors des forks)
+     */
+    setIndividualInput() {
+        this.hasIndividualInput = true;
     }
 }
 
