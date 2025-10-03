@@ -1,43 +1,39 @@
 # Test du problème "f,.,." en pas à pas
 
 ## Problème identifié
-L'exécution pas à pas de "f,.,." ne se termine pas, alors que l'exécution en une fois fonctionne.
+L'exécution pas à pas de "f,.,." ne se termine pas. T0 se bloque à 55,6% et T1 à 44,4%.
+
+## Analyse du code "f,.,."
+- Indices: 0=f, 1=,, 2=., 3=,, 4=.
+- Longueur code: 5 instructions
+- 55,6% de 5 = environ 2,78 → T0 fait ~3 étapes 
+- 44,4% de 5 = environ 2,22 → T1 fait ~2 étapes
 
 ## Cause probable
-1. **Double incrémentation IP pour 'f'** : Dans `BrainfuckInterpreter.js`, l'IP était incrémenté dans `handleFork()` ET à la fin de `step()`.
-2. **Gestion de l'input** : Problème potentiel de synchronisation de la queue d'input entre threads.
+1. **Double incrémentation IP pour 'f'** : ✅ CORRIGÉ
+2. **Threads ne se terminent pas à IP=5** : ⚠️ SUSPECT 
+3. **Gestion de l'input vide** : Les commandes ',' mettent 0 si queue vide mais continuent
 
-## Correction appliquée
-Dans `BrainfuckInterpreter.js`, ligne ~267 :
-```javascript
-case 'f':
-    this.handleFork();
-    // CORRECTION: Return direct car handleFork() gère déjà l'IP
-    return true;
+## Corrections appliquées
+1. Return direct dans case 'f' ✅
+2. Logs de debug étendus ✅  
+3. Force halted=true si continued=false ✅
+
+## Test recommandé
+1. **Code** : `f,.,.` (exactement)
+2. **Input** : `AB` (2 caractères) ou plus
+3. **Mode Step** : Observer les logs console
+4. **Rechercher** :
+   - IP qui n'atteint jamais 5
+   - continued=true en boucle
+   - halted qui reste false
+
+## Logs à surveiller
+```
+📍 Thread T0 step: IP=X/5, instruction='Y'
+🔍 DEBUG Step result for T0: continued=Z, IP=X/5, halted=false
+⚡ T0: Instruction exécutée (IP: X)
 ```
 
-Avant c'était :
-```javascript
-case 'f':
-    this.handleFork();
-    // CORRECTION: Pas d'incrémentation car handleFork() gère l'IP
-    return true;
-    
-// Puis plus loin :
-this.ip++; // ← PROBLÈME : double incrémentation !
-```
-
-## Test à effectuer
-1. Code : `f,.,.`
-2. Input : `AB` (2 caractères)
-3. **Mode Step** : Devrait maintenant se terminer correctement
-4. **Mode Run All** : Devrait continuer à fonctionner
-
-## Comportement attendu
-- Thread parent (T0) : fork → lit 'A' → affiche 'A' → lit 'B' → affiche 'B' → termine
-- Thread enfant (T1) : démarre après fork → lit depuis queue partagée → termine
-
-## Résultat espéré
-- Output : `AB` (ou `BA` selon ordre d'exécution)
-- Tous les threads se terminent proprement
-- Interface détecte la fin et désactive les boutons
+Si IP reste < 5 et continued=true en permanence → problème d'incrémentation
+Si IP atteint 5 mais halted=false → problème détection fin

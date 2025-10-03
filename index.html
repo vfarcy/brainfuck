@@ -2067,6 +2067,8 @@
                             try {
                                 const continued = thread.stepSingleThread();
                                 
+                                console.log(`🔍 DEBUG Step result for T${threadId}: continued=${continued}, IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
+                                
                                 // Correction: Si IP >= code.length, s'assurer que halted = true
                                 if (thread.ip >= thread.code.length && !thread.halted) {
                                     console.log(`🔧 Thread T${threadId} marqué comme terminé (IP: ${thread.ip}/${thread.code.length})`);
@@ -2078,6 +2080,8 @@
                                     console.log(`⚡ T${threadId}: Instruction exécutée (IP: ${thread.ip})`);
                                 } else {
                                     console.log(`🛑 Thread T${threadId} terminé (IP: ${thread.ip}/${thread.code.length})`);
+                                    // CORRECTION: Force halted si continued = false
+                                    thread.halted = true;
                                 }
                             } catch (error) {
                                 console.error(`❌ Erreur dans thread T${threadId}:`, error.message);
