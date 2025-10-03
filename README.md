@@ -1,18 +1,18 @@
 # 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.11.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.12.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--03-lightgreen.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés Version 1.11.0 (2025-10-03)
+## 🆕 Nouveautés Version 1.12.0 (2025-10-03)
 
-- **✅ Solution 1 : Input Séparé implémentée** - Correction du bug critique de race conditions sur l'input
-- **🔧 Division intelligente d'input** - Lors des forks, l'input est maintenant divisé équitablement entre parent et enfant  
-- **🛡️ Élimination des race conditions** - Comportement déterministe garanti pour tous les threads
-- **🧹 Code défensif supprimé** - Plus de vérifications inutiles grâce à la gestion propre de l'input
-- **📊 Logs informatifs** - Traçabilité complète de la division d'input lors des forks
+- **🔄 FIFO Séquentiel implémenté** - Queue globale partagée pour l'input unifié
+- **📥 Consommation atomique** - Premier arrivé, premier servi sans race conditions  
+- **🎯 Comportement déterministe** - Ordre de lecture prévisible et reproductible
+- **🗑️ Suppression division d'input** - Plus de partage artificiel lors des forks
+- **📊 Queue globale** - Tous les threads consomment la même source d'entrée
 
 -----
 

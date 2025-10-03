@@ -1,5 +1,5 @@
-// Version 1.11.0 - Solution 1 : Input Séparé implémentée - 2025-10-03
-// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, Input séparé lors des forks
+// Version 1.12.0 - FIFO Séquentiel : Queue globale partagée - 2025-10-03
+// ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, FIFO Séquentiel pour input unifié
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
 const VALID_CHARS = '><+-.,[]f'; // Ajout de la commande 'f' pour le fork
@@ -42,7 +42,7 @@ class BrainfuckInterpreter {
         }
         this.code = filteredChars.join('');
         
-        this.input = (typeof input === 'string' ? input : '').split('');
+        this.input = []; // Plus utilisé - remplacé par globalInputQueue
         this.memory = new Array(MEMORY_SIZE).fill(0);
         this.ptr = 0; 
         this.ip = 0; 
@@ -57,6 +57,7 @@ class BrainfuckInterpreter {
         this.isForked = false;
         this.children = [];
         this.forkCount = 0; // Nombre de forks créés par ce thread (pour statistiques)
+        this.hasIndividualInput = false; // Flag pour détecter mode input individuel
         
         // Statistiques d'exécution
         this.stats = {
@@ -97,7 +98,8 @@ class BrainfuckInterpreter {
             this.threadManager = {
                 threads: new Map(),
                 nextId: 1,
-                maxThreads: 8 // Protection contre les fork bombs
+                maxThreads: 8, // Protection contre les fork bombs
+                globalInputQueue: (typeof input === 'string' ? input : '').split('') // FIFO global
             };
             this.threadManager.threads.set(this.threadId, this);
             // Démarrer le timer pour le thread principal
@@ -231,9 +233,12 @@ class BrainfuckInterpreter {
                 break;
 
             case ',':
-                // Lecture d'un caractère depuis l'input (maintenant toujours un Array grâce à la Solution 1)
-                const char = this.input.shift();
-                console.log(`📥 Thread T${this.threadId}: Lecture caractère "${char}" (input restant:`, this.input, `)`);
+                // FIFO Séquentiel : lecture atomique depuis la queue globale partagée
+                let char = undefined;
+                if (this.threadManager && this.threadManager.globalInputQueue.length > 0) {
+                    char = this.threadManager.globalInputQueue.shift();
+                }
+                console.log(`📥 Thread T${this.threadId}: Lecture FIFO "${char}" (queue restante: ${this.threadManager ? this.threadManager.globalInputQueue.length : 0} chars)`);
                 this.memory[this.ptr] = char !== undefined ? char.charCodeAt(0) : 0;
                 this.stats.inputCharsRead++;
                 this.stats.memoryWrites++;
@@ -361,39 +366,16 @@ class BrainfuckInterpreter {
         
         const childId = manager.nextId++;
         
-        // SOLUTION 1 : INPUT SÉPARÉ - Division intelligente de l'input
-        let parentInput, childInput;
+        // FIFO Séquentiel : pas de division d'input, tous partagent la même queue
+        console.log(`📊 FIFO Séquentiel: Queue globale partagée (${manager.globalInputQueue.length} chars restants)`);
         
-        const inputLength = this.input.length;
-        console.log(`📊 Division input: ${inputLength} caractères à partager entre parent et enfant`);
-        
-        if (inputLength === 0) {
-            // Cas input vide : les deux gardent un input vide
-            parentInput = [];
-            childInput = '';
-            console.log(`   Cas input vide: Parent=[], Enfant=""`);
-        } else if (inputLength === 1) {
-            // Cas 1 caractère : enfant hérite, parent vide
-            parentInput = [];
-            childInput = this.input[0];
-            console.log(`   Cas 1 caractère: Parent=[], Enfant="${childInput}"`);
-        } else {
-            // Division intelligente : parent garde première moitié (ceil), enfant seconde moitié
-            const splitPoint = Math.ceil(inputLength / 2);
-            parentInput = this.input.slice(0, splitPoint);
-            childInput = this.input.slice(splitPoint).join('');
-            console.log(`   Division ${inputLength} chars: Parent=[${parentInput.join(', ')}], Enfant="${childInput}"`);
-        }
-        
-        // Créer le thread enfant avec son input exclusif
-        const childThread = new BrainfuckInterpreter(this.code, childInput, childId, this.threadId);
+        // Créer le thread enfant sans input spécifique (utilise la queue globale)
+        const childThread = new BrainfuckInterpreter(this.code, '', childId, this.threadId);
         
         // Établir la référence directe parent-enfant
         childThread.parentThread = this;
         
-        // Appliquer l'input divisé au parent (APRÈS création enfant)
-        this.input = parentInput;
-        console.log(`✅ Input séparé appliqué - Parent T${this.threadId}: [${this.input.join(', ')}], Enfant T${childId}: "${childThread.input.join('')}"`);
+        console.log(`✅ FIFO Séquentiel: Parent T${this.threadId} et Enfant T${childId} partagent la queue globale`);
         
         // Copier l'état actuel du parent (sauf les propriétés qui doivent être différentes)
         childThread.memory = [...this.memory];
@@ -672,6 +654,13 @@ class BrainfuckInterpreter {
         if (this.threadManager) {
             this.threadManager.maxThreads = maxThreads;
         }
+    }
+
+    /**
+     * Marque ce thread comme ayant un input individuel (pas de division lors des forks)
+     */
+    setIndividualInput() {
+        this.hasIndividualInput = true;
     }
 }
 
