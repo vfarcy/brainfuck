@@ -171,7 +171,10 @@ class BrainfuckInterpreter {
      * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
      */
     step() {
-        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}', code='${this.code}'`);
+        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}', code='${this.code}', halted=${this.halted}`);
+        
+        // VÉRIFICATION CRITIQUE: Vérifier la longueur du code
+        console.log(`🔍 DEBUGGING: this.code = "${this.code}", this.code.length = ${this.code.length}, typeof = ${typeof this.code}`);
         
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
@@ -371,6 +374,9 @@ class BrainfuckInterpreter {
         
         // Créer le thread enfant sans input spécifique (utilise la queue globale)
         const childThread = new BrainfuckInterpreter(this.code, '', childId, this.threadId);
+        
+        // VÉRIFICATION CRITIQUE: Vérifier que le code est bien transmis
+        console.log(`🔍 FORK DEBUG: Parent code="${this.code}" (length=${this.code.length}), Child code="${childThread.code}" (length=${childThread.code.length})`);
         
         // Établir la référence directe parent-enfant
         childThread.parentThread = this;
