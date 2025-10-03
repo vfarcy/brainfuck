@@ -2155,36 +2155,24 @@
                             console.log(`🔍 État Thread T${thread.threadId}: IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
                         });
                         
-                        // CORRECTION: Forcer une vérification stricte de la terminaison
-                        const allThreadsFinished = Array.from(manager.threads.values()).every(thread => 
-                            thread.halted || thread.ip >= thread.code.length
-                        );
+                        // CORRECTION: En mode Step, ne JAMAIS désactiver automatiquement les boutons
+                        // L'utilisateur doit pouvoir continuer à cliquer même si les threads semblent terminés
+                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
                         
-                        console.log(`🎯 Vérification terminaison: allThreadsFinished=${allThreadsFinished}, remainingActive=${remainingActiveThreads.length}`);
+                        console.log(`🎯 État threads: allThreadsHalted=${allThreadsHalted}, remainingActive=${remainingActiveThreads.length}, anyProgress=${anyProgress}`);
                         
-                        if (allThreadsFinished && manager.threads.size > 0) {
-                            console.log('🎯 Tous les threads sont terminés via stepAllThreads (vérification stricte)');
-                            const stepCounterEl = document.getElementById('step-counter');
-                            if (stepCounterEl) stepCounterEl.style.display = 'none';
+                        // Afficher un message informatif si tous les threads sont terminés, mais ne pas désactiver les boutons
+                        if (allThreadsHalted && manager.threads.size > 0) {
+                            console.log('ℹ️ Tous les threads semblent terminés, mais boutons restent actifs en mode Step');
                             
-                            // Ajouter le message de fin dans la sortie globale
+                            // Ajouter le message de fin dans la sortie globale (une seule fois)
                             const outputView = document.getElementById('output-view');
                             if (outputView && !outputView.innerHTML.includes("terminé")) {
-                                outputView.innerHTML += "\n\n\n--- Programme terminé ---";
-                                console.log("✅ Message 'Programme terminé' ajouté");
+                                outputView.innerHTML += "\n\n--- ✅ Tous les threads terminés ---";
+                                console.log("✅ Message 'Threads terminés' ajouté");
                             }
                             
-                            // Désactiver les boutons d'exécution
-                            const runAllBtn = document.getElementById('run-all');
-                            const stepBtn = document.getElementById('step');
-                            if (runAllBtn) {
-                                runAllBtn.disabled = true;
-                                console.log("🚫 Bouton 'Exécuter' désactivé");
-                            }
-                            if (stepBtn) {
-                                stepBtn.disabled = true;
-                                console.log("🚫 Bouton 'Step' désactivé");
-                            }
+                            // NE PAS désactiver les boutons en mode Step - l'utilisateur garde le contrôle
                         }
                         
                         // Mettre à jour l'affichage des threads
