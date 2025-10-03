@@ -235,4 +235,4 @@ f[>+<-]    # Copier PID
 
 ---
 
-*Mis à jour pour ForkBrain v1.10.0 - Amélioration détection fin de thread*
+*Mis à jour pour ForkBrain v1.11.0 - Solution 1: Input Séparé implémentée*
