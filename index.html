@@ -2063,6 +2063,10 @@
                             try {
                                 const continued = thread.stepSingleThread();
                                 
+                                // CORRECTION: Toujours incrémenter l'historique, même pour la dernière étape qui termine le thread
+                                executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
+                                console.log(`📊 Stats update: Thread T${threadId} now has ${executionHistory.get(threadId)} steps`);
+                                
                                 console.log(`🔍 DEBUG Step result for T${threadId}: continued=${continued}, IP=${thread.ip}/${thread.code.length}, halted=${thread.halted}`);
                                 
                                 // Correction: Si IP >= code.length, s'assurer que halted = true
@@ -2073,9 +2077,6 @@
                                 
                                 if (continued) {
                                     anyProgress = true;
-                                    // CORRECTION: Incrémenter l'historique SEULEMENT si le thread a vraiment progressé
-                                    executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
-                                    console.log(`📊 Stats update: Thread T${threadId} now has ${executionHistory.get(threadId)} steps`);
                                     console.log(`⚡ T${threadId}: Instruction exécutée (IP: ${thread.ip})`);
                                 } else {
                                     console.log(`🛑 Thread T${threadId} terminé (IP: ${thread.ip}/${thread.code.length})`);
