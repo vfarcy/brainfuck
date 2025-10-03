@@ -2095,6 +2095,9 @@
                         // Mettre à jour l'affichage des statistiques après chaque cycle
                         generateThreadExecutionLog();
                         
+                        // CORRECTION: Définir allThreadsHalted au niveau du scope principal
+                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                        
                         // INJECTION DIRECTE pour mode multi-thread pas à pas
                         const logElement = document.getElementById('execution-log');
                         if (logElement && executionHistory.size > 0) {
@@ -2153,8 +2156,7 @@
                         const remainingActiveThreads = Array.from(manager.threads.values())
                             .filter(thread => !thread.halted);
                         
-                        // UNIFICATION: Une seule vérification pour tous les threads terminés
-                        const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
+                        // CORRECTION: allThreadsHalted déjà défini plus haut, pas besoin de redéclarer
                         
                         console.log(`🔍 Threads restants actifs: ${remainingActiveThreads.length}`);
                         console.log(`🔍 Total threads dans manager: ${manager.threads.size}`);
