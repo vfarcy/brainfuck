@@ -1,6 +1,6 @@
 # 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.13.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.14.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--03-lightgreen.svg)
 
