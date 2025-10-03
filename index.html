@@ -774,7 +774,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.13.0"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.12.0"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2103,23 +2103,8 @@
                             
                             let threadsHtml = '';
                             for (const [threadId, steps] of executionHistory) {
-                                const thread = manager.threads.get(threadId);
-                                const isActive = manager.threads.has(threadId) && !thread.halted;
-                                
-                                // CORRECTION: Calcul de progression individuelle par thread
-                                let percentage;
-                                if (!isActive && thread && thread.halted) {
-                                    // Thread terminé = 100%
-                                    percentage = "100.0";
-                                } else if (thread && thread.code) {
-                                    // Thread actif = progression basée sur IP/code.length
-                                    const progress = thread.code.length > 0 ? (thread.ip / thread.code.length) * 100 : 0;
-                                    percentage = progress.toFixed(1);
-                                } else {
-                                    // Fallback: proportion par rapport au total (ancien calcul)
-                                    percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
-                                }
-
+                                const percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                                const isActive = manager.threads.has(threadId) && !manager.threads.get(threadId).halted;
                                 threadsHtml += `
                                     <div style="margin-bottom: 8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
@@ -2133,13 +2118,6 @@
                                 `;
                             }
                             
-                            // Déterminer le message de statut selon l'état des threads
-                            const allThreadsHalted = Array.from(manager.threads.values()).every(thread => thread.halted);
-                            const statusMessage = allThreadsHalted && manager.threads.size > 0 
-                                ? "✅ Tous les threads terminés - Exécution complète !" 
-                                : "⏳ Exécution pas à pas en cours...";
-                            const statusColor = allThreadsHalted ? "#4caf50" : "#666";
-
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
                                 <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd;">
@@ -2158,8 +2136,8 @@
                                         </div>
                                     </div>
                                     ${threadsHtml}
-                                    <div style="font-size: 0.85em; color: ${statusColor}; margin-top: 10px; font-weight: ${allThreadsHalted ? 'bold' : 'normal'};">
-                                        ${statusMessage}
+                                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
+                                        ⏳ Exécution pas à pas en cours...
                                     </div>
                                 </div>
                             `;
@@ -2546,7 +2524,7 @@
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Informations de version de l'application
-        const APP_VERSION = '1.13.0';
+        const APP_VERSION = '1.12.0';
         const BUILD_DATE = '2025-10-03';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2593,7 +2571,7 @@
         <div id="version-info">
             🧠 ForkBrain - Where Brainfuck meets Unix threading !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.13.0</span> • Build <span id="build-date">2025-10-03</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.12.0</span> • Build <span id="build-date">2025-10-03</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
