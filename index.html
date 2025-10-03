@@ -2106,8 +2106,24 @@
                             
                             let threadsHtml = '';
                             for (const [threadId, steps] of executionHistory) {
-                                const percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
-                                const isActive = manager.threads.has(threadId) && !manager.threads.get(threadId).halted;
+                                const thread = manager.threads.get(threadId);
+                                const isActive = manager.threads.has(threadId) && !thread.halted;
+                                
+                                // CORRECTION: Calcul de progression individuelle par thread
+                                let percentage;
+                                if (!isActive && thread && thread.halted) {
+                                    // Thread terminé = 100%
+                                    percentage = "100.0";
+                                } else if (thread && thread.code) {
+                                    // Thread actif = progression basée sur IP/code.length
+                                    const progress = thread.code.length > 0 ? (thread.ip / thread.code.length) * 100 : 0;
+                                    percentage = progress.toFixed(1);
+                                } else {
+                                    // Fallback: proportion par rapport au total (ancien calcul)
+                                    const totalSteps = Array.from(executionHistory.values()).reduce((sum, steps) => sum + steps, 0);
+                                    percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                                }
+
                                 threadsHtml += `
                                     <div style="margin-bottom: 8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
