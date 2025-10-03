@@ -171,7 +171,7 @@ class BrainfuckInterpreter {
      * @returns {boolean} Vrai si l'exécution s'est poursuivie, Faux si le programme est terminé.
      */
     step() {
-        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}'`);
+        console.log(`📍 Thread T${this.threadId} step: IP=${this.ip}/${this.code.length}, instruction='${this.code[this.ip] || 'EOF'}', code='${this.code}'`);
         
         if (this.ip >= this.code.length) {
             console.log(`🛑 Thread T${this.threadId} terminé (IP: ${this.ip}/${this.code.length})`);
@@ -382,6 +382,10 @@ class BrainfuckInterpreter {
         childThread.ptr = this.ptr;
         childThread.ip = this.ip; // L'enfant commence à la même position que le parent (après 'f')
         childThread.output = this.output;
+        
+        console.log(`🔧 DEBUG Fork: Parent T${this.threadId} → Enfant T${childId}`);
+        console.log(`   Parent: IP=${this.ip}/${this.code.length}, code='${this.code}'`);
+        console.log(`   Enfant: IP=${childThread.ip}/${childThread.code.length}, code='${childThread.code}'`);
         
         // Partager le gestionnaire avec l'enfant et s'assurer qu'il est ajouté
         childThread.threadManager = this.threadManager;
