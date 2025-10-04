@@ -1,6 +1,6 @@
-# 🔧 API Reference - ForkBrain
+# 🔧 API Reference - Bra1nF0rk
 
-Documentation complète de l'API ForkBrain v1.11.0 - *Where Brainfuck meets Unix threading!*
+Documentation complète de l'API Bra1nF0rk v1.11.0 - *Where Brainfuck code goes parallel, see your threads run*
 
 ## 📋 Table des Matières
 
@@ -481,11 +481,11 @@ try {
 
 ## 🔗 Voir Aussi
 
-- **[README.md](../README.md)** - Documentation générale ForkBrain
+- **[README.md](../README.md)** - Documentation générale Bra1nF0rk
 - **[EXAMPLES.md](EXAMPLES.md)** - Exemples avancés et tutoriels
 - **[GitHub Repository](https://github.com/vfarcy/brainfuck)** - Code source complet
 
 ---
 
-*Documentation mise à jour pour **ForkBrain v1.11.0** - Where Brainfuck meets Unix threading!*  
+*Documentation mise à jour pour **Bra1nF0rk v1.11.0** - Where Brainfuck code goes parallel, see your threads run*  
 *Dernière modification : 2 octobre 2025*

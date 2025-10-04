@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 ForkBrain - Where Brainfuck meets Unix threading !</title>
+    <title>🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -120,8 +120,8 @@
             cursor: not-allowed;
         }
         
-        /* --- Styles de Sortie et Mémoire --- */
-        #output-view, #code-view {
+        /* --- Styles de Sortie --- */
+        #output-view {
             white-space: pre-wrap;
             border: 1px solid #ddd;
             padding: 10px;
@@ -132,9 +132,7 @@
             resize: vertical;
             overflow: auto;
         }
-        #memory-view {
-            max-width: 100%;
-        }
+        /* memory-view supprimé */
         .memory-scroll-wrapper {
             width: 100%;
             max-width: 100%;
@@ -264,6 +262,60 @@
             border: 2px solid #2196F3;
             background: #e3f2fd;
         }
+
+        /* Badge très visible pour le thread actuel */
+        .current-badge {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ffd54f, #ffeb3b);
+            color: #1a1a1a;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            border: 1px solid #f0c000;
+            box-shadow: 0 0 0 2px rgba(255, 235, 59, 0.35), 0 2px 6px rgba(0,0,0,0.12);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            vertical-align: middle;
+            position: relative;
+        }
+        @keyframes currentPulse {
+            0%   { box-shadow: 0 0 0 2px rgba(255, 235, 59, 0.45); }
+            50%  { box-shadow: 0 0 0 6px rgba(255, 235, 59, 0.0); }
+            100% { box-shadow: 0 0 0 2px rgba(255, 235, 59, 0.45); }
+        }
+        .thread-state.current .current-badge {
+            animation: currentPulse 1.8s ease-in-out infinite;
+        }
+
+        /* Bouton inline pour Step (Thread Actuel) */
+        .inline-step-btn {
+            margin-left: 8px;
+            padding: 2px 8px;
+            font-size: 12px;
+            line-height: 1.2;
+            border: 1px solid #1976d2;
+            background: #2196F3;
+            color: #fff;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        .inline-step-btn:hover { background: #0b7dda; }
+
+        /* Bouton inline pour changer de thread */
+        .inline-switch-btn {
+            margin-left: 8px;
+            padding: 2px 8px;
+            font-size: 12px;
+            line-height: 1.2;
+            border: 1px solid #888;
+            background: #eee;
+            color: #333;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        .inline-switch-btn:hover { background: #ddd; }
         
         .thread-execution-indicator {
             position: absolute;
@@ -670,7 +722,16 @@
 </head>
 <body>
 
-    <h1>🧠 ForkBrain - Where Brainfuck meets Unix threading !</h1>
+    <h1>🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run</h1>
+
+    <!-- Contrôle pour la limite de threads (déplacé au-dessus de l'éditeur) -->
+    <div id="max-threads-control">
+        <label for="max-threads">🛡️ Limite max de threads:</label>
+        <input type="number" id="max-threads" value="8" min="1" max="1000" style="width: 80px;">
+        <div class="warning-text">
+            ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]"). Limite globale de sécurité.
+        </div>
+    </div>
 
     <label for="bf-code">Entrez votre programme Brainfuck :</label>
     <div class="editor-wrapper">
@@ -686,19 +747,10 @@
     <p>
         <button id="run-all" aria-label="Exécuter d'un coup">▶ Exécuter D'un Coup</button>
         <button id="step-btn" aria-label="Exécuter pas à pas">👣 Step (Tous Threads)</button>
-        <button id="step-single-btn" aria-label="Exécuter pas à pas thread unique" style="display: none;">👤 Step (Thread Actuel)</button>
+    <button id="step-single-btn" aria-label="Exécuter pas à pas thread unique" style="display: none;">👤 Step (Thread Actuel)</button>
         <button id="switch-thread-btn" aria-label="Changer de thread actuel" style="display: none;">🔄 Changer Thread</button>
         <button id="reset-btn" aria-label="Réinitialiser">🔄 Réinitialiser</button>
     </p>
-    
-    <!-- Contrôle pour la limite de threads -->
-    <div id="max-threads-control">
-        <label for="max-threads">🛡️ Limite max de threads:</label>
-        <input type="number" id="max-threads" value="8" min="1" max="1000" style="width: 80px;">
-        <div class="warning-text">
-            ⚠️ Attention: La commande 'f' peut créer des explosions de threads (ex: "+[f+]"). Limite globale de sécurité.
-        </div>
-    </div>
     
     <!-- Compteur d'étapes global -->
     <div id="step-counter" class="step-counter" style="display: none;">
@@ -707,11 +759,17 @@
 
     <hr>
     
+    <!-- Historique d'exécution -->
+    <div id="execution-log" style="margin-top: 20px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
+        <h4>📊 Historique d'exécution</h4>
+        <p style="color: #666; font-style: italic;">Aucune exécution pour le moment - Lancez un programme pour voir les statistiques !</p>
+    </div>
+
     <!-- Section d'information des threads -->
     <div id="thread-info">
         <strong>🔗 Thread Principal (T0)</strong> - Aucun fork détecté
     </div>
-    
+
     <!-- Vue multi-thread (masquée par défaut) -->
     <div id="multi-thread-view" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -723,12 +781,6 @@
         <div id="threads-container">
             <!-- Les threads s'afficheront ici dynamiquement -->
         </div>
-    </div>
-    
-    <!-- Historique d'exécution -->
-    <div id="execution-log" style="margin-top: 20px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
-        <h4>📊 Historique d'exécution</h4>
-        <p style="color: #666; font-style: italic;">Aucune exécution pour le moment - Lancez un programme pour voir les statistiques !</p>
     </div>
     
     <!-- Zones d'entrée/sortie globales -->
@@ -758,23 +810,9 @@
 
     <hr>
 
-    <!-- État de l'interpréteur (visible uniquement en mode single-thread) -->
-    <div id="single-thread-state">
-        <h2>État de l'Interpréteur</h2>
-        <p>
-            Pointeur d'Instruction (IP): <span id="ip-view">0</span>
-            &nbsp;|&nbsp;
-            Pointeur de Cellule (PTR): <span id="ptr-view">0</span>
-        </p>
+    <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-        <h3>Code en cours d'exécution</h3>
-        <pre id="code-view"></pre>
-
-        <h3>Mémoire (Cellules autour du PTR)</h3>
-        <div id="memory-view"></div>
-    </div>
-
-    <script src="BrainfuckInterpreter.js?v=1.14.3"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.4"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -797,10 +835,7 @@
         const codeInput = document.getElementById('bf-code');
         const inputData = document.getElementById('bf-input');
         const outputView = document.getElementById('output-view');
-        const ipView = document.getElementById('ip-view');
-        const ptrView = document.getElementById('ptr-view');
-        const memoryView = document.getElementById('memory-view');
-        const codeView = document.getElementById('code-view');
+    // Suppression des vues single-thread (ip-view, ptr-view, memory-view, code-view)
         const codeHighlight = document.getElementById('code-highlight');
         const runAllBtn = document.getElementById('run-all');
         const stepBtn = document.getElementById('step-btn');
@@ -1088,10 +1123,8 @@
 
             const state = interpreter.getState();
 
-            // 1. Mise à jour des compteurs et sortie avec annotations de threads
+            // 1. Mise à jour des compteurs et sortie avec annotations de threads (UI unifiée)
             updateGlobalOutput();
-            ipView.textContent = state.ip;
-            ptrView.textContent = state.ptr;
 
             // 2. Visualisation du code et du Pointeur d'Instruction (IP)
             
@@ -1102,67 +1135,11 @@
                 ? null
                 : (state.ip < state.codeMap.length ? state.codeMap[state.ip] : state.codeMap[state.codeMap.length - 1]);
 
-            codeView.innerHTML = buildHighlightedHtml(state.code, activeInstructionIndex);
+            // UI unifiée: plus d'affichage séparé du code-view; on conserve seulement la mise en évidence dans l'éditeur
             renderEditorHighlight(activeOriginalIndex);
 
 
-            // 3. Visualisation de la mémoire et du Pointeur de Cellule (PTR)
-            let memDisplay = '<table>';
-            const windowRadius = 7;
-            const memoryLength = state.memoryFull.length;
-            const start = Math.max(0, state.ptr - windowRadius);
-            const end = Math.min(state.ptr + windowRadius + 1, memoryLength);
-
-            // Ligne 1: Index (PTR)
-            memDisplay += '<tr class="header-row">';
-            if (start > 0) {
-                memDisplay += '<td class="ellipsis-cell">…</td>';
-            }
-            for (let i = start; i < end; i++) {
-                memDisplay += `<td>${i}</td>`;
-            }
-            if (end < memoryLength) {
-                memDisplay += '<td class="ellipsis-cell">…</td>';
-            }
-            memDisplay += '</tr>';
-
-            // Ligne 2: Valeurs (Contenu de la cellule)
-            memDisplay += '<tr>';
-            if (start > 0) {
-                memDisplay += '<td class="ellipsis-cell">…</td>';
-            }
-            for (let i = start; i < end; i++) {
-                const cellClass = i === state.ptr ? 'active-cell' : '';
-                const cellContent = formatMemoryCell(state.memoryFull[i]);
-                memDisplay += `<td class="${cellClass}">${cellContent}</td>`;
-            }
-            if (end < memoryLength) {
-                memDisplay += '<td class="ellipsis-cell">…</td>';
-            }
-            memDisplay += '</tr>';
-            memDisplay += '</table>';
-
-            memoryView.innerHTML = `
-                <div class="memory-scroll-wrapper">
-                    <div class="memory-scroll" role="region" aria-label="Fenêtre mémoire défilable">${memDisplay}</div>
-                    <input type="range" class="memory-scroll-slider" min="0" value="0" step="1" aria-label="Défilement horizontal de la mémoire">
-                </div>
-            `;
-
-            const memoryWrapper = memoryView.querySelector('.memory-scroll-wrapper');
-            setupMemoryScrollbar(memoryWrapper);
-
-            // Centrer automatiquement la vue mémoire sur la cellule active
-            const activeCellElement = memoryWrapper.querySelector('.active-cell');
-            const scrollContainer = memoryWrapper.querySelector('.memory-scroll');
-            if (activeCellElement && scrollContainer) {
-                const containerWidth = scrollContainer.offsetWidth;
-                const cellLeft = activeCellElement.offsetLeft;
-                const cellWidth = activeCellElement.offsetWidth;
-                // Calcule la position de défilement pour centrer la cellule
-                const scrollTarget = cellLeft - (containerWidth / 2) + (cellWidth / 2);
-                scrollContainer.scrollLeft = scrollTarget;
-            }
+            // 3. Plus de visualisation dédiée de la mémoire (UI unifiée)
 
             // 4. Mise à jour des informations de threading
             updateThreadInfo(state);
@@ -1179,10 +1156,6 @@
             if (state.totalThreads > 1) {
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
-                
-                // Masquer l'état single-thread en mode multi-thread (éviter la redondance)
-                document.getElementById('single-thread-state').style.display = 'none';
-                
                 // Basculer vers les zones d'entrée par thread
                 document.getElementById('single-thread-input').style.display = 'none';
                 updateMultiThreadInputs();
@@ -1190,14 +1163,12 @@
                 
                 // Afficher le bouton Step Single en mode multi-thread
                 stepSingleBtn.style.display = 'inline-block';
-                switchThreadBtn.style.display = 'inline-block';
+                switchThreadBtn.style.display = 'none';
                 stepBtn.textContent = '👣 Step (Tous Threads)';
             } else {
-                document.getElementById('multi-thread-view').style.display = 'none';
-                
-                // Afficher l'état single-thread en mode single-thread
-                document.getElementById('single-thread-state').style.display = 'block';
-                
+                // Garder la vue multi-thread visible et la renseigner même pour un seul thread (T0)
+                updateMultiThreadView();
+                document.getElementById('multi-thread-view').style.display = 'block';
                 // Revenir à la zone d'entrée globale
                 document.getElementById('single-thread-input').style.display = 'block';
                 document.getElementById('multi-thread-inputs').style.display = 'none';
@@ -1316,7 +1287,12 @@
         function updateMultiThreadView() {
             if (!interpreter) return;
             
-            const allStates = interpreter.getAllThreadStates();
+            let allStates = interpreter.getAllThreadStates() || [];
+            // Toujours inclure au minimum l'état courant (T0) si nécessaire
+            if (allStates.length === 0) {
+                const mainState = interpreter.getState ? interpreter.getState() : null;
+                if (mainState) allStates = [mainState];
+            }
             console.log('🔍 Debug updateMultiThreadView - Nombre de threads:', allStates.length);
             console.log('🔍 Debug updateMultiThreadView - États des threads:', allStates);
             const container = document.getElementById('threads-container');
@@ -1346,7 +1322,12 @@
                 // En-tête du thread avec indicateur d'exécution
                 const headerHTML = `
                     <div class="thread-header">
-                        <span>🔗 Thread T${state.threadId} ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'} ${isCurrentThread ? '👑 Actuel' : ''}</span>
+                        <span>
+                            🔗 Thread T${state.threadId} ${state.parentId !== null ? `(Parent: T${state.parentId})` : '(Principal)'}
+                            ${isCurrentThread 
+                                ? '<span class="current-badge" title="Thread en focus pour Step Single">👑 Actuel</span><button class="inline-step-btn" data-thread-id="'+state.threadId+'">👤 Step</button>' 
+                                : (!state.halted ? '<button class="inline-switch-btn" data-switch-to="'+state.threadId+'">🔄 Changer Thread</button>' : '')}
+                        </span>
                         <span>${state.halted ? '� TERMINÉ' : '▶️ Actif'}</span>
                     </div>
                     <div class="thread-progress-bar">
@@ -2337,7 +2318,7 @@
             }
         });
 
-        stepSingleBtn.addEventListener('click', () => {
+        function handleStepSingleClick() {
             if (!interpreter) return;
             
             try {
@@ -2460,6 +2441,36 @@
                 alert(`❌ Erreur d'exécution step single: ${error.message}`);
                 console.error(error);
             }
+        }
+
+        // Bouton global (caché dans l'UI) réutilise le même handler
+        stepSingleBtn.addEventListener('click', handleStepSingleClick);
+
+        // Délégation: boutons inline à côté du badge 👑 Actuel
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.inline-step-btn');
+            if (!btn) return;
+            // Exécuter un step pour le thread courant
+            handleStepSingleClick();
+        });
+
+        // Délégation: boutons inline "Changer Thread" pour passer sur un autre thread exécutable
+        document.addEventListener('click', (e) => {
+            const switchBtn = e.target.closest('.inline-switch-btn');
+            if (!switchBtn) return;
+            if (!interpreter || !interpreter.threadManager) return;
+            const targetId = parseInt(switchBtn.getAttribute('data-switch-to'));
+            const manager = interpreter.threadManager;
+            for (const [tid, thread] of manager.threads) {
+                if (tid === targetId && !thread.halted) {
+                    interpreter = thread;
+                    console.log(`🔄 Thread actuel changé via inline vers T${targetId}`);
+                    captureThreadOutputs();
+                    updateUI();
+                    updateMultiThreadView();
+                    break;
+                }
+            }
         });
 
         switchThreadBtn.addEventListener('click', () => {
@@ -2532,8 +2543,7 @@
             const outputEl = document.querySelector('#output pre');
             if (outputEl) outputEl.textContent = '';
             
-            const memoryViewEl = document.getElementById('memory-view');
-            if (memoryViewEl) memoryViewEl.innerHTML = '';
+            // Plus de memory-view en UI unifiée
             
             const executionLogEl = document.getElementById('execution-log');
             if (executionLogEl) {
@@ -2549,8 +2559,7 @@
             document.getElementById('multi-thread-view').style.display = 'none';
             document.getElementById('output-legend').style.display = 'none';
             
-            // Réafficher l'état single-thread
-            document.getElementById('single-thread-state').style.display = 'block';
+            // UI unifiée: pas de section état single-thread
             
             console.clear();
             console.log('🔄 Interpréteur réinitialisé');
@@ -2715,7 +2724,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.3';
+    const APP_VERSION = '1.14.4';
     const BUILD_DATE = '2025-10-04';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2760,9 +2769,9 @@
     <!-- Pied de page avec numéro de version -->
     <footer style="margin-top: 50px; padding: 20px 0; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 12px;">
         <div id="version-info">
-            🧠 ForkBrain - Where Brainfuck meets Unix threading !
+            🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.3</span> • Build <span id="build-date">2025-10-04</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.4</span> • Build <span id="build-date">2025-10-04</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub

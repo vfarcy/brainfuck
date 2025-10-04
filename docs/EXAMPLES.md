@@ -235,4 +235,4 @@ f[>+<-]    # Copier PID
 
 ---
 
-*Mis à jour pour ForkBrain v1.11.0 - Solution 1: Input Séparé implémentée*
+*Mis à jour pour Bra1nF0rk v1.11.0 - Solution 1: Input Séparé implémentée*

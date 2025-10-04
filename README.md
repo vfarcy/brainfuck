@@ -1,11 +1,48 @@
-# 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
+# 🧠 Bra1nF0rk - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.14.3-blue.svg)
+![Version](https://img.shields.io/badge/version-1.14.4-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--04-lightgreen.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
+Bra1nF0rk est avant tout un util pédagogique. Il étendant le Brainfuck standard avec la commande f de fork. 
+
+## Public cible
+
+Le projet s'adresse à plusieurs catégories d'utilisateurs souhaitant explorer les fondations de l'informatique :
+
+- Étudiants et apprenants : Il est idéal pour découvrir les structures de données minimalistes et les concepts avancés des systèmes d'exploitation.
+- Développeurs intéressés par les systèmes : Le projet simule la sémantique de fonctions de bas niveau, notamment le comportement Unix-style Fork.
+- Enseignants et formateurs : L'interface utilisateur interactive avec visualisation temps réel et exécution pas à pas facilite la démonstration des concepts de mémoire, d'ordonnancement et de concurrence.
+
+## Objectif
+
+L'objectif premier est de fournir une plateforme interactive pour l'étude des concepts suivants :
+
+### Découverte des Fondamentaux de l'Informatique
+
+- Visualisation de l'État : L'interface permet une visualisation détaillée de l'état de la mémoire et du pointeur (PTR) en temps réel.
+- Exécution Pas à Pas : Le mode Step-by-Step exécute une seule instruction à la fois, ce qui est idéal pour le débogage et la pédagogie.
+- Éditeur Amélioré : Un éditeur de code personnalisé fournit la coloration syntaxique des commandes Brainfuck, y compris la nouvelle commande f.
+
+### Compréhension des Systèmes d'Exploitation (OS)
+
+L'interpréteur simule plusieurs aspects de la gestion des processus et des ressources dans un OS :
+
+- Fork Unix-Style : La nouvelle commande f permet la création de threads parallèles. Elle reproduit la sémantique POSIX authentique : le thread parent reçoit le PID de l'enfant (valeur > 0), tandis que l'enfant reçoit la valeur 0. Ceci permet la mise en œuvre de l'exécution conditionnelle.
+- Isolation des Threads : Chaque thread est géré avec sa propre mémoire indépendante (30 000 cellules).
+- Gestion des E/S : Un modèle d'E/S de type FIFO Unix like est implémenté, utilisant une queue globale partagée pour l'input unifié. La consommation est atomique et le comportement est déterministe.
+
+### Initiation à la Programmation Concurrente
+
+Le projet offre un cadre pour visualiser et comprendre la gestion de multiples flux d'exécution :
+
+- Multithreading Simulé : Le système gère jusqu'à 8 threads simultanés par défaut.
+- Ordonnancement : L'interpréteur utilise un modèle d'ordonnancement coopératif round-robin, où chaque thread actif exécute une instruction par cycle. Cela garantit une exécution séquentielle et prévisible.
+- Visualisation de la Concurrence : L'interface permet le suivi de l'état de tous les threads actifs. La coloration automatique (par exemple, 🔵 Bleu, 🟢 Vert, 🟠 Orange) permet d'identifier clairement l'origine de chaque sortie dans le Output Global Unifié.
+- Sécurité et Stabilité : Une protection contre la "Fork Bomb" est intégrée, limitant le nombre global de threads actifs à une valeur configurable (8 par défaut).
+- Statistiques Avancées : Un système de statistiques complet assure le suivi en temps réel de la répartition des étapes et de la progression des threads.
 
 -----
 
