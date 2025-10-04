@@ -774,7 +774,7 @@
         <div id="memory-view"></div>
     </div>
 
-    <script src="BrainfuckInterpreter.js?v=1.14.1"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.3"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -1357,26 +1357,10 @@
                 // Zones d'entrée et de sortie par thread
                 const ioHTML = generateThreadIOView(state);
                 
-                // Informations de base avec chronologie
-                const steps = executionHistory.get(state.threadId) || 0;
-                const detailsHTML = `
-                    <div class="thread-details">
-                        <strong>PTR:</strong> ${state.ptr} | 
-                        <strong>IP:</strong> ${state.ip}/${state.code.length} | 
-                        <strong>Cellule:</strong> ${state.memoryFull[state.ptr] || 0} | 
-                        <strong>Étapes:</strong> ${steps}<br>
-                        <strong>Instruction:</strong> "${state.currentInstruction || 'FIN'}" | 
-                        <strong>Forks créés:</strong> ${state.forkCount || 0}<br>
-                        ${state.children.length > 0 ? `<strong>Enfants:</strong> [${state.children.map(id => `T${id}`).join(', ')}]` : ''}
-                        <div class="thread-timeline">
-                            📊 Progrès: ${progress.toFixed(1)}% | 
-                            ⏱️ Dernière activité: Étape ${globalStepCounter}
-                        </div>
-                    </div>
-                `;
+                // Suppression des détails redondants - maintenant dans les logs d'exécution
                 
                 // Contenu selon le mode d'affichage
-                let contentHTML = headerHTML + ioHTML + detailsHTML;
+                let contentHTML = headerHTML + ioHTML;
                 
                 if (showDetailedThreadView) {
                     // Visualisation de la mémoire (fenêtre autour du PTR)
@@ -1796,18 +1780,62 @@
         // Génère un log d'exécution pour un thread
         function generateThreadExecutionLog(threadId) {
             const history = executionHistory.get(threadId) || 0;
-            const logs = [
-                `Étape ${Math.max(0, globalStepCounter - 2)}: Instruction exécutée`,
-                `Étape ${Math.max(0, globalStepCounter - 1)}: État mis à jour`,
-                `Étape ${globalStepCounter}: État actuel`
-            ];
+            
+            // Récupérer les logs réels de la console pour ce thread
+            const threadLogs = getThreadExecutionLogs(threadId);
             
             return `
                 <div class="execution-log">
                     <strong>📝 Log d'exécution:</strong><br>
-                    ${logs.slice(-3).map(log => `• ${log}`).join('<br>')}
+                    ${threadLogs.length > 0 ? threadLogs.reverse().map(log => `• ${log}`).join('<br>') : '• Aucun log disponible'}
                 </div>
             `;
+        }
+
+        // Récupère les logs d'exécution pertinents pour un thread spécifique
+        function getThreadExecutionLogs(threadId) {
+            // Utiliser les logs capturés automatiquement
+            const logs = threadLogs.get(threadId) || [];
+            
+            if (logs.length === 0) {
+                // Fallback : simuler des logs basiques si aucun log capturé
+                if (!interpreter || !interpreter.threadManager) {
+                    return ['🧵 Thread non initialisé'];
+                }
+                
+                const thread = interpreter.threadManager.threads.get(threadId);
+                if (!thread) {
+                    return ['🗑️ Thread supprimé du gestionnaire'];
+                }
+                
+                const steps = executionHistory.get(threadId) || 0;
+                const basicLogs = [];
+                
+                if (threadId === 0) {
+                    basicLogs.push(`🧵 Thread T${threadId} créé (principal)`);
+                } else {
+                    basicLogs.push(`🧵 Thread T${threadId} créé par fork`);
+                }
+                
+                if (steps > 0) {
+                    const state = thread.getState();
+                    basicLogs.push(`⚡ ${steps} instructions exécutées`);
+                    
+                    if (state.forkCount > 0) {
+                        basicLogs.push(`🔀 ${state.forkCount} fork(s) créé(s)`);
+                    }
+                }
+                
+                if (thread.halted) {
+                    basicLogs.push(`🛑 Thread T${threadId} terminé`);
+                }
+                
+                return basicLogs.slice(-5);
+            }
+            
+            // Retourner les logs capturés (formattés) - déjà dans l'ordre chronologique
+            // Le reverse sera fait dans generateThreadExecutionLog pour affichage inverse
+            return logs.map(log => log.message);
         }
 
         // Génère la vue mémoire pour un thread
@@ -2491,6 +2519,7 @@
             executionHistory.clear();
             threadInputData.clear();
             threadAccessHistory = []; // Reset de l'historique des threads
+            threadLogs.clear(); // Reset des logs capturés
             
             // Reset sécurisé des éléments DOM
             const stepNumberEl = document.getElementById('step-number');
@@ -2548,8 +2577,145 @@
         let threadInputData = new Map(); // Données d'entrée par thread
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
+        // Système de logs condensés par thread
+        let threadLogs = new Map(); // Map<threadId, Array<logEntry>>
+        
+        // Capturer les logs console utiles pour l'affichage
+        function captureThreadLog(threadId, type, message, details = {}) {
+            if (!threadLogs.has(threadId)) {
+                threadLogs.set(threadId, []);
+            }
+            
+            const logs = threadLogs.get(threadId);
+            const timestamp = Date.now();
+            
+            // Formater le message selon le type
+            let formattedMessage = '';
+            switch (type) {
+                case 'create':
+                    formattedMessage = `🧵 Thread T${threadId} ${details.isMain ? 'créé (principal)' : `créé (parent: T${details.parentId})`}`;
+                    break;
+                case 'step':
+                    const instruction = details.instruction || 'EOF';
+                    formattedMessage = `⚡ IP:${details.fromIP}→${details.toIP} [${instruction}]`;
+                    if (details.cellValue !== undefined) {
+                        formattedMessage += ` cell=${details.cellValue}`;
+                    }
+                    break;
+                case 'fork':
+                    formattedMessage = `🔀 Fork → T${details.childId} (PID=${details.childId})`;
+                    break;
+                case 'input':
+                    formattedMessage = `📥 Input: "${details.char}" (queue:${details.queueRemaining})`;
+                    break;
+                case 'output':
+                    const char = details.isPrintable ? `'${details.char}'` : `0x${details.charCode.toString(16).padStart(2, '0')}`;
+                    formattedMessage = `💾 Output: ${char}`;
+                    break;
+                case 'halt':
+                    formattedMessage = `🛑 Terminé (${details.ip}/${details.codeLength})`;
+                    break;
+                default:
+                    formattedMessage = message;
+            }
+            
+            logs.push({
+                timestamp,
+                type,
+                message: formattedMessage,
+                details
+            });
+            
+            // Limiter à 8 logs max par thread pour économiser l'espace
+            if (logs.length > 8) {
+                logs.shift();
+            }
+        }
+        
+        // Intercepter les logs console existants et les capturer
+        const originalConsoleLog = console.log;
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            
+            // Capturer les logs utiles automatiquement
+            const message = args.join(' ');
+            
+            // Logs de création de thread
+            if (message.includes('🧵 Création Thread T')) {
+                const match = message.match(/Thread T(\d+) \(parent: T?(\w+)\)/);
+                if (match) {
+                    const threadId = parseInt(match[1]);
+                    const parentInfo = match[2];
+                    captureThreadLog(threadId, 'create', message, {
+                        isMain: parentInfo === 'none',
+                        parentId: parentInfo !== 'none' ? parentInfo : null
+                    });
+                }
+            }
+            
+            // Logs d'exécution pas à pas
+            else if (message.includes('📍 Thread T') && message.includes('step:')) {
+                const threadMatch = message.match(/Thread T(\d+)/);
+                const ipMatch = message.match(/IP=(\d+)\/(\d+)/);
+                const instrMatch = message.match(/instruction='([^']+)'/);
+                
+                if (threadMatch && ipMatch && instrMatch) {
+                    const threadId = parseInt(threadMatch[1]);
+                    const ip = parseInt(ipMatch[1]);
+                    const codeLength = parseInt(ipMatch[2]);
+                    const instruction = instrMatch[1];
+                    
+                    captureThreadLog(threadId, 'step', message, {
+                        fromIP: Math.max(0, ip - 1),
+                        toIP: ip,
+                        instruction: instruction === 'EOF' ? 'EOF' : instruction,
+                        codeLength
+                    });
+                }
+            }
+            
+            // Logs de fork
+            else if (message.includes('🔀 Fork Unix-style:')) {
+                const parentMatch = message.match(/Parent T(\d+)/);
+                const childMatch = message.match(/PID=(\d+)/);
+                
+                if (parentMatch && childMatch) {
+                    const parentId = parseInt(parentMatch[1]);
+                    const childId = parseInt(childMatch[1]);
+                    captureThreadLog(parentId, 'fork', message, { childId });
+                }
+            }
+            
+            // Logs d'input FIFO
+            else if (message.includes('📥 Thread T') && message.includes('Lecture FIFO')) {
+                const threadMatch = message.match(/Thread T(\d+)/);
+                const charMatch = message.match(/Lecture FIFO "([^"]*)"/);
+                const queueMatch = message.match(/queue restante: (\d+)/);
+                
+                if (threadMatch && charMatch && queueMatch) {
+                    const threadId = parseInt(threadMatch[1]);
+                    const char = charMatch[1];
+                    const queueRemaining = parseInt(queueMatch[1]);
+                    captureThreadLog(threadId, 'input', message, { char, queueRemaining });
+                }
+            }
+            
+            // Logs de fin de thread
+            else if (message.includes('🛑 Thread T') && message.includes('terminé')) {
+                const threadMatch = message.match(/Thread T(\d+)/);
+                const ipMatch = message.match(/IP: (\d+)\/(\d+)/);
+                
+                if (threadMatch && ipMatch) {
+                    const threadId = parseInt(threadMatch[1]);
+                    const ip = parseInt(ipMatch[1]);
+                    const codeLength = parseInt(ipMatch[2]);
+                    captureThreadLog(threadId, 'halt', message, { ip, codeLength });
+                }
+            }
+        };
+        
         // Informations de version de l'application
-    const APP_VERSION = '1.14.1';
+    const APP_VERSION = '1.14.3';
     const BUILD_DATE = '2025-10-04';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2596,7 +2762,7 @@
         <div id="version-info">
             🧠 ForkBrain - Where Brainfuck meets Unix threading !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.1</span> • Build <span id="build-date">2025-10-04</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.3</span> • Build <span id="build-date">2025-10-04</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
