@@ -1,6 +1,6 @@
 # 🔧 API Reference - Bra1nF0rk
 
-Documentation complète de l'API Bra1nF0rk v1.11.0 - *Where Brainfuck code goes parallel, see your threads run*
+Documentation complète de l'API Bra1nF0rk v1.11.0 - *Brainfuck code goes parallel, see your threads run !*
 
 ## 📋 Table des Matières
 
@@ -487,5 +487,5 @@ try {
 
 ---
 
-*Documentation mise à jour pour **Bra1nF0rk v1.11.0** - Where Brainfuck code goes parallel, see your threads run*  
+*Documentation mise à jour pour **Bra1nF0rk v1.11.0** - Brainfuck code goes parallel, see your threads run !*  
 *Dernière modification : 2 octobre 2025*

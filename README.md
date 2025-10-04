@@ -1,6 +1,8 @@
 # 🧠 Bra1nF0rk - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.14.4-blue.svg)
+> Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
+
+![Version](https://img.shields.io/badge/version-1.14.5-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--04-lightgreen.svg)
 

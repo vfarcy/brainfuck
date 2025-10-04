@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run</title>
+    <title>🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -383,8 +383,12 @@
         }
         
         .execution-log {
-            max-height: 100px;
+            /* Rendre la fenêtre de log redimensionnable en hauteur */
+            resize: vertical;
             overflow-y: auto;
+            height: 120px;           /* hauteur par défaut confortable */
+            min-height: 60px;        /* limite basse raisonnable */
+            max-height: 50vh;        /* empêcher de couvrir tout l'écran */
             font-size: 10px;
             background: #fafafa;
             border: 1px solid #e0e0e0;
@@ -722,7 +726,7 @@
 </head>
 <body>
 
-    <h1>🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run</h1>
+    <h1>🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !</h1>
 
     <!-- Contrôle pour la limite de threads (déplacé au-dessus de l'éditeur) -->
     <div id="max-threads-control">
@@ -812,7 +816,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.4"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.5"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2724,7 +2728,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.4';
+    const APP_VERSION = '1.14.5';
     const BUILD_DATE = '2025-10-04';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2769,9 +2773,9 @@
     <!-- Pied de page avec numéro de version -->
     <footer style="margin-top: 50px; padding: 20px 0; border-top: 1px solid #eee; text-align: center; color: #999; font-size: 12px;">
         <div id="version-info">
-            🧠 Bra1nF0rk - Where Brainfuck code goes parallel, see your threads run
+            🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.4</span> • Build <span id="build-date">2025-10-04</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.5</span> • Build <span id="build-date">2025-10-04</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
