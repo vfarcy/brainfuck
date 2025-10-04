@@ -1,22 +1,23 @@
 # 🧠 ForkBrain - interpréteur Brainfuck JavaScript avec Multithreading
 
-![Version](https://img.shields.io/badge/version-1.14.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.14.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Build](https://img.shields.io/badge/build-2025--10--03-lightgreen.svg)
+![Build](https://img.shields.io/badge/build-2025--10--04-lightgreen.svg)
 
 Un interpréteur **Brainfuck** complet, implémenté en **JavaScript pur (Vanilla JS)**, avec une interface utilisateur interactive et **support du multithreading**. Il permet l'exécution pas à pas, la visualisation détaillée de l'état de la mémoire et inclut un éditeur avec coloration syntaxique. Cette version étend le Brainfuck standard avec la **commande `f` de fork**.
 
-## 🆕 Nouveautés Version 1.12.0 (2025-10-03)
-
-- **🔄 FIFO Séquentiel implémenté** - Queue globale partagée pour l'input unifié
-- **📥 Consommation atomique** - Premier arrivé, premier servi sans race conditions  
-- **🎯 Comportement déterministe** - Ordre de lecture prévisible et reproductible
-- **🗑️ Suppression division d'input** - Plus de partage artificiel lors des forks
-- **📊 Queue globale** - Tous les threads consomment la même source d'entrée
 
 -----
 
 ## 🏗️ Architecture Technique
+
+### 🆕 **E/S FIFO Unix like**
+- **🔄 FIFO Séquentiel implémenté** - Queue globale partagée pour l'input unifié
+- **📥 Consommation atomique** - Premier arrivé, premier servi sans race conditions  
+- **🎯 Comportement déterministe** - Ordre de lecture prévisible et reproductible
+- **🗑️ 0x00 retourné après consommation complètede STDIN** - STDIN Unix like
+- **📊 Queue globale** - Tous les threads consomment la même source d'entrée
+
 
 ### 📦 **Structure Modulaire**
 - **`BrainfuckInterpreter.js`** : Moteur d'interprétation avec gestion des threads (486 lignes)

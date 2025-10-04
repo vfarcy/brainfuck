@@ -1,4 +1,4 @@
-// Version 1.14.0 - Mise à jour automatique du 2025-10-03
+// Version 1.14.1 - Mise à jour automatique du 2025-10-04
 // ForkBrain - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, FIFO Séquentiel pour input unifié
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
