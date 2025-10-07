@@ -720,6 +720,62 @@
             vertical-align: middle;
         }
 
+        /* Guide des instructions Brainfuck */
+        .instruction-guide {
+            margin: 10px 0 16px;
+            padding: 12px;
+            background: #f8f9ff;
+            border: 1px solid #dfe7ff;
+            border-radius: 8px;
+        }
+        .instruction-guide h3 {
+            margin: 0 0 8px;
+            color: #2a3a77;
+            font-size: 16px;
+        }
+        .instruction-guide-header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .instruction-toggle-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            border: 1px solid #c9d5ff;
+            background: #eaf0ff;
+            color: #2a3a77;
+            border-radius: 999px;
+            cursor: pointer;
+        }
+        .instruction-toggle-btn:hover { background: #dde7ff; }
+        .instruction-guide table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .instruction-guide th,
+        .instruction-guide td {
+            border: 1px solid #e3e7ef;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .instruction-guide th {
+            background: #eef3ff;
+            color: #35427a;
+            font-weight: 700;
+            width: 120px;
+        }
+        .instruction-guide td:first-child {
+            font-family: monospace;
+            font-weight: 700;
+            width: 80px;
+        }
+        .instruction-guide tbody tr:nth-child(odd) {
+            background: #fafcff;
+        }
         </style>
 </head>
 <body>
@@ -727,6 +783,33 @@
     <h1>🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !</h1>
 
     <!-- Contrôle pour la limite de threads (déplacé au-dessus de l'éditeur) -->
+    <div class="instruction-guide" aria-label="Guide des instructions Brainfuck">
+        <div class="instruction-guide-header">
+            <button id="toggle-instruction-guide" class="instruction-toggle-btn" type="button" aria-expanded="false" aria-controls="instruction-guide-content">clic pour afficher</button>
+            <h3>📘 Instructions Brainfuck (rappel rapide)</h3>
+        </div>
+        <div id="instruction-guide-content" style="display: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Instr.</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>&gt;</td><td>Déplace le pointeur mémoire à droite (cellule suivante).</td></tr>
+                <tr><td>&lt;</td><td>Déplace le pointeur mémoire à gauche (cellule précédente).</td></tr>
+                <tr><td>+</td><td>Incrémente la valeur de la cellule courante (modulo 256).</td></tr>
+                <tr><td>-</td><td>Décrémente la valeur de la cellule courante (modulo 256).</td></tr>
+                <tr><td>.</td><td>Affiche le caractère correspondant à la valeur de la cellule courante.</td></tr>
+                <tr><td>,</td><td>Lit un caractère depuis l’entrée (FIFO globale) dans la cellule courante.</td></tr>
+                <tr><td>[</td><td>Si la cellule vaut 0, saute après le crochet fermant ‘]’ associé.</td></tr>
+                <tr><td>]</td><td>Si la cellule ≠ 0, revient après le crochet ouvrant ‘[’ associé.</td></tr>
+                <tr><td>f</td><td>Fork Unix‑style (extension) : Parent reçoit le PID de l’enfant (> 0), Enfant reçoit 0.</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
     <div id="max-threads-control">
         <label for="max-threads">🛡️ Limite max de threads:</label>
         <input type="number" id="max-threads" value="8" min="1" max="1000" style="width: 80px;">
@@ -2786,6 +2869,22 @@
                 updateMultiThreadView();
             }
         });
+
+        // Toggle du guide d'instructions
+        const instructionToggleBtn = document.getElementById('toggle-instruction-guide');
+        const instructionGuideContent = document.getElementById('instruction-guide-content');
+        if (instructionToggleBtn && instructionGuideContent) {
+            // Ajuster le libellé initial selon l'état
+            instructionToggleBtn.textContent = (instructionGuideContent.style.display === 'none') ? 'clic pour afficher' : 'Masquer';
+            instructionToggleBtn.setAttribute('aria-expanded', String(instructionGuideContent.style.display !== 'none'));
+
+            instructionToggleBtn.addEventListener('click', () => {
+                const isHidden = instructionGuideContent.style.display === 'none';
+                instructionGuideContent.style.display = isHidden ? '' : 'none';
+                instructionToggleBtn.textContent = isHidden ? 'Masquer' : 'clic pour afficher';
+                instructionToggleBtn.setAttribute('aria-expanded', String(isHidden));
+            });
+        }
 
         // Initialisation après le chargement complet
         window.addEventListener('load', () => {
