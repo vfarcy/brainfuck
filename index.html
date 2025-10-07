@@ -1297,6 +1297,22 @@
                 const mainState = interpreter.getState ? interpreter.getState() : null;
                 if (mainState) allStates = [mainState];
             }
+            // Avant de rerendre, mémoriser les hauteurs actuelles des fenêtres de log si l'utilisateur les a redimensionnées
+            try {
+                if (Array.isArray(allStates) && allStates.length > 0) {
+                    allStates.forEach(s => {
+                        const existingLog = document.getElementById(`execution-log-T${s.threadId}`);
+                        if (existingLog) {
+                            const currentH = Math.round(existingLog.getBoundingClientRect().height);
+                            if (currentH > 0) {
+                                threadLogHeights.set(s.threadId, currentH);
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('⚠️ Impossible de mémoriser la hauteur des logs:', e);
+            }
             console.log('🔍 Debug updateMultiThreadView - Nombre de threads:', allStates.length);
             console.log('🔍 Debug updateMultiThreadView - États des threads:', allStates);
             const container = document.getElementById('threads-container');
@@ -1362,6 +1378,19 @@
                 
                 threadDiv.innerHTML = contentHTML;
                 container.appendChild(threadDiv);
+
+                // Restaurer la hauteur précédente de la fenêtre de log si l'utilisateur l'avait redimensionnée
+                try {
+                    const savedH = threadLogHeights.get(state.threadId);
+                    if (savedH) {
+                        const newLogEl = document.getElementById(`execution-log-T${state.threadId}`);
+                        if (newLogEl) {
+                            newLogEl.style.height = `${savedH}px`;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Impossible de restaurer la hauteur du log:', e);
+                }
                 
                 // Configurer les gestionnaires d'événements pour les zones I/O
                 setupThreadIOHandlers(threadDiv, state.threadId);
@@ -1770,7 +1799,7 @@
             const threadLogs = getThreadExecutionLogs(threadId);
             
             return `
-                <div class="execution-log">
+                <div class="execution-log" id="execution-log-T${threadId}">
                     <strong>📝 Log d'exécution:</strong><br>
                     ${threadLogs.length > 0 ? threadLogs.reverse().map(log => `• ${log}`).join('<br>') : '• Aucun log disponible'}
                 </div>
@@ -2592,6 +2621,8 @@
         
         // Système de logs condensés par thread
         let threadLogs = new Map(); // Map<threadId, Array<logEntry>>
+    // Hauteurs persistées des fenêtres "📝 Log d'exécution:" par thread (pour préserver un redimensionnement manuel)
+    let threadLogHeights = new Map(); // Map<threadId, number(px)>
         
         // Capturer les logs console utiles pour l'affichage
         function captureThreadLog(threadId, type, message, details = {}) {
