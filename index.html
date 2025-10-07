@@ -816,7 +816,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.5"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.6"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -1297,14 +1297,16 @@
                 const mainState = interpreter.getState ? interpreter.getState() : null;
                 if (mainState) allStates = [mainState];
             }
-            // Avant de rerendre, mémoriser les hauteurs actuelles des fenêtres de log si l'utilisateur les a redimensionnées
+            // Avant de rerendre, mémoriser les hauteurs actuelles des fenêtres de log.
+            // Important: ne PAS écraser une hauteur déjà mémorisée, afin d'éviter tout agrandissement automatique lors d'un Step.
             try {
                 if (Array.isArray(allStates) && allStates.length > 0) {
                     allStates.forEach(s => {
                         const existingLog = document.getElementById(`execution-log-T${s.threadId}`);
                         if (existingLog) {
                             const currentH = Math.round(existingLog.getBoundingClientRect().height);
-                            if (currentH > 0) {
+                            // Ne mémoriser que si aucune valeur sauvegardée n'existe encore
+                            if (currentH > 0 && !threadLogHeights.has(s.threadId)) {
                                 threadLogHeights.set(s.threadId, currentH);
                             }
                         }
@@ -1382,11 +1384,23 @@
                 // Restaurer la hauteur précédente de la fenêtre de log si l'utilisateur l'avait redimensionnée
                 try {
                     const savedH = threadLogHeights.get(state.threadId);
-                    if (savedH) {
-                        const newLogEl = document.getElementById(`execution-log-T${state.threadId}`);
-                        if (newLogEl) {
+                    const newLogEl = document.getElementById(`execution-log-T${state.threadId}`);
+                    if (newLogEl) {
+                        if (savedH) {
                             newLogEl.style.height = `${savedH}px`;
+                        } else {
+                            // Aucune hauteur mémorisée: verrouiller la hauteur actuelle pour éviter un "saut" visuel
+                            const currentH = Math.round(newLogEl.getBoundingClientRect().height);
+                            if (currentH > 0) {
+                                threadLogHeights.set(state.threadId, currentH);
+                                newLogEl.style.height = `${currentH}px`;
+                            }
                         }
+
+                        // Détecter un redimensionnement manuel par l'utilisateur
+                        newLogEl.addEventListener('mousedown', () => {
+                            resizingLogThreadId = state.threadId;
+                        });
                     }
                 } catch (e) {
                     console.warn('⚠️ Impossible de restaurer la hauteur du log:', e);
@@ -2623,6 +2637,20 @@
         let threadLogs = new Map(); // Map<threadId, Array<logEntry>>
     // Hauteurs persistées des fenêtres "📝 Log d'exécution:" par thread (pour préserver un redimensionnement manuel)
     let threadLogHeights = new Map(); // Map<threadId, number(px)>
+        // Thread id en cours de redimensionnement (tracking souris)
+        let resizingLogThreadId = null;
+
+        // Quand l'utilisateur relâche la souris, figer la hauteur choisie
+        window.addEventListener('mouseup', () => {
+            if (resizingLogThreadId !== null) {
+                const el = document.getElementById(`execution-log-T${resizingLogThreadId}`);
+                if (el) {
+                    const h = Math.round(el.getBoundingClientRect().height);
+                    if (h > 0) threadLogHeights.set(resizingLogThreadId, h);
+                }
+                resizingLogThreadId = null;
+            }
+        });
         
         // Capturer les logs console utiles pour l'affichage
         function captureThreadLog(threadId, type, message, details = {}) {
@@ -2759,8 +2787,8 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.5';
-    const BUILD_DATE = '2025-10-04';
+    const APP_VERSION = '1.14.6';
+    const BUILD_DATE = '2025-10-07';
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {
@@ -2806,7 +2834,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.5</span> • Build <span id="build-date">2025-10-04</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.6</span> • Build <span id="build-date">2025-10-07</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
