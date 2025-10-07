@@ -242,6 +242,9 @@
             font-family: 'Courier New', monospace;
             font-size: 13px;
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 240px; /* hauteur de base, la carte peut s'agrandir si le log grossit */
         }
         
         .thread-state:hover {
@@ -386,15 +389,16 @@
             /* Rendre la fenêtre de log redimensionnable en hauteur */
             resize: vertical;
             overflow-y: auto;
-            height: 120px;           /* hauteur par défaut confortable */
+            height: 120px;           /* hauteur par défaut stable (pas de croissance automatique) */
             min-height: 60px;        /* limite basse raisonnable */
-            max-height: 50vh;        /* empêcher de couvrir tout l'écran */
+            max-height: 50vh;        /* limite haute raisonnable si l'utilisateur agrandit */
             font-size: 10px;
             background: #fafafa;
             border: 1px solid #e0e0e0;
             border-radius: 3px;
             padding: 5px;
             margin-top: 5px;
+            box-sizing: border-box;
         }
         
         .thread-header {
@@ -415,6 +419,8 @@
             margin-top: 10px;
             border-top: 1px solid #eee;
             padding-top: 8px;
+            max-height: 120px; /* éviter que la mémoire prenne toute la place */
+            overflow: auto;
         }
         
         .thread-memory-scroll {
@@ -457,7 +463,7 @@
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             font-size: 11px;
-            max-height: 60px;
+            max-height: 80px;
             overflow-y: auto;
         }
         
@@ -474,15 +480,7 @@
             font-size: 12px;
             margin-top: 5px;
         }
-            /* Logs d'exécution */
-        .execution-stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
+        
 
         .stat-item {
             display: flex;
@@ -1297,24 +1295,8 @@
                 const mainState = interpreter.getState ? interpreter.getState() : null;
                 if (mainState) allStates = [mainState];
             }
-            // Avant de rerendre, mémoriser les hauteurs actuelles des fenêtres de log.
-            // Important: ne PAS écraser une hauteur déjà mémorisée, afin d'éviter tout agrandissement automatique lors d'un Step.
-            try {
-                if (Array.isArray(allStates) && allStates.length > 0) {
-                    allStates.forEach(s => {
-                        const existingLog = document.getElementById(`execution-log-T${s.threadId}`);
-                        if (existingLog) {
-                            const currentH = Math.round(existingLog.getBoundingClientRect().height);
-                            // Ne mémoriser que si aucune valeur sauvegardée n'existe encore
-                            if (currentH > 0 && !threadLogHeights.has(s.threadId)) {
-                                threadLogHeights.set(s.threadId, currentH);
-                            }
-                        }
-                    });
-                }
-            } catch (e) {
-                console.warn('⚠️ Impossible de mémoriser la hauteur des logs:', e);
-            }
+            // Ne pas mémoriser automatiquement les hauteurs ici :
+            // la persistance ne doit se produire que quand l'utilisateur redimensionne manuellement.
             console.log('🔍 Debug updateMultiThreadView - Nombre de threads:', allStates.length);
             console.log('🔍 Debug updateMultiThreadView - États des threads:', allStates);
             const container = document.getElementById('threads-container');
@@ -1387,20 +1369,26 @@
                     const newLogEl = document.getElementById(`execution-log-T${state.threadId}`);
                     if (newLogEl) {
                         if (savedH) {
+                            // Appliquer uniquement si l'utilisateur a explicitement redimensionné
                             newLogEl.style.height = `${savedH}px`;
                         } else {
-                            // Aucune hauteur mémorisée: verrouiller la hauteur actuelle pour éviter un "saut" visuel
-                            const currentH = Math.round(newLogEl.getBoundingClientRect().height);
-                            if (currentH > 0) {
-                                threadLogHeights.set(state.threadId, currentH);
-                                newLogEl.style.height = `${currentH}px`;
-                            }
+                            // Laisser la hauteur par défaut CSS (pas de croissance automatique)
+                            newLogEl.style.height = '';
                         }
 
                         // Détecter un redimensionnement manuel par l'utilisateur
                         newLogEl.addEventListener('mousedown', () => {
                             resizingLogThreadId = state.threadId;
                         });
+
+                        // Double-clic: réinitialiser la hauteur sur auto pour profiter de l'espace dispo
+                        newLogEl.addEventListener('dblclick', () => {
+                            threadLogHeights.delete(state.threadId);
+                            newLogEl.style.height = '';
+                        });
+
+                        // Affichage newest-first: rester scrolé en haut pour voir en premier les lignes récentes
+                        newLogEl.scrollTop = 0;
                     }
                 } catch (e) {
                     console.warn('⚠️ Impossible de restaurer la hauteur du log:', e);
@@ -1858,7 +1846,7 @@
                     basicLogs.push(`🛑 Thread T${threadId} terminé`);
                 }
                 
-                return basicLogs.slice(-5);
+                return basicLogs; // pas de limite artificielle, laisser le conteneur gérer le scroll
             }
             
             // Retourner les logs capturés (formattés) - déjà dans l'ordre chronologique
@@ -2698,10 +2686,7 @@
                 details
             });
             
-            // Limiter à 8 logs max par thread pour économiser l'espace
-            if (logs.length > 8) {
-                logs.shift();
-            }
+            // Ne pas limiter artificiellement le nombre de lignes: le conteneur gèrera le scroll
         }
         
         // Intercepter les logs console existants et les capturer
