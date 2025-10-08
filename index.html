@@ -808,6 +808,15 @@
                 <tr><td>f</td><td>Fork Unix‑style (extension) : Parent reçoit le PID de l’enfant (> 0), Enfant reçoit 0.</td></tr>
             </tbody>
         </table>
+        
+        <div style="margin-top: 12px; padding: 8px; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 4px;">
+            <h4 style="margin: 0 0 6px; font-size: 14px; color: #2a5aa8;">💬 Commentaires</h4>
+            <p style="margin: 0; font-size: 12px; color: #4a4a4a;">
+                <strong>Tout caractère qui n'est pas une instruction Brainfuck valide est considéré comme un commentaire.</strong><br>
+                Vous pouvez utiliser <code>//</code>, <code>/* */</code>, du texte libre, des espaces, etc.<br>
+                <em>Exemple :</em> <code>+++  // Incrémente 3 fois</code> ou <code>f[+++.[-]]  /* Fork avec nettoyage */</code>
+            </p>
+        </div>
         </div>
     </div>
     <div id="max-threads-control">
@@ -844,33 +853,9 @@
 
     <hr>
     
-    <!-- Historique d'exécution -->
-    <div id="execution-log" style="margin-top: 20px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
-        <h4>📊 Historique d'exécution</h4>
-        <p style="color: #666; font-style: italic;">Aucune exécution pour le moment - Lancez un programme pour voir les statistiques !</p>
-    </div>
-
-    <!-- Section d'information des threads -->
-    <div id="thread-info">
-        <strong>🔗 Thread Principal (T0)</strong> - Aucun fork détecté
-    </div>
-
-    <!-- Vue multi-thread (masquée par défaut) -->
-    <div id="multi-thread-view" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="margin: 0;">🔀 État de Tous les Threads Actifs</h3>
-            <button id="toggle-thread-details" style="padding: 5px 10px; font-size: 12px;">
-                👁️ Vue Détaillée
-            </button>
-        </div>
-        <div id="threads-container">
-            <!-- Les threads s'afficheront ici dynamiquement -->
-        </div>
-    </div>
-    
     <!-- Zones d'entrée/sortie globales -->
     <div id="global-io">
-        <h2>📥 Données d'Entrée (Input)</h2>
+        <h2>📥 Données d'Entrée (Input) - Globale Unifiée</h2>
         <div id="input-section">
             <!-- Zone d'entrée globale pour le mode single-thread -->
             <div id="single-thread-input" style="display: block;">
@@ -894,10 +879,36 @@
     </div>
 
     <hr>
+    
+    <!-- Historique d'exécution -->
+    <div id="execution-log" style="margin-top: 20px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
+        <h4>📊 Historique d'exécution</h4>
+        <p style="color: #666; font-style: italic;">Aucune exécution pour le moment - Lancez un programme pour voir les statistiques !</p>
+    </div>
+
+    <!-- Section d'information des threads -->
+    <div id="thread-info">
+        <strong>🔗 Thread Principal (T0)</strong> - Aucun fork détecté
+    </div>
+
+    <!-- Vue multi-thread (masquée par défaut) -->
+    <div id="multi-thread-view" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">🔀 État de Tous les Threads Actifs</h3>
+            <button id="toggle-thread-details" style="padding: 5px 10px; font-size: 12px;">
+                👁️ Vue Détaillée
+            </button>
+        </div>
+        <div id="threads-container">
+            <!-- Les threads s'afficheront ici dynamiquement -->
+        </div>
+    </div>
+
+    <hr>
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.7"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.8"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -1056,8 +1067,7 @@
                 const globalInput = inputData.value;
                 interpreter = new BrainfuckInterpreter(codeInput.value, globalInput); 
                 
-                // Initialiser les données d'entrée pour le thread principal (T0)
-                threadInputData.set(0, globalInput);
+                // L'entrée est globale et gérée par l'interpréteur
                 
                 // Appliquer la limite de threads depuis l'interface
                 const maxThreadsInput = document.getElementById('max-threads');
@@ -1241,10 +1251,10 @@
             if (state.totalThreads > 1) {
                 updateMultiThreadView();
                 document.getElementById('multi-thread-view').style.display = 'block';
-                // Basculer vers les zones d'entrée par thread
-                document.getElementById('single-thread-input').style.display = 'none';
-                updateMultiThreadInputs();
-                document.getElementById('multi-thread-inputs').style.display = 'block';
+                
+                // L'entrée reste globale même en mode multi-thread
+                document.getElementById('single-thread-input').style.display = 'block';
+                document.getElementById('multi-thread-inputs').style.display = 'none';
                 
                 // Afficher le bouton Step Single en mode multi-thread
                 stepSingleBtn.style.display = 'inline-block';
@@ -1477,9 +1487,6 @@
                     console.warn('⚠️ Impossible de restaurer la hauteur du log:', e);
                 }
                 
-                // Configurer les gestionnaires d'événements pour les zones I/O
-                setupThreadIOHandlers(threadDiv, state.threadId);
-                
                 // Ajouter effet visuel lors de l'exécution
                 if (!state.halted && Math.random() < 0.3) { // Animation occasionnelle
                     setTimeout(() => {
@@ -1492,35 +1499,17 @@
             });
         }
 
-        // Génère la vue I/O pour un thread (entrée seulement, sortie globale)
+        // Génère la vue d'informations pour un thread (pas d'entrée individuelle)
         function generateThreadIOView(state) {
-            const inputValue = threadInputData.get(state.threadId) || '';
-            
-            if (showDetailedThreadView) {
-                // Vue détaillée avec zone d'entrée complète
-                return `
-                    <div class="thread-io">
-                        <div class="thread-io-section">
-                            <label class="thread-io-label">📥 Données d'Entrée (Input):</label>
-                            <textarea class="thread-input" 
-                                      data-thread-id="${state.threadId}" 
-                                      placeholder="Données pour les commandes ',' du thread T${state.threadId}">${inputValue}</textarea>
-                        </div>
+            // Pas de zone d'entrée par thread car l'entrée est globale
+            return `
+                <div class="thread-info-compact">
+                    <div class="thread-status">
+                        <strong>État:</strong> ${state.halted ? '💀 Terminé' : '▶️ Actif'} | 
+                        <strong>Étapes:</strong> ${executionHistory.get(state.threadId) || 0}
                     </div>
-                `;
-            } else {
-                // Vue compacte avec zone d'entrée réduite
-                return `
-                    <div class="thread-io">
-                        <div class="thread-io-section">
-                            <label class="thread-io-label">📥 Input T${state.threadId}:</label>
-                            <textarea class="thread-input" 
-                                      data-thread-id="${state.threadId}" 
-                                      placeholder="Input T${state.threadId}">${inputValue}</textarea>
-                        </div>
-                    </div>
-                `;
-            }
+                </div>
+            `;
         }
 
 
@@ -1797,83 +1786,6 @@
             });
             
             legendContainer.innerHTML = legendHTML;
-        }
-
-        // Met à jour les zones d'entrée en mode multi-thread
-        function updateMultiThreadInputs() {
-            if (!interpreter) return;
-            
-            const allStates = interpreter.getAllThreadStates();
-            const container = document.getElementById('multi-thread-inputs');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            allStates.forEach(state => {
-                const inputValue = threadInputData.get(state.threadId) || '';
-                const inputDiv = document.createElement('div');
-                inputDiv.className = 'multi-thread-input';
-                
-                inputDiv.innerHTML = `
-                    <label class="multi-thread-input-label">
-                        📥 Thread T${state.threadId} - Données d'Entrée:
-                    </label>
-                    <textarea data-thread-id="${state.threadId}" 
-                              placeholder="Données pour les commandes ',' du thread T${state.threadId}">${inputValue}</textarea>
-                `;
-                
-                container.appendChild(inputDiv);
-                
-                // Configurer les gestionnaires d'événements
-                const textarea = inputDiv.querySelector('textarea');
-                if (textarea) {
-                    textarea.addEventListener('input', (e) => {
-                        const newValue = e.target.value;
-                        threadInputData.set(state.threadId, newValue);
-                        console.log(`📝 Input thread T${state.threadId} mis à jour: "${newValue}"`);
-                        
-                        // Mettre à jour l'input du thread correspondant dans l'interpréteur
-                        if (interpreter && interpreter.threadManager) {
-                            const thread = interpreter.threadManager.threads.get(state.threadId);
-                            if (thread) {
-                                // Comparer avec la version chaîne du tableau actuel
-                                const currentInputString = Array.isArray(thread.input) ? thread.input.join('') : (thread.input || '');
-                                if (currentInputString !== newValue) {
-                                    thread.input = newValue.split(''); // Convertir en tableau
-                                    // Pas de inputPointer car BrainfuckInterpreter utilise shift()
-                                    console.log(`🔄 Thread T${state.threadId} input synchronisé: "${newValue}"`);
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        // Configure les gestionnaires d'événements pour les zones I/O d'un thread
-        function setupThreadIOHandlers(threadDiv, threadId) {
-            const inputArea = threadDiv.querySelector(`textarea[data-thread-id="${threadId}"]`);
-            if (inputArea) {
-                inputArea.addEventListener('input', (e) => {
-                    const newValue = e.target.value;
-                    threadInputData.set(threadId, newValue);
-                    console.log(`📝 Input thread T${threadId} mis à jour: "${newValue}"`);
-                    
-                    // Mettre à jour l'input du thread correspondant dans l'interpréteur
-                    if (interpreter && interpreter.threadManager) {
-                        const thread = interpreter.threadManager.threads.get(threadId);
-                        if (thread) {
-                            // Comparer avec la version chaîne du tableau actuel
-                            const currentInputString = Array.isArray(thread.input) ? thread.input.join('') : (thread.input || '');
-                            if (currentInputString !== newValue) {
-                                thread.input = newValue.split(''); // Convertir en tableau
-                                // Pas de inputPointer car BrainfuckInterpreter utilise shift()
-                                console.log(`🔄 Thread T${threadId} input synchronisé: "${newValue}"`);
-                            }
-                        }
-                    }
-                });
-            }
         }
 
         // Génère un log d'exécution pour un thread
@@ -2646,7 +2558,6 @@
             // Reset des compteurs et données
             globalStepCounter = 0;
             executionHistory.clear();
-            threadInputData.clear();
             threadAccessHistory = []; // Reset de l'historique des threads
             threadLogs.clear(); // Reset des logs capturés
             
@@ -2701,7 +2612,6 @@
         let showDetailedThreadView = true;
         let globalStepCounter = 0;
         let executionHistory = new Map(); // Historique d'exécution par thread
-        let threadInputData = new Map(); // Données d'entrée par thread
         let threadAccessHistory = []; // Historique des threads utilisés (pour priorité de retour)
         
         // Système de logs condensés par thread
@@ -2855,8 +2765,8 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.7';
-    const BUILD_DATE = '2025-10-07';
+    const APP_VERSION = '1.14.8';
+    const BUILD_DATE = '2025-10-08';
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {
@@ -2918,7 +2828,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.7</span> • Build <span id="build-date">2025-10-07</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.8</span> • Build <span id="build-date">2025-10-08</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
