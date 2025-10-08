@@ -764,6 +764,16 @@
             cursor: pointer;
         }
         .instruction-toggle-btn:hover { background: #dde7ff; }
+        /* Align the instruction guide header with the button on the right */
+        .instruction-guide-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .instruction-guide-header h3 {
+            margin: 0;
+        }
+        
         .instruction-guide table {
             width: 100%;
             border-collapse: collapse;
@@ -799,8 +809,8 @@
     <!-- Contrôle pour la limite de threads (déplacé au-dessus de l'éditeur) -->
     <div class="instruction-guide" aria-label="Guide des instructions Brainfuck">
         <div class="instruction-guide-header">
+            <h3>📘 Aide Brainfuck</h3>
             <button id="toggle-instruction-guide" class="instruction-toggle-btn" type="button" aria-expanded="false" aria-controls="instruction-guide-content">clic pour afficher</button>
-            <h3>📘 Instructions Brainfuck (rappel rapide)</h3>
         </div>
         <div id="instruction-guide-content" style="display: none;">
         <table>
@@ -925,7 +935,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.10"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.11"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -2879,7 +2889,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.10';
+    const APP_VERSION = '1.14.11';
     const BUILD_DATE = '2025-10-08';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2942,7 +2952,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.10</span> • Build <span id="build-date">2025-10-08</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.11</span> • Build <span id="build-date">2025-10-08</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub

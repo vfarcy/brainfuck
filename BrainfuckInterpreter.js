@@ -1,4 +1,4 @@
-// Version 1.14.10 - Mise à jour automatique du 2025-10-08
+// Version 1.14.11 - Mise à jour automatique du 2025-10-08
 // Bra1nF0rk - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, FIFO Séquentiel pour input unifié, Logs condensés par thread, Interface épurée
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
