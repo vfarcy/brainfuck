@@ -1,6 +1,6 @@
 {
   "name": "forkbrain-multithreading-interpreter",
-  "version": "1.14.9",
+  "version": "1.14.10",
   "description": "Bra1nF0rk - Interpréteur Brainfuck avec support multithreading et interface interactive",
   "main": "BrainfuckInterpreter.js",
   "scripts": {

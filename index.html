@@ -925,7 +925,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.9"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.10"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -1107,25 +1107,35 @@
             const validInstructions = new Set(['>', '<', '+', '-', '.', ',', '[', ']', 'f']);
             const filteredChars = [];
             
-            for (let i = 0; i < rawCode.length; i++) {
+            let i = 0;
+            while (i < rawCode.length) {
                 const char = rawCode[i];
                 
                 // Détecter les commentaires de style //
-                if (char === '/' && i < rawCode.length - 1 && rawCode[i + 1] === '/') {
-                    // Commentaire ligne: ignorer jusqu'à la fin de ligne
+                if (char === '/' && i + 1 < rawCode.length && rawCode[i + 1] === '/') {
+                    // Commentaire ligne: ignorer jusqu'à la fin de ligne (ou fin de chaîne)
                     let endLine = rawCode.indexOf('\n', i);
-                    if (endLine === -1) endLine = rawCode.length;
-                    i = endLine - 1; // -1 car la boucle fera i++
+                    if (endLine === -1) {
+                        // Pas de nouvelle ligne trouvée, aller à la fin
+                        i = rawCode.length;
+                    } else {
+                        // Continuer après la nouvelle ligne
+                        i = endLine + 1;
+                    }
                     continue;
                 }
                 
                 // Détecter les commentaires de style /* */
-                if (char === '/' && i < rawCode.length - 1 && rawCode[i + 1] === '*') {
+                if (char === '/' && i + 1 < rawCode.length && rawCode[i + 1] === '*') {
                     // Commentaire bloc: ignorer jusqu'à */
                     let endBlock = rawCode.indexOf('*/', i + 2);
-                    if (endBlock === -1) endBlock = rawCode.length;
-                    else endBlock += 1; // Pointer après le */
-                    i = endBlock; // La boucle fera i++
+                    if (endBlock === -1) {
+                        // Pas de */ trouvé, ignorer jusqu'à la fin
+                        i = rawCode.length;
+                    } else {
+                        // Continuer après le */
+                        i = endBlock + 2;
+                    }
                     continue;
                 }
                 
@@ -1134,6 +1144,8 @@
                     filteredChars.push(char);
                 }
                 // Sinon, c'est un commentaire (caractère ignoré)
+                
+                i++; // Passer au caractère suivant
             }
             
             return filteredChars.join('');
@@ -1162,6 +1174,8 @@
                 console.log('🔍 Code original:', rawCode.length, 'caractères');
                 console.log('🔍 Code filtré:', filteredCode.length, 'instructions');
                 console.log('🔍 Caractères ignorés:', rawCode.length - filteredCode.length);
+                console.log('🔍 Code filtré exact:', `"${filteredCode}"`);
+                console.log('🔍 Instructions détectées:', filteredCode.split('').join(' '));
                 
                 // Passage du code filtré et des données d'entrée globales pour le thread principal
                 const globalInput = inputData.value;
@@ -2865,7 +2879,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.9';
+    const APP_VERSION = '1.14.10';
     const BUILD_DATE = '2025-10-08';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2928,7 +2942,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.9</span> • Build <span id="build-date">2025-10-08</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.10</span> • Build <span id="build-date">2025-10-08</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
