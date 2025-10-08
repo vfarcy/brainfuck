@@ -72,6 +72,20 @@
         .bf-comment {
             color: #bdbdbd;
         }
+        .bf-comment-line {
+            color: #888;
+            font-style: italic;
+            background-color: #f8f8f8;
+        }
+        .bf-comment-block {
+            color: #999;
+            background-color: #f0f0f0;
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+        .bf-comment:hover {
+            color: #666;
+        }
         .bf-move-right,
         .bf-move-left {
             color: #1565c0;
@@ -812,9 +826,12 @@
         <div style="margin-top: 12px; padding: 8px; background: #f0f8ff; border: 1px solid #b3d9ff; border-radius: 4px;">
             <h4 style="margin: 0 0 6px; font-size: 14px; color: #2a5aa8;">💬 Commentaires</h4>
             <p style="margin: 0; font-size: 12px; color: #4a4a4a;">
-                <strong>Tout caractère qui n'est pas une instruction Brainfuck valide est considéré comme un commentaire.</strong><br>
-                Vous pouvez utiliser <code>//</code>, <code>/* */</code>, du texte libre, des espaces, etc.<br>
-                <em>Exemple :</em> <code>+++  // Incrémente 3 fois</code> ou <code>f[+++.[-]]  /* Fork avec nettoyage */</code>
+                <strong>Les commentaires sont complètement ignorés lors de l'exécution.</strong><br>
+                <em>Formats supportés :</em><br>
+                • <code>//</code> commentaire ligne : <code>+++  // Incrémente 3 fois</code><br>
+                • <code>/* */</code> commentaire bloc : <code>f[+++.[-]]  /* Fork avec nettoyage */</code><br>
+                • <em>Texte libre :</em> Tout caractère non-Brainfuck est ignoré<br>
+                <strong>⚠️ Important :</strong> Les instructions Brainfuck dans les commentaires <em>ne sont PAS exécutées</em>.
             </p>
         </div>
         </div>
@@ -908,7 +925,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.8"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.9"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -967,18 +984,54 @@
         function buildHighlightedHtml(source, activeIndex = null) {
             if (!source) return '';
             let html = '';
+            let filteredIndex = 0; // Index dans le code filtré (sans commentaires)
+            
             for (let i = 0; i < source.length; i++) {
                 const char = source[i];
                 if (char === '\n') {
                     html += '\n';
                     continue;
                 }
+                
                 const classes = ['bf-token'];
+                
+                // Détecter les commentaires de style // 
+                if (char === '/' && i < source.length - 1 && source[i + 1] === '/') {
+                    let endLine = source.indexOf('\n', i);
+                    if (endLine === -1) endLine = source.length;
+                    
+                    const commentText = source.slice(i, endLine);
+                    html += `<span class="bf-comment bf-comment-line">${escapeHtml(commentText)}</span>`;
+                    i = endLine - 1; // -1 car la boucle fera i++
+                    continue;
+                }
+                
+                // Détecter les commentaires de style /* */
+                if (char === '/' && i < source.length - 1 && source[i + 1] === '*') {
+                    let endBlock = source.indexOf('*/', i + 2);
+                    if (endBlock === -1) endBlock = source.length;
+                    else endBlock += 2;
+                    
+                    const commentText = source.slice(i, endBlock);
+                    html += `<span class="bf-comment bf-comment-block">${escapeHtml(commentText)}</span>`;
+                    i = endBlock - 1; // -1 car la boucle fera i++
+                    continue;
+                }
+                
+                // Classification normale
                 const tokenClass = BF_TOKEN_CLASSES[char] || 'bf-comment';
                 classes.push(tokenClass);
-                if (activeIndex !== null && i === activeIndex) {
+                
+                // Vérifier si c'est l'instruction active (seulement pour les vraies instructions)
+                if (activeIndex !== null && filteredIndex === activeIndex && BF_TOKEN_CLASSES[char]) {
                     classes.push('bf-active');
                 }
+                
+                // Incrémenter l'index filtré seulement pour les vraies instructions
+                if (BF_TOKEN_CLASSES[char]) {
+                    filteredIndex++;
+                }
+                
                 html += `<span class="${classes.join(' ')}">${escapeHtml(char)}</span>`;
             }
             return html;
@@ -1048,6 +1101,45 @@
         renderEditorHighlight();
         
         /**
+         * Filtre le code Brainfuck pour ignorer complètement les commentaires
+         */
+        function filterBrainfuckCode(rawCode) {
+            const validInstructions = new Set(['>', '<', '+', '-', '.', ',', '[', ']', 'f']);
+            const filteredChars = [];
+            
+            for (let i = 0; i < rawCode.length; i++) {
+                const char = rawCode[i];
+                
+                // Détecter les commentaires de style //
+                if (char === '/' && i < rawCode.length - 1 && rawCode[i + 1] === '/') {
+                    // Commentaire ligne: ignorer jusqu'à la fin de ligne
+                    let endLine = rawCode.indexOf('\n', i);
+                    if (endLine === -1) endLine = rawCode.length;
+                    i = endLine - 1; // -1 car la boucle fera i++
+                    continue;
+                }
+                
+                // Détecter les commentaires de style /* */
+                if (char === '/' && i < rawCode.length - 1 && rawCode[i + 1] === '*') {
+                    // Commentaire bloc: ignorer jusqu'à */
+                    let endBlock = rawCode.indexOf('*/', i + 2);
+                    if (endBlock === -1) endBlock = rawCode.length;
+                    else endBlock += 1; // Pointer après le */
+                    i = endBlock; // La boucle fera i++
+                    continue;
+                }
+                
+                // Si c'est une instruction Brainfuck valide, la garder
+                if (validInstructions.has(char)) {
+                    filteredChars.push(char);
+                }
+                // Sinon, c'est un commentaire (caractère ignoré)
+            }
+            
+            return filteredChars.join('');
+        }
+        
+        /**
          * Initialise ou réinitialise l'interpréteur avec le code et les données d'entrée.
          */
         function initializeInterpreter() {
@@ -1063,9 +1155,17 @@
                 threadOutputsCache.clear();
                 console.log('🧹 Cache des sorties vidé');
                 
-                // Passage du code et des données d'entrée globales pour le thread principal
+                // NOUVEAU: Filtrer le code pour ignorer les commentaires
+                const rawCode = codeInput.value;
+                const filteredCode = filterBrainfuckCode(rawCode);
+                
+                console.log('🔍 Code original:', rawCode.length, 'caractères');
+                console.log('🔍 Code filtré:', filteredCode.length, 'instructions');
+                console.log('🔍 Caractères ignorés:', rawCode.length - filteredCode.length);
+                
+                // Passage du code filtré et des données d'entrée globales pour le thread principal
                 const globalInput = inputData.value;
-                interpreter = new BrainfuckInterpreter(codeInput.value, globalInput); 
+                interpreter = new BrainfuckInterpreter(filteredCode, globalInput); 
                 
                 // L'entrée est globale et gérée par l'interpréteur
                 
@@ -2765,7 +2865,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.8';
+    const APP_VERSION = '1.14.9';
     const BUILD_DATE = '2025-10-08';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -2828,7 +2928,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.8</span> • Build <span id="build-date">2025-10-08</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.9</span> • Build <span id="build-date">2025-10-08</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub

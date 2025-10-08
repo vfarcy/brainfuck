@@ -2,7 +2,7 @@
 
 > Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
 
-![Version](https://img.shields.io/badge/version-1.14.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.14.9-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Build](https://img.shields.io/badge/build-2025--10--07-lightgreen.svg)
 
