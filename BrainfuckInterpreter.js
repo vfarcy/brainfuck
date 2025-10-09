@@ -1,4 +1,4 @@
-// Version 1.14.12 - Mise à jour automatique du 2025-10-09
+// Version 1.14.15 - Mise à jour automatique du 2025-10-09
 // Bra1nF0rk - Corrections appliquées : Fork Unix-style, Round-robin intelligent, Marquage threads terminés, BrainfuckStatsAnalyzer complet, Documentation fork examples corrigés, API Documentation complète, FIFO Séquentiel pour input unifié, Logs condensés par thread, Interface épurée
 const MEMORY_SIZE = 30000;
 const MAX_BYTE_VALUE = 256;
@@ -63,6 +63,7 @@ class BrainfuckInterpreter {
         this.stats = {
             // Performance
             totalSteps: 0,
+            steps: 0,
             executionStartTime: null,
             executionEndTime: null,
             
@@ -188,6 +189,7 @@ class BrainfuckInterpreter {
 
         const instruction = this.code[this.ip];
         this.stats.totalSteps++;
+        this.stats.steps++;
         this.stats.instructionCounts[instruction]++;
 
         // Tracker l'utilisation mémoire

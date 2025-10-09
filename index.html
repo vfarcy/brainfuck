@@ -907,11 +907,18 @@
 
     <hr>
     
+    <!-- Toggle for execution log -->
+    <div style="margin-top: 20px; margin-bottom: 10px;">
+        <label><input type="checkbox" id="toggle-exec-log"> Afficher la zone d'exécution dynamique</label>
+    </div>
     <!-- Historique d'exécution -->
-    <div id="execution-log" style="margin-top: 20px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
+    <div id="execution-log" style="margin-top: 0px; border: 2px solid #ddd; padding: 15px; background-color: #f9f9f9;">
         <h4>📊 Historique d'exécution</h4>
         <p style="color: #666; font-style: italic;">Aucune exécution pour le moment - Lancez un programme pour voir les statistiques !</p>
     </div>
+    <style>
+        .hidden { display: none !important; }
+    </style>
 
     <!-- Section d'information des threads -->
     <div id="thread-info">
@@ -935,9 +942,26 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.12"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.15"></script> 
 
     <script>
+        // Initial state: hide execution log
+        document.addEventListener('DOMContentLoaded', function() {
+            const logElement = document.getElementById('execution-log');
+            const toggleExecLog = document.getElementById('toggle-exec-log');
+            if (logElement && toggleExecLog) {
+                logElement.classList.add('hidden');
+                toggleExecLog.checked = false;
+                toggleExecLog.addEventListener('change', function() {
+                    if (toggleExecLog.checked) {
+                        logElement.classList.remove('hidden');
+                        if (typeof generateThreadExecutionLog === 'function') generateThreadExecutionLog();
+                    } else {
+                        logElement.classList.add('hidden');
+                    }
+                });
+            }
+        });
         // Vérification du chargement de BrainfuckInterpreter
         if (typeof BrainfuckInterpreter === 'undefined') {
             console.error('❌ BrainfuckInterpreter non chargé !');
@@ -1236,10 +1260,16 @@
             try {
                 console.log('🔄 DEBUT generateThreadExecutionLog');
                 const logElement = document.getElementById('execution-log');
-                console.log('🔍 logElement found:', logElement);
+                const toggleExecLog = document.getElementById('toggle-exec-log');
                 if (!logElement) {
                     console.error('❌ Element execution-log not found!');
                     return;
+                }
+                if (toggleExecLog && !toggleExecLog.checked) {
+                    logElement.classList.add('hidden');
+                    return;
+                } else {
+                    logElement.classList.remove('hidden');
                 }
                 
                 console.log('🔄 Après vérification logElement');
@@ -1255,14 +1285,11 @@
             
             if (executionHistory.size === 0) {
                 console.log('📊 BRANCH: executionHistory est vide');
-                
-                // Vérifier s'il y a des threads actifs même sans historique
+                // Afficher stats live si l'interpréteur est en cours d'exécution
                 if (interpreter && interpreter.getAllThreadStates) {
                     const allThreadStates = interpreter.getAllThreadStates();
                     console.log('📊 Threads actifs trouvés:', allThreadStates.length);
-                    
-                    if (allThreadStates.length > 1) {
-                        // Il y a des threads mais pas d'historique - créer un affichage temporaire
+                    if (allThreadStates.length > 0) {
                         html += '<div class="execution-stats">';
                         html += `<div class="stat-item">
                             <span class="stat-label">Threads actifs:</span>
@@ -1273,11 +1300,10 @@
                             <span class="stat-value">0</span>
                         </div>`;
                         html += '</div>';
-                        
                         // Détails par thread
                         html += '<div class="thread-logs">';
                         allThreadStates.forEach(state => {
-                            const steps = executionHistory.get(state.threadId) || 0;
+                            const steps = executionHistory.get(state.threadId) || (state.stats && typeof state.stats.steps === 'number' ? state.stats.steps : 0);
                             html += `
                                 <div class="thread-log-item">
                                     <div class="thread-log-header">
@@ -1302,10 +1328,19 @@
                 if (interpreter && interpreter.stats && interpreter.stats.totalSteps > 0) {
                     console.log('🔧 WORKAROUND: Utilisation des stats de l\'interpréteur directement');
                     const stats = interpreter.stats;
+                    let execDuration = 0;
+                    if (typeof stats.executionStartTime === 'number') {
+                        if (typeof stats.executionEndTime === 'number' && interpreter.getState().halted) {
+                            execDuration = stats.executionEndTime - stats.executionStartTime;
+                        } else {
+                            execDuration = performance.now() - stats.executionStartTime;
+                        }
+                        if (!isFinite(execDuration) || execDuration < 0) execDuration = 0;
+                    }
                     html += '<div style="background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 5px;">';
                     html += '<h5>📊 Statistiques depuis l\'interpréteur :</h5>';
-                    html += `<p><strong>Total d'étapes:</strong> ${stats.totalSteps}</p>`;
-                    html += `<p><strong>Temps d'exécution:</strong> ${(stats.executionEndTime - stats.executionStartTime).toFixed(2)}ms</p>`;
+                    html += `<p><strong>Total d'étapes:</strong> ${isFinite(stats.totalSteps) ? stats.totalSteps : 0}</p>`;
+                    html += `<p><strong>Temps d'exécution:</strong> ${execDuration.toFixed(2)}ms</p>`;
                     html += `<p><strong>Instructions exécutées:</strong></p><ul>`;
                     for (const [cmd, count] of Object.entries(stats.instructionCounts)) {
                         if (count > 0) {
@@ -2152,66 +2187,36 @@
         runAllBtn.addEventListener('click', () => {
             // Réinitialiser s'il n'y a pas d'interpréteur ou si l'exécution précédente est terminée
             if (!interpreter || interpreter.getState().halted) initializeInterpreter();
-            if (interpreter) {
-                try {
-                    const state = interpreter.getState();
-                    console.log('🔍 Debug - state.totalThreads:', state.totalThreads);
-                    console.log('🔍 Debug - getAllThreadStates().length:', interpreter.getAllThreadStates().length);
-                    
-                    // Toujours démarrer en mode multi-thread pour détecter les forks dynamiquement
-                    console.log('🚀 Démarrage exécution multi-thread (détection dynamique des forks)...');
-                    const results = interpreter.runAllThreads();
-                    console.log('✅ Exécution terminée. Résultats:', results);
-                    
-                    // Log des résultats sans popup
-                    if (results.length > 1) {
-                        console.log(`✅ Exécution multi-thread terminée avec ${results.length} threads`);
-                        results.forEach(r => {
-                            console.log(`Thread T${r.threadId}: "${r.output}"`);
-                        });
-                    } else {
-                        console.log('✅ Exécution terminée (pas de forks détectés)');
-                    }
-                    
-                    console.log('🔍 AVANT updateUI() - outputView.innerHTML =', document.getElementById('output-view').innerHTML);
-                    
-                    // IMPORTANT: Après runAllThreads(), les statistiques d'exécution ne sont pas trackées
-                    // car cette méthode bypass notre système step-by-step. 
-                    // On doit récupérer les stats depuis l'interpréteur
+            if (!interpreter) return;
+
+            // Exécution non bloquante par lots
+            const STEP_BATCH_SIZE = 1000;
+            let running = true;
+            let totalSteps = 0;
+            let startTime = performance.now();
+
+            function runBatch() {
+                if (!interpreter || interpreter.getState().halted) {
+                    running = false;
+                    // Mise à jour finale de l'UI
                     if (interpreter && interpreter.stats) {
                         const stats = interpreter.stats;
-                        console.log('📊 Récupération des stats depuis l\'interpréteur:', stats);
-                        
-                        // Mettre à jour executionHistory avec les vraies statistiques
                         executionHistory.clear();
-                        if (results.length > 1) {
-                            // Mode multi-thread - répartir les étapes par thread
-                            results.forEach((result, index) => {
-                                const threadSteps = Math.ceil(stats.totalSteps / results.length);
-                                executionHistory.set(result.threadId, threadSteps);
-                            });
-                        } else {
-                            // Mode single-thread
-                            executionHistory.set(0, stats.totalSteps);
+                        if (interpreter.threadManager && interpreter.threadManager.threads) {
+                            for (const [threadId, thread] of interpreter.threadManager.threads.entries()) {
+                                executionHistory.set(threadId, thread.stats ? thread.stats.steps : thread.ip);
+                            }
                         }
-                        
-                        console.log('📊 executionHistory mis à jour:', executionHistory);
-                        
-                        // FORCER la mise à jour des statistiques - MÉTHODE DIRECTE
-                        console.log('🔄 Injection directe des statistiques');
                         const logElement = document.getElementById('execution-log');
                         if (logElement && stats) {
-                            console.log('✅ Élément trouvé, injection des statistiques...');
-                            const totalSteps = stats.totalSteps;
                             const execTime = (stats.executionEndTime - stats.executionStartTime).toFixed(2);
-                            
                             logElement.innerHTML = `
                                 <h4>📊 Historique d'exécution</h4>
                                 <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #4caf50;">
                                     <div style="display: flex; gap: 20px; margin-bottom: 15px;">
                                         <div style="text-align: center;">
                                             <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Total d'étapes</div>
-                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${totalSteps}</div>
+                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${stats.totalSteps}</div>
                                         </div>
                                         <div style="text-align: center;">
                                             <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Temps d'exécution</div>
@@ -2219,38 +2224,74 @@
                                         </div>
                                         <div style="text-align: center;">
                                             <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Threads actifs</div>
-                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">1</div>
+                                            <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${interpreter.threadManager ? interpreter.threadManager.threads.size : 1}</div>
                                         </div>
                                     </div>
-                                    <div style="margin-bottom: 10px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                            <span style="font-weight: bold;">Thread T0</span>
-                                            <span>${totalSteps} étapes (100.0%)</span>
+                                </div>`;
+                                let execDuration = 0;
+                                let totalSteps = 0;
+                                if (typeof stats.executionStartTime === 'number') {
+                                    if (typeof stats.executionEndTime === 'number' && interpreter.getState().halted) {
+                                        execDuration = stats.executionEndTime - stats.executionStartTime;
+                                    } else {
+                                        execDuration = performance.now() - stats.executionStartTime;
+                                    }
+                                    if (!isFinite(execDuration) || execDuration < 0) execDuration = 0;
+                                }
+                                if (typeof stats.totalSteps === 'number' && isFinite(stats.totalSteps) && stats.totalSteps >= 0) {
+                                    totalSteps = stats.totalSteps;
+                                } else if (interpreter && interpreter.threadManager && interpreter.threadManager.threads) {
+                                    // Fallback: sum all thread steps if available
+                                    totalSteps = Array.from(interpreter.threadManager.threads.values()).reduce((sum, thread) => {
+                                        if (thread && thread.stats && typeof thread.stats.steps === 'number' && isFinite(thread.stats.steps)) {
+                                            return sum + thread.stats.steps;
+                                        }
+                                        return sum;
+                                    }, 0);
+                                }
+                                if (!isFinite(totalSteps) || typeof totalSteps !== 'number' || totalSteps < 0) totalSteps = 0;
+                                logElement.innerHTML = `
+                                    <h4>📊 Historique d'exécution</h4>
+                                    <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #4caf50;">
+                                        <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                                            <div style="text-align: center;">
+                                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Total d'étapes</div>
+                                                <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${totalSteps}</div>
+                                            </div>
+                                            <div style="text-align: center;">
+                                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Temps d'exécution</div>
+                                                <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${execDuration.toFixed(2)}ms</div>
+                                            </div>
+                                            <div style="text-align: center;">
+                                                <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Threads actifs</div>
+                                                <div style="font-size: 1.3em; font-weight: bold; color: #2196F3;">${interpreter.threadManager ? interpreter.threadManager.threads.size : 1}</div>
+                                            </div>
                                         </div>
-                                        <div style="background: #ddd; height: 20px; border-radius: 10px; overflow: hidden;">
-                                            <div style="background: linear-gradient(90deg, #2196F3, #1976D2); height: 100%; width: 100%; border-radius: 10px;"></div>
-                                        </div>
-                                    </div>
-                                    <div style="font-size: 0.85em; color: #666; margin-top: 10px;">
-                                        ✅ Exécution terminée avec succès
-                                    </div>
-                                </div>
-                            `;
-                            console.log('✅ Statistiques injectées directement dans le DOM');
-                        } else {
-                            console.log('❌ Impossible de trouver l\'élément execution-log ou les stats');
+                                    </div>`;
                         }
                     }
-                    
                     updateUI();
-                    
-                    console.log('✅ Fin de l\'exécution complète avec statistiques injectées');
-                    console.log('🔍 APRES updateUI() - outputView.innerHTML =', document.getElementById('output-view').innerHTML);
-                } catch (error) {
-                    alert(`❌ Erreur d'exécution: ${error.message}`);
-                    console.error(error);
+                    return;
                 }
+
+                // Exécuter un batch de steps
+                let stepsThisBatch = 0;
+                while (stepsThisBatch < STEP_BATCH_SIZE && !interpreter.getState().halted) {
+                    interpreter.stepAllThreads ? interpreter.stepAllThreads() : interpreter.step();
+                    stepsThisBatch++;
+                    totalSteps++;
+                }
+
+                // Mise à jour intermédiaire de l'UI (optionnel)
+                if (totalSteps % (STEP_BATCH_SIZE * 10) === 0) {
+                    if (typeof generateThreadExecutionLog === 'function') generateThreadExecutionLog();
+                }
+
+                // Prochain batch
+                setTimeout(runBatch, 0);
             }
+
+            runBatch();
         });
 
         stepBtn.addEventListener('click', () => {
@@ -2401,7 +2442,7 @@
                                     <div style="margin-bottom: 8px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
                                             <span style="font-weight: bold;">Thread T${threadId} ${isActive ? '🟢' : '🔴'}</span>
-                                            <span>${steps} étapes (${percentage}%)</span>
+                                            <span>${typeof steps === 'number' && isFinite(steps) && steps >= 0 ? steps : (thread && thread.stats && typeof thread.stats.steps === 'number' && isFinite(thread.stats.steps) && thread.stats.steps >= 0 ? thread.stats.steps : 0)} étapes (${percentage}%)</span>
                                         </div>
                                         <div style="background: #ddd; height: 12px; border-radius: 6px; overflow: hidden;">
                                             <div style="background: linear-gradient(90deg, #2196F3, #1976D2); height: 100%; width: ${percentage}%; border-radius: 6px; transition: width 0.3s ease;"></div>
@@ -3029,7 +3070,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.12';
+    const APP_VERSION = '1.14.15';
     const BUILD_DATE = '2025-10-09';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -3092,7 +3133,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.12</span> • Build <span id="build-date">2025-10-09</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.15</span> • Build <span id="build-date">2025-10-09</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
