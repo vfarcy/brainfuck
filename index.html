@@ -867,7 +867,8 @@
     
     <p>
         <button id="run-all" aria-label="Exécuter d'un coup">▶ Exécuter D'un Coup</button>
-        <button id="step-btn" aria-label="Exécuter pas à pas">👣 Step (Tous Threads)</button>
+    <button id="stop-btn" aria-label="Arrêter" style="margin-left:8px;background:#e53935;color:#fff;">⏹️ Arrêter</button>
+    <button id="step-btn" aria-label="Exécuter pas à pas">👣 Step (Tous Threads)</button>
     <button id="step-single-btn" aria-label="Exécuter pas à pas thread unique" style="display: none;">👤 Step (Thread Actuel)</button>
         <button id="switch-thread-btn" aria-label="Changer de thread actuel" style="display: none;">🔄 Changer Thread</button>
         <button id="reset-btn" aria-label="Réinitialiser">🔄 Réinitialiser</button>
@@ -942,7 +943,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.16"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.17"></script> 
 
     <script>
         // Initial state: hide execution log
@@ -2184,7 +2185,18 @@
         
         // --- Gestionnaires d'événements ---
 
+        let stopRequested = false;
+        const stopBtn = document.getElementById('stop-btn');
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => {
+                stopRequested = true;
+                stopBtn.disabled = true;
+            });
+        }
+
         runAllBtn.addEventListener('click', () => {
+            stopRequested = false;
+            if (stopBtn) stopBtn.disabled = false;
             // Réinitialiser s'il n'y a pas d'interpréteur ou si l'exécution précédente est terminée
             if (!interpreter || interpreter.getState().halted) initializeInterpreter();
             if (!interpreter) return;
@@ -2196,7 +2208,8 @@
             let startTime = performance.now();
 
             function runBatch() {
-                if (!interpreter || interpreter.getState().halted) {
+                if (!interpreter || interpreter.getState().halted || stopRequested) {
+                    if (pauseBtn) pauseBtn.disabled = false;
                     running = false;
                     // Mise à jour finale de l'UI
                     if (interpreter && interpreter.stats) {
@@ -3070,7 +3083,7 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.16';
+    const APP_VERSION = '1.14.17';
     const BUILD_DATE = '2025-10-09';
         
         // Gestionnaire pour le bouton de bascule de vue
@@ -3133,7 +3146,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.16</span> • Build <span id="build-date">2025-10-09</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.17</span> • Build <span id="build-date">2025-10-09</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
