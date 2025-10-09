@@ -935,7 +935,7 @@
 
     <!-- Section État de l'Interpréteur supprimée pour une interface unifiée -->
 
-    <script src="BrainfuckInterpreter.js?v=1.14.11"></script> 
+    <script src="BrainfuckInterpreter.js?v=1.14.12"></script> 
 
     <script>
         // Vérification du chargement de BrainfuckInterpreter
@@ -1255,8 +1255,48 @@
             
             if (executionHistory.size === 0) {
                 console.log('📊 BRANCH: executionHistory est vide');
-                html += '<p style="color: #666; font-style: italic;">Aucune exécution pour le moment</p>';
-                html += '<p style="color: #999; font-size: 12px;">Debug: executionHistory.size = ' + executionHistory.size + '</p>';
+                
+                // Vérifier s'il y a des threads actifs même sans historique
+                if (interpreter && interpreter.getAllThreadStates) {
+                    const allThreadStates = interpreter.getAllThreadStates();
+                    console.log('📊 Threads actifs trouvés:', allThreadStates.length);
+                    
+                    if (allThreadStates.length > 1) {
+                        // Il y a des threads mais pas d'historique - créer un affichage temporaire
+                        html += '<div class="execution-stats">';
+                        html += `<div class="stat-item">
+                            <span class="stat-label">Threads actifs:</span>
+                            <span class="stat-value">${allThreadStates.length}</span>
+                        </div>`;
+                        html += `<div class="stat-item">
+                            <span class="stat-label">Total d'étapes:</span>
+                            <span class="stat-value">0</span>
+                        </div>`;
+                        html += '</div>';
+                        
+                        // Détails par thread
+                        html += '<div class="thread-logs">';
+                        allThreadStates.forEach(state => {
+                            const steps = executionHistory.get(state.threadId) || 0;
+                            html += `
+                                <div class="thread-log-item">
+                                    <div class="thread-log-header">
+                                        <span class="thread-id">Thread T${state.threadId}</span>
+                                        <span class="thread-steps">${steps} étapes (${state.halted ? 'Terminé' : 'Actif'})</span>
+                                    </div>
+                                    <div class="thread-progress-bar">
+                                        <div class="thread-progress-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<p style="color: #666; font-style: italic;">Aucune exécution pour le moment</p>';
+                    }
+                } else {
+                    html += '<p style="color: #666; font-style: italic;">Aucune exécution pour le moment</p>';
+                }
                 
                 // WORKAROUND: Si les stats de l'interpréteur existent, les afficher directement
                 if (interpreter && interpreter.stats && interpreter.stats.totalSteps > 0) {
@@ -1296,7 +1336,44 @@
                 // Détails par thread
                 html += '<div class="thread-logs">';
                 for (const [threadId, steps] of executionHistory) {
-                    const percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                    // Nouveau calcul: pourcentage basé sur l'état du thread, pas relatif aux autres
+                    let percentage;
+                    let threadState = null;
+                    
+                    // Chercher l'état du thread dans l'interpréteur
+                    if (interpreter && interpreter.getAllThreadStates) {
+                        const allThreadStates = interpreter.getAllThreadStates();
+                        threadState = allThreadStates.find(state => state.threadId === threadId);
+                    }
+                    
+                    if (threadState) {
+                        console.log(`📊 DEBUG: Thread T${threadId} - halted=${threadState.halted}, IP=${threadState.ip}/${threadState.code.length}`);
+                        if (threadState.halted || threadState.ip >= threadState.code.length) {
+                            // Thread terminé = 100%
+                            percentage = "100.0";
+                            console.log(`📊 DEBUG: Thread T${threadId} marqué comme terminé → 100%`);
+                        } else {
+                            // Thread en cours = progression basée sur IP/code.length
+                            percentage = ((threadState.ip / threadState.code.length) * 100).toFixed(1);
+                            console.log(`📊 DEBUG: Thread T${threadId} en cours → ${percentage}%`);
+                        }
+                    } else {
+                        // Thread pas trouvé dans getAllThreadStates() = probablement terminé et supprimé
+                        // Vérifier si le programme global est terminé ou s'il y a des indices de completion
+                        const allThreadStates = interpreter ? interpreter.getAllThreadStates() : [];
+                        const hasActiveThreads = allThreadStates.some(state => !state.halted && state.ip < state.code.length);
+                        
+                        if (!hasActiveThreads && allThreadStates.length > 0) {
+                            // Programme semble terminé et thread absent = thread terminé
+                            percentage = "100.0";
+                            console.log(`📊 DEBUG: Thread T${threadId} absent mais programme terminé → 100%`);
+                        } else {
+                            // Fallback: utiliser l'ancien calcul relatif
+                            percentage = totalSteps > 0 ? ((steps / totalSteps) * 100).toFixed(1) : 0;
+                            console.log(`📊 DEBUG: Thread T${threadId} fallback → ${percentage}%`);
+                        }
+                    }
+                    
                     html += `
                         <div class="thread-log-item">
                             <div class="thread-log-header">
@@ -1572,7 +1649,7 @@
                     const codeHTML = generateThreadCodeView(state);
                     
                     // Log d'exécution récent
-                    const logHTML = generateThreadExecutionLog(state.threadId);
+                    const logHTML = generateSingleThreadExecutionLog(state.threadId);
                     
                     contentHTML += memoryHTML + codeHTML + logHTML;
                 }
@@ -1913,7 +1990,7 @@
         }
 
         // Génère un log d'exécution pour un thread
-        function generateThreadExecutionLog(threadId) {
+        function generateSingleThreadExecutionLog(threadId) {
             const history = executionHistory.get(threadId) || 0;
             
             // Récupérer les logs réels de la console pour ce thread
@@ -2177,6 +2254,7 @@
         });
 
         stepBtn.addEventListener('click', () => {
+            console.log('🔥 DEBUG: stepBtn clicked - fonction stepBtn.addEventListener appelée');
             if (!interpreter || interpreter.getState().halted) initializeInterpreter(); 
             if (interpreter) {
                 try {
@@ -2186,6 +2264,20 @@
                     const allThreadStates = interpreter.getAllThreadStates();
                     const activeThreads = allThreadStates.filter(t => !t.halted);
                     const hasMultipleThreads = interpreter.hasMultipleActiveThreads();
+                    
+                    // NOUVEAU: Initialiser executionHistory avec tous les threads existants s'ils ne sont pas déjà dedans
+                    allThreadStates.forEach(threadState => {
+                        if (!executionHistory.has(threadState.threadId)) {
+                            executionHistory.set(threadState.threadId, 0);
+                            console.log(`📊 Initialisation executionHistory pour thread T${threadState.threadId}`);
+                        }
+                    });
+                    
+                    console.log('📊 DEBUG: executionHistory après initialisation:', executionHistory);
+                    console.log('📊 DEBUG: executionHistory.size après initialisation:', executionHistory.size);
+                    
+                    // Mettre à jour l'affichage immédiatement après l'initialisation
+                    generateThreadExecutionLog();
                     
                     console.log(`🔍 Debug step: ${allThreadStates.length} threads total, ${activeThreads.length} actifs, hasMultiple: ${hasMultipleThreads}`);
                     allThreadStates.forEach(t => {
@@ -2200,7 +2292,9 @@
                     const stepCounterEl = document.getElementById('step-counter');
                     if (stepCounterEl) stepCounterEl.style.display = 'block';
                     
+                    // NOUVEAU: Exécuter l'étape d'abord, puis déterminer le mode d'affichage
                     if (hasMultipleThreads) {
+                        console.log(`📊 DEBUG: PASSAGE par la branche MULTI-THREAD (hasMultipleThreads=${hasMultipleThreads})`);
                         // Mode multi-thread: exécuter une étape pour chaque thread actif
                         const manager = interpreter.threadManager;
                         if (!manager) {
@@ -2254,6 +2348,22 @@
                             // Capturer les outputs après chaque step
                             captureThreadOutputs();
                         }
+                        
+                        // NOUVEAU: Vérifier s'il y a de nouveaux threads créés pendant l'exécution
+                        const updatedThreadStates = interpreter.getAllThreadStates();
+                        console.log('📊 DEBUG: Threads après exécution:', updatedThreadStates.length);
+                        updatedThreadStates.forEach((threadState, index) => {
+                            console.log(`📊 DEBUG: Thread ${index}: T${threadState.threadId}, halted=${threadState.halted}`);
+                        });
+                        
+                        updatedThreadStates.forEach(threadState => {
+                            if (!executionHistory.has(threadState.threadId)) {
+                                executionHistory.set(threadState.threadId, 0);
+                                console.log(`📊 Nouveau thread détecté après exécution: T${threadState.threadId}`);
+                            }
+                        });
+                        
+                        console.log('📊 DEBUG: executionHistory après vérification:', executionHistory);
                         
                         // Mettre à jour l'affichage des statistiques après chaque cycle
                         generateThreadExecutionLog();
@@ -2367,6 +2477,7 @@
                         updateMultiThreadView();
                         
                     } else {
+                        console.log(`📊 DEBUG: PASSAGE par la branche SINGLE-THREAD (hasMultipleThreads=${hasMultipleThreads})`);
                         // Mode single-thread classique
                         const threadId = interpreter.threadId;
                         executionHistory.set(threadId, (executionHistory.get(threadId) || 0) + 1);
@@ -2375,6 +2486,34 @@
                         interpreter.step();
                         console.log(`⚡ T${threadId}: ${interpreter.code[interpreter.ip - 1] || 'N/A'} (IP: ${interpreter.ip - 1} → ${interpreter.ip})`);
                         
+                        console.log(`📊 DEBUG: Exécution de la vérification post-step en mode single-thread`);
+                        
+                        // NOUVEAU: Vérifier s'il y a de nouveaux threads créés pendant l'exécution en single-thread
+                        const updatedThreadStates = interpreter.getAllThreadStates();
+                        console.log(`📊 DEBUG: updatedThreadStates.length = ${updatedThreadStates.length}`);
+                        updatedThreadStates.forEach(threadState => {
+                            if (!executionHistory.has(threadState.threadId)) {
+                                executionHistory.set(threadState.threadId, 0);
+                                console.log(`📊 Nouveau thread détecté en single-thread: T${threadState.threadId}`);
+                            }
+                        });
+                        
+                        // NOUVEAU: Après avoir détecté de nouveaux threads, vérifier si on doit passer en mode multi-thread
+                        const nowHasMultipleThreads = interpreter.hasMultipleActiveThreads();
+                        console.log(`📊 DEBUG: Après step, nowHasMultipleThreads = ${nowHasMultipleThreads}`);
+                        
+                        if (nowHasMultipleThreads && updatedThreadStates.length > 1) {
+                            console.log(`📊 SWITCH: Passage en mode multi-thread détecté (${updatedThreadStates.length} threads)`);
+                            // Utiliser l'affichage multi-thread au lieu du single-thread
+                            console.log(`📊 DEBUG: Appel de generateThreadExecutionLog() en mode switch`);
+                            console.log(`📊 DEBUG: AVANT appel generateThreadExecutionLog - fonction existe: ${typeof generateThreadExecutionLog}`);
+                            generateThreadExecutionLog();
+                            console.log(`📊 DEBUG: APRES appel generateThreadExecutionLog`);
+                            console.log(`📊 DEBUG: Appel de updateMultiThreadView() en mode switch`);
+                            updateMultiThreadView();
+                            console.log(`📊 DEBUG: Return après switch pour éviter affichage single-thread`);
+                            return; // Sortir de la fonction pour éviter l'affichage single-thread
+                        }
                         // Récupérer l'état APRÈS l'exécution
                         const currentState = interpreter.getState();
                         console.log(`📊 IP après step: ${currentState.ip}/${currentState.code.length}`);
@@ -2473,6 +2612,7 @@
         });
 
         function handleStepSingleClick() {
+            console.log('🔥 DEBUG: handleStepSingleClick appelée');
             if (!interpreter) return;
             
             try {
@@ -2889,8 +3029,8 @@
         };
         
         // Informations de version de l'application
-    const APP_VERSION = '1.14.11';
-    const BUILD_DATE = '2025-10-08';
+    const APP_VERSION = '1.14.12';
+    const BUILD_DATE = '2025-10-09';
         
         // Gestionnaire pour le bouton de bascule de vue
         document.getElementById('toggle-thread-details').addEventListener('click', () => {
@@ -2952,7 +3092,7 @@
         <div id="version-info">
             🧠 Bra1nF0rk : Brainfuck code goes parallel, see your threads run !
             <br>
-            <span style="font-family: monospace;">Version <span id="app-version">1.14.11</span> • Build <span id="build-date">2025-10-08</span></span>
+            <span style="font-family: monospace;">Version <span id="app-version">1.14.12</span> • Build <span id="build-date">2025-10-09</span></span>
             <br>
             <a href="https://github.com/vfarcy/brainfuck" style="color: #666; text-decoration: none;" target="_blank">
                 📦 Code source sur GitHub
